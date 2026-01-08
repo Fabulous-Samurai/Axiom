@@ -1,0 +1,7 @@
+# Optional Python dependencies for AXIOM GUI features
+# Install with: pip install -r requirements-optional.txt
+numpy>=1.24,<1.28
+scipy>=1.11,<1.13
+matplotlib>=3.7,<3.10
+pandas>=2.0,<2.3
+sympy>=1.12,<1.13

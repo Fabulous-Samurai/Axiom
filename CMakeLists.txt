@@ -311,6 +311,8 @@ if(BUILD_GIGA_TESTS)
         # Core sources needed for testing
         src/algebraic_parser.cpp
         src/linear_system_parser.cpp
+        src/statistics_parser.cpp
+        src/symbolic_parser.cpp
         src/statistics_engine.cpp
         src/symbolic_engine.cpp
         src/unit_manager.cpp

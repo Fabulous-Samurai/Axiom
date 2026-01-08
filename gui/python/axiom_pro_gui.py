@@ -7,14 +7,11 @@ Advanced 3D plotting, signal processing, and professional tools
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-import threading
 import time
 import sys
-import os
 from pathlib import Path
 
 # Add paths for signal processing toolkit
@@ -23,6 +20,17 @@ sys.path.insert(0, str(project_root / 'tools' / 'analysis'))
 
 # Constants
 DEFAULT_FONT_FAMILY = 'Segoe UI'
+
+# Standard file dialog type tuples (deduplicated)
+FILETYPE_ALL = ("All files", "*.*")
+FILETYPE_TEXT = ("Text files", "*.txt")
+FILETYPE_PY = ("Python files", "*.py")
+FILETYPE_NPY = ("NumPy files", "*.npy")
+FILETYPE_CSV = ("CSV files", "*.csv")
+FILETYPE_NPZ = ("NumPy archive", "*.npz")
+FILETYPE_PNG = ("PNG files", "*.png")
+FILETYPE_PDF = ("PDF files", "*.pdf")
+FILETYPE_SVG = ("SVG files", "*.svg")
 
 class AxiomProGUI:
     """🎯 AXIOM PRO - Professional Scientific Computing GUI 🎯"""
@@ -628,8 +636,7 @@ Ready for professional scientific computing! 🎯
         """Open a data file"""
         filename = filedialog.askopenfilename(
             title="Open Data File",
-            filetypes=[("NumPy files", "*.npy"), ("CSV files", "*.csv"), 
-                      ("Text files", "*.txt"), ("All files", "*.*")]
+            filetypes=[FILETYPE_NPY, FILETYPE_CSV, FILETYPE_TEXT, FILETYPE_ALL]
         )
         if filename:
             try:
@@ -655,7 +662,7 @@ Ready for professional scientific computing! 🎯
         filename = filedialog.asksaveasfilename(
             title="Save Workspace",
             defaultextension=".npz",
-            filetypes=[("NumPy archive", "*.npz"), ("All files", "*.*")]
+            filetypes=[FILETYPE_NPZ, FILETYPE_ALL]
         )
         if filename:
             try:
@@ -1131,8 +1138,7 @@ Ready for professional scientific computing! 🎯
         filename = filedialog.asksaveasfilename(
             title="Save Figure",
             defaultextension=".png",
-            filetypes=[("PNG files", "*.png"), ("PDF files", "*.pdf"), 
-                      ("SVG files", "*.svg"), ("All files", "*.*")]
+            filetypes=[FILETYPE_PNG, FILETYPE_PDF, FILETYPE_SVG, FILETYPE_ALL]
         )
         if filename:
             try:
@@ -1238,7 +1244,7 @@ Ready for professional scientific computing! 🎯
         filename = filedialog.asksaveasfilename(
             title="Save Script",
             defaultextension=".py",
-            filetypes=[("Python files", "*.py"), ("Text files", "*.txt"), ("All files", "*.*")]
+            filetypes=[FILETYPE_PY, FILETYPE_TEXT, FILETYPE_ALL]
         )
         if filename:
             try:
@@ -1252,7 +1258,7 @@ Ready for professional scientific computing! 🎯
         """Load script from file"""
         filename = filedialog.askopenfilename(
             title="Load Script",
-            filetypes=[("Python files", "*.py"), ("Text files", "*.txt"), ("All files", "*.*")]
+            filetypes=[FILETYPE_PY, FILETYPE_TEXT, FILETYPE_ALL]
         )
         if filename:
             try:

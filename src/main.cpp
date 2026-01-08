@@ -236,6 +236,8 @@ int run_interactive_mode() {
             } else {
                 std::cout << "❌ Error: " << result.error_message << "\n";
             }
+        } catch (const std::runtime_error& e) {
+            std::cout << "❌ Runtime error: " << e.what() << "\n";
         } catch (const std::exception& e) {
             std::cout << "❌ Error: " << e.what() << "\n";
         }
@@ -500,6 +502,9 @@ int main(int argc, char* argv[]) {
                 auto basic_result = calc->calculate(line, current_mode);
                 print_result(basic_result, current_mode);
                 std::cout << "__END__\n" << std::flush;
+            } catch (const std::runtime_error& e) {
+                std::cerr << "Runtime error: " << e.what() << "\n";
+                std::cout << "__END__\n" << std::flush;
             } catch (const std::exception& e) {
                 std::cerr << "Error: " << e.what() << "\n";
                 std::cout << "__END__\n" << std::flush;
@@ -571,6 +576,9 @@ int main(int argc, char* argv[]) {
         try {
             auto basic_result = calc->calculate(expression, mode);
             return print_result(basic_result, mode);
+        } catch (const std::runtime_error& e) {
+            std::cerr << "Runtime error: " << e.what() << "\n";
+            return 1;
         } catch (const std::exception& e) {
             std::cerr << "Error: " << e.what() << "\n";
             return 1;

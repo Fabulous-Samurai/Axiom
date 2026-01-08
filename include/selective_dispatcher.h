@@ -129,14 +129,14 @@ public:
     void PrintDispatchDecision(const DispatchMetrics& metrics) const;
 
 private:
-    ComputeEngine preferred_engine_;
-    bool fallback_enabled_;
-    double performance_threshold_ms_;
-    bool learning_enabled_;
+    ComputeEngine preferred_engine_ = ComputeEngine::Auto;
+    bool fallback_enabled_ = true;
+    double performance_threshold_ms_ = 100.0;
+    bool learning_enabled_ = true;
     
-    mutable DispatchMetrics last_metrics_;
-    std::map<ComputeEngine, bool> engine_availability_;
-    std::map<ComputeEngine, std::map<std::string, EnginePerformance>> engine_performance_;
+    mutable DispatchMetrics last_metrics_{};
+    std::map<ComputeEngine, bool> engine_availability_{};
+    std::map<ComputeEngine, std::map<std::string, EnginePerformance>> engine_performance_{};
     
 #ifdef ENABLE_EIGEN
     std::unique_ptr<EigenEngine> eigen_engine_;
@@ -202,7 +202,7 @@ public:
 private:
     std::string operation_name_;
     std::chrono::high_resolution_clock::time_point start_time_;
-    bool stopped_;
+    bool stopped_ = false;
 };
 
 /**

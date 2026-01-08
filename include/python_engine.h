@@ -60,9 +60,9 @@ public:
     void ClearError() { last_error_.clear(); }
 
 private:
-    bool initialized_;
-    std::string last_error_;
-    std::map<std::string, PyObject*> cached_modules_;
+    bool initialized_ = false;
+    std::string last_error_{};
+    std::map<std::string, PyObject*> cached_modules_{};
 
     // Python object helpers
     PyObject* VectorToPyList(const std::vector<double>& vec);

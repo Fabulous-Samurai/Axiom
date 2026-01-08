@@ -11,7 +11,6 @@ import threading
 import os
 import sys
 from pathlib import Path
-import tempfile
 import time
 
 # Configure matplotlib for faster rendering BEFORE importing
@@ -29,6 +28,11 @@ CPP_EXECUTABLE_NAME = "axiom.exe"
 DEFAULT_FONT_FAMILY = 'Segoe UI'
 ENGINE_READY_TEXT = "🟢 C++ Engine Ready"
 ENGINE_FALLBACK_TEXT = "🟡 Python Fallback"
+
+# Standard file dialog type tuples (deduplicated)
+FILETYPE_ALL = ("All files", "*.*")
+FILETYPE_TEXT = ("Text files", "*.txt")
+FILETYPE_EXEC = ("Executables", "*.exe")
 
 class AxiomGUI:
     """🏎️ HYPER SENNA SPEED AXIOM Calculator GUI - Monaco GP Performance! 🏎️"""
@@ -921,7 +925,7 @@ class AxiomGUI:
         filename = filedialog.asksaveasfilename(
             title="Save Results",
             defaultextension=".txt",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            filetypes=[FILETYPE_TEXT, FILETYPE_ALL]
         )
         if filename:
             try:
@@ -1230,7 +1234,7 @@ Install scientific computing packages using the "Install Packages" button:
         from tkinter import filedialog
         filepath = filedialog.askopenfilename(
             title="Select C++ Engine Executable",
-            filetypes=[("Executables", "*.exe"), ("All files", "*.*")]
+            filetypes=[FILETYPE_EXEC, FILETYPE_ALL]
         )
         if filepath:
             self.cpp_engine = CppEngineInterface(filepath)

@@ -197,7 +197,6 @@ class TestScientificPackages(unittest.TestCase):
         """Test NumPy package availability"""
         try:
             import numpy as np
-            self.assertTrue(True, "NumPy is available")
             # Test basic numpy operation
             arr = np.array([1, 2, 3, 4, 5])
             mean_val = np.mean(arr)
@@ -210,7 +209,6 @@ class TestScientificPackages(unittest.TestCase):
         try:
             import scipy
             import scipy.special
-            self.assertTrue(True, "SciPy is available")
             # Test basic scipy function
             gamma_val = scipy.special.gamma(2)
             self.assertAlmostEqual(gamma_val, 1.0, places=5)
@@ -222,7 +220,9 @@ class TestScientificPackages(unittest.TestCase):
         try:
             import matplotlib
             import matplotlib.pyplot as plt
-            self.assertTrue(True, "Matplotlib is available")
+            # Verify modules loaded successfully
+            self.assertIsNotNone(matplotlib)
+            self.assertIsNotNone(plt)
         except ImportError:
             self.skipTest("Matplotlib not installed")
     
@@ -230,7 +230,6 @@ class TestScientificPackages(unittest.TestCase):
         """Test Pandas package availability"""
         try:
             import pandas as pd
-            self.assertTrue(True, "Pandas is available")
             # Test basic pandas operation
             df = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
             self.assertEqual(len(df), 3)
@@ -241,7 +240,6 @@ class TestScientificPackages(unittest.TestCase):
         """Test SymPy package availability"""
         try:
             import sympy as sp
-            self.assertTrue(True, "SymPy is available")
             # Test basic symbolic operation
             x = sp.Symbol('x')
             expr = x**2 + 2*x + 1
@@ -266,7 +264,7 @@ class TestCalculatorModes(unittest.TestCase):
         for expr in test_expressions:
             with self.subTest(expression=expr):
                 # In a real implementation, this would use the algebraic parser
-                self.assertTrue(True, f"Algebraic expression: {expr}")
+                self.assertIsNotNone(expr)
     
     def test_linear_system_mode(self):
         """Test linear system solving"""
@@ -280,7 +278,7 @@ class TestCalculatorModes(unittest.TestCase):
         for system in systems:
             with self.subTest(system=system):
                 # In a real implementation, this would solve the linear system
-                self.assertTrue(True, f"Linear system: {system}")
+                self.assertIsNotNone(system)
     
     def test_statistics_mode(self):
         """Test statistical calculations"""
@@ -409,10 +407,10 @@ class TestErrorHandling(unittest.TestCase):
     def test_division_by_zero(self):
         """Test division by zero handling"""
         try:
-            result = eval("1/0")
+            eval("1/0")
             self.fail("Should have raised ZeroDivisionError")
         except ZeroDivisionError:
-            self.assertTrue(True, "Correctly handled division by zero")
+            pass  # Expected behavior
     
     def test_invalid_syntax(self):
         """Test invalid syntax handling"""
@@ -428,11 +426,11 @@ class TestErrorHandling(unittest.TestCase):
         for expr in invalid_expressions:
             with self.subTest(expression=expr):
                 try:
-                    result = eval(expr, {'sin': lambda x: x, 'log': lambda x: x})
+                    eval(expr, {'sin': lambda x: x, 'log': lambda x: x})
                     # If it doesn't raise an error, that's also fine
                 except Exception:
                     # Expected behavior - error was handled
-                    self.assertTrue(True, f"Error correctly handled for: {expr}")
+                    pass
     
     def test_large_numbers(self):
         """Test handling of large numbers"""
@@ -452,7 +450,30 @@ class TestErrorHandling(unittest.TestCase):
                     self.assertIsInstance(result, (int, float))
                     self.assertGreater(result, 0)
                 except OverflowError:
-                    self.assertTrue(True, "Correctly handled overflow")
+                    pass  # Overflow is expected behavior
+
+def print_failures(failures):
+    """Print test failures."""
+    if failures:
+        print("\n❌ FAILURES:")
+        for test, traceback in failures:
+            error_line = traceback.split('\n')[-2] if '\n' in traceback else traceback
+            print(f"  • {test}: {error_line}")
+
+def print_errors(errors):
+    """Print test errors."""
+    if errors:
+        print("\n💥 ERRORS:")
+        for test, traceback in errors:
+            error_line = traceback.split('\n')[-2] if '\n' in traceback else traceback
+            print(f"  • {test}: {error_line}")
+
+def print_skipped(skipped):
+    """Print skipped tests."""
+    if skipped:
+        print("\n⏭️ SKIPPED:")
+        for test, reason in skipped:
+            print(f"  • {test}: {reason}")
 
 def run_all_tests():
     """Run all test suites"""
@@ -485,27 +506,18 @@ def run_all_tests():
     print("\n" + "=" * 50)
     print("📊 TEST SUMMARY")
     print(f"Total Tests: {result.testsRun}")
-    print(f"Successes: {result.testsRun - len(result.failures) - len(result.errors) - len(result.skipped)}")
+    successes = result.testsRun - len(result.failures) - len(result.errors) - len(result.skipped)
+    print(f"Successes: {successes}")
     print(f"Failures: {len(result.failures)}")
     print(f"Errors: {len(result.errors)}")
     print(f"Skipped: {len(result.skipped)}")
     
-    if result.failures:
-        print("\n❌ FAILURES:")
-        for test, traceback in result.failures:
-            print(f"  • {test}: {traceback.split(chr(10))[-2] if chr(10) in traceback else traceback}")
+    print_failures(result.failures)
+    print_errors(result.errors)
+    print_skipped(result.skipped)
     
-    if result.errors:
-        print("\n💥 ERRORS:")
-        for test, traceback in result.errors:
-            print(f"  • {test}: {traceback.split(chr(10))[-2] if chr(10) in traceback else traceback}")
-    
-    if result.skipped:
-        print("\n⏭️ SKIPPED:")
-        for test, reason in result.skipped:
-            print(f"  • {test}: {reason}")
-    
-    success_rate = (result.testsRun - len(result.failures) - len(result.errors)) / result.testsRun * 100 if result.testsRun > 0 else 0
+    success_rate = ((result.testsRun - len(result.failures) - len(result.errors)) / 
+                    result.testsRun * 100) if result.testsRun > 0 else 0
     print(f"\n🎯 Success Rate: {success_rate:.1f}%")
     
     return result.wasSuccessful()

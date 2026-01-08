@@ -21,6 +21,9 @@ NanobindInterface::NanobindInterface() {
     try {
         Initialize();
         std::cout << "🚀 NanobindInterface initialized successfully!" << std::endl;
+    } catch (const std::runtime_error& e) {
+        std::cerr << "❌ NanobindInterface initialization failed (runtime): " << e.what() << std::endl;
+        last_error_ = e.what();
     } catch (const std::exception& e) {
         std::cerr << "❌ NanobindInterface initialization failed: " << e.what() << std::endl;
         last_error_ = e.what();

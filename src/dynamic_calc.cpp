@@ -145,6 +145,10 @@ EngineResult DynamicCalc::EvaluateWithContext(const std::string& input,const std
                     Matrix data = plot_engine_->ComputeFunctionData(expression, config);
                     return EngineSuccessResult(data);
                     
+                } catch (const std::invalid_argument&) {
+                    EngineResult err_result; err_result.error = EngineErrorResult(CalcErr::ParseError); return err_result;
+                } catch (const std::out_of_range&) {
+                    EngineResult err_result; err_result.error = EngineErrorResult(CalcErr::NumericOverflow); return err_result;
                 } catch (const std::exception&) {
                     EngineResult err_result; err_result.error = EngineErrorResult(CalcErr::ArgumentMismatch); return err_result;
                 }

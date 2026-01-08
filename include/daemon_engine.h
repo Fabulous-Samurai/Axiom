@@ -107,7 +107,7 @@ private:
 #endif
 
 public:
-    DaemonEngine(const std::string& pipe_name = "axiom_daemon");
+    explicit DaemonEngine(const std::string& pipe_name = "axiom_daemon");
     ~DaemonEngine();
 
     // Lifecycle management
@@ -160,7 +160,7 @@ public:
     std::unique_ptr<class AlgebraicParser> algebraic_parser;
     std::unique_ptr<class LinearSystemParser> linear_parser;
     
-    SessionContext(const std::string& id);
+    explicit SessionContext(const std::string& id);
     ~SessionContext();
     
     void update_access_time() {
@@ -191,7 +191,7 @@ private:
 #endif
 
 public:
-    DaemonClient(const std::string& pipe_name = "axiom_daemon");
+    explicit DaemonClient(const std::string& pipe_name = "axiom_daemon");
     ~DaemonClient();
 
     // Connection management

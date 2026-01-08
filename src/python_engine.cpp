@@ -88,6 +88,9 @@ EngineResult PythonEngine::ExecutePython(const std::string& code) {
             SetErrorFromPython();
             return {{}, {EngineErrorResult(CalcErr::DomainError)}};
         }
+    } catch (const std::runtime_error& e) {
+        last_error_ = std::string("Runtime error during Python execution: ") + e.what();
+        return {{}, {EngineErrorResult(CalcErr::DomainError)}};
     } catch (const std::exception& e) {
         last_error_ = std::string("Exception during Python execution: ") + e.what();
         return {{}, {EngineErrorResult(CalcErr::DomainError)}};
@@ -145,6 +148,9 @@ EngineResult PythonEngine::EvaluatePython(const std::string& expression) {
             return EngineSuccessResult(str_result);
         }
 
+    } catch (const std::runtime_error& e) {
+        last_error_ = std::string("Runtime error during Python evaluation: ") + e.what();
+        return {{}, {EngineErrorResult(CalcErr::DomainError)}};
     } catch (const std::exception& e) {
         last_error_ = std::string("Exception during Python evaluation: ") + e.what();
         return {{}, {EngineErrorResult(CalcErr::DomainError)}};
@@ -167,6 +173,9 @@ bool PythonEngine::SetVariable(const std::string& name, double value) {
         Py_DECREF(py_value);
         
         return result == 0;
+    } catch (const std::runtime_error& e) {
+        last_error_ = std::string("Runtime error setting variable: ") + e.what();
+        return false;
     } catch (const std::exception& e) {
         last_error_ = std::string("Exception setting variable: ") + e.what();
         return false;
@@ -188,6 +197,9 @@ bool PythonEngine::SetVariable(const std::string& name, const std::vector<double
         Py_DECREF(py_list);
         
         return result == 0;
+    } catch (const std::runtime_error& e) {
+        last_error_ = std::string("Runtime error setting vector variable: ") + e.what();
+        return false;
     } catch (const std::exception& e) {
         last_error_ = std::string("Exception setting vector variable: ") + e.what();
         return false;
@@ -216,6 +228,9 @@ EngineResult PythonEngine::CreateNumpyArray(const std::vector<double>& data) {
             SetErrorFromPython();
             return {{}, {EngineErrorResult(CalcErr::DomainError)}};
         }
+    } catch (const std::runtime_error& e) {
+        last_error_ = std::string("Runtime error during NumPy array creation: ") + e.what();
+        return {{}, {EngineErrorResult(CalcErr::DomainError)}};
     } catch (const std::exception& e) {
         last_error_ = std::string("Exception during NumPy array creation: ") + e.what();
         return {{}, {EngineErrorResult(CalcErr::DomainError)}};
@@ -252,6 +267,9 @@ EngineResult PythonEngine::MatplotlibPlot(const std::string& expression, double 
             SetErrorFromPython();
             return {{}, {EngineErrorResult(CalcErr::DomainError)}};
         }
+    } catch (const std::runtime_error& e) {
+        last_error_ = std::string("Runtime error during matplotlib plotting: ") + e.what();
+        return {{}, {EngineErrorResult(CalcErr::DomainError)}};
     } catch (const std::exception& e) {
         last_error_ = std::string("Exception during matplotlib plotting: ") + e.what();
         return {{}, {EngineErrorResult(CalcErr::DomainError)}};

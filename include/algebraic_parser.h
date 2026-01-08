@@ -18,15 +18,18 @@
 // 1. MEMORY ARENA (High Performance Allocation)
 // ========================================================
 class Arena {
-    struct Block { char* memory; size_t size; size_t used; };
+    struct Block { std::unique_ptr<char[]> memory; size_t size; size_t used; };
     std::vector<Block> blocks;
 public:
-    Arena(size_t blockSize = 1024 * 64) { allocateBlock(blockSize); }
-    ~Arena() { for (auto& block : blocks) delete[] block.memory; }
+    explicit Arena(size_t blockSize = 1024 * 64) { allocateBlock(blockSize); }
+    ~Arena() = default;
     Arena(const Arena&) = delete;
     Arena& operator=(const Arena&) = delete;
     
-    void allocateBlock(size_t size) { char* mem = new char[size]; blocks.push_back({mem, size, 0}); }
+    void allocateBlock(size_t size) {
+        auto mem = std::make_unique<char[]>(size);
+        blocks.push_back({std::move(mem), size, 0});
+    }
     void reset() { 
         // AXIOM v3.1: Rewind Strategy - prevent heap fragmentation in Daemon Mode
         if (!blocks.empty() && blocks[0].size >= 1024 * 64) {
@@ -34,7 +37,6 @@ public:
             for (auto& block : blocks) block.used = 0;
         } else {
             // First allocation or insufficient capacity: reallocate
-            for (auto& block : blocks) delete[] block.memory;
             blocks.clear();
             allocateBlock(1024 * 64);
         }
@@ -44,21 +46,21 @@ public:
     T* alloc(Args&&... args) {
         size_t sizeNeeded = sizeof(T); size_t align = alignof(T);
         Block* current = &blocks.back();
-        uintptr_t currentPtr = (uintptr_t)(current->memory + current->used);
+        uintptr_t currentPtr = (uintptr_t)(current->memory.get() + current->used);
         size_t padding = (align - (currentPtr % align)) % align;
         
         if (current->used + padding + sizeNeeded > current->size) {
             allocateBlock(std::max(current->size * 2, sizeNeeded + align));
-            current = &blocks.back(); currentPtr = (uintptr_t)(current->memory); padding = 0;
+            current = &blocks.back(); currentPtr = (uintptr_t)(current->memory.get()); padding = 0;
         }
-        current->used += padding; void* ptr = current->memory + current->used; current->used += sizeNeeded;
+        current->used += padding; void* ptr = current->memory.get() + current->used; current->used += sizeNeeded;
         return new (ptr) T(std::forward<Args>(args)...);
     }
     
     std::string_view allocString(std::string_view sv) {
         size_t len = sv.length(); Block* current = &blocks.back();
         if (current->used + len > current->size) { allocateBlock(std::max(current->size * 2, len)); current = &blocks.back(); }
-        char* ptr = current->memory + current->used; std::memcpy(ptr, sv.data(), len); current->used += len;
+        char* ptr = current->memory.get() + current->used; std::memcpy(ptr, sv.data(), len); current->used += len;
         return std::string_view(ptr, len);
     }
 };

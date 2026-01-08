@@ -1,7 +1,10 @@
 # Build artifacts and output
 build*/
+!build/cmake/
+!build/scripts/
 cmake-build*/
 ninja-build*/
+.build-output/
 out/
 bin/
 lib/
@@ -114,7 +117,6 @@ Thumbs.db
 Desktop.ini
 
 # Dependencies
-libs/FTXUI/
 third_party/
 vendor/
 

@@ -118,6 +118,12 @@ namespace AXIOM
 
             history.push_back("Session " + session_id + " initialized.");
         }
+        catch (const std::runtime_error &e)
+        {
+            // Log runtime error properly
+            history.push_back("CRITICAL: Runtime error initializing session: " + std::string(e.what()));
+            throw; // Re-throw to prevent broken session creation
+        }
         catch (const std::exception &e)
         {
             // Log error properly, don't just swallow
@@ -180,6 +186,13 @@ namespace AXIOM
         {
             daemon_thread_ = std::thread(&DaemonEngine::daemon_loop, this);
             request_processor_ = std::thread(&DaemonEngine::request_processor_loop, this);
+        }
+        catch (const std::runtime_error& e)
+        {
+            std::cerr << "[AXIOM DAEMON ERROR] Thread creation failed (runtime): " << e.what() << std::endl;
+            cleanup_pipe();
+            running_.store(false);
+            return false;
         }
         catch (const std::exception& e)
         {
@@ -445,6 +458,11 @@ namespace AXIOM
                     std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 }
 #endif
+            }
+            catch (const std::runtime_error &e)
+            {
+                // Log runtime error and backoff
+                std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Backoff strategy
             }
             catch (const std::exception &e)
             {

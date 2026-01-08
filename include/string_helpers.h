@@ -34,10 +34,10 @@ namespace Utils {
     }
 
     // Helper to trim strings (removes whitespace from both ends)
-    std::string Trim(const std::string& str);
+    std::string Trim(std::string_view str);
     
     // Helper to split string by delimiter
-    std::vector<std::string> Split(const std::string& s, char delimiter);
+    std::vector<std::string> Split(std::string_view s, char delimiter);
 
     // Modern C++ Way: Exception-free number check with fast parsing
     inline bool IsNumber(std::string_view str) {
@@ -64,5 +64,5 @@ namespace Utils {
     }
 
     // String utilities
-    std::string ReplaceAll(const std::string& str, const std::string& from, const std::string& to);
+    std::string ReplaceAll(std::string_view str, std::string_view from, std::string_view to);
 }

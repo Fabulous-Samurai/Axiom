@@ -30,6 +30,9 @@ SelectiveDispatcher::SelectiveDispatcher()
         eigen_engine_ = std::make_unique<EigenEngine>();
         engine_availability_[ComputeEngine::Eigen] = true;
         std::cout << "Eigen engine available" << std::endl;
+    } catch (const std::runtime_error& e) {
+        engine_availability_[ComputeEngine::Eigen] = false;
+        std::cerr << "❌ Eigen engine unavailable (runtime): " << e.what() << std::endl;
     } catch (const std::exception& e) {
         engine_availability_[ComputeEngine::Eigen] = false;
         std::cerr << "❌ Eigen engine unavailable: " << e.what() << std::endl;
@@ -43,6 +46,9 @@ SelectiveDispatcher::SelectiveDispatcher()
         nanobind_interface_ = std::make_unique<NanobindInterface>();
         engine_availability_[ComputeEngine::Python] = true;
         std::cout << "Python engine available" << std::endl;
+    } catch (const std::runtime_error& e) {
+        engine_availability_[ComputeEngine::Python] = false;
+        std::cerr << "❌ Python engine unavailable (runtime): " << e.what() << std::endl;
     } catch (const std::exception& e) {
         engine_availability_[ComputeEngine::Python] = false;
         std::cerr << "❌ Python engine unavailable: " << e.what() << std::endl;
@@ -321,8 +327,8 @@ EngineResult SelectiveDispatcher::DispatchToEigen(const std::string& operation,
         
         // For other operations, fallback to native
         return DispatchToNative(operation, args);
-        
-    } catch (const std::exception& e) {
+            } catch (const std::runtime_error& e) {
+        return {{}, {CalcErr::OperationNotFound}};    } catch (const std::exception& e) {
         return {{}, {CalcErr::OperationNotFound}};
     }
 }
@@ -346,6 +352,8 @@ EngineResult SelectiveDispatcher::DispatchToPython(const std::string& operation,
         // For other operations, fallback to native
         return DispatchToNative(operation, args);
         
+    } catch (const std::runtime_error& e) {
+        return {{}, {CalcErr::OperationNotFound}};
     } catch (const std::exception& e) {
         return {{}, {CalcErr::OperationNotFound}};
     }
