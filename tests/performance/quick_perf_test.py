@@ -63,7 +63,7 @@ for i, (name, expr, context) in enumerate(tests, 1):
 
 print("-" * 70)
 avg_time = total_time / len(tests)
-print(f"\n📊 Statistics:")
+print("\n📊 Statistics:")
 print(f"   Total commands: {len(tests)}")
 print(f"   Total time: {total_time:.1f}ms")
 print(f"   Average: {avg_time:.2f}ms per command")

@@ -653,7 +653,7 @@ Ready for professional scientific computing! 🎯
                     self.refresh_workspace()
                     self.add_command_output(f"✅ Loaded {var_name} from {filename}", 'success')
                 else:
-                    self.add_command_output(f"⚠️ Unsupported file format", 'warning')
+                    self.add_command_output("⚠️ Unsupported file format", 'warning')
             except Exception as e:
                 self.add_command_output(f"❌ Error loading file: {e}", 'error')
     

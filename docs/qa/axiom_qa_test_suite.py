@@ -84,7 +84,7 @@ class AxiomQATestSuite:
                 print("✅ Binary Identity: AXIOM Engine v3.0 confirmed")
                 self.results["architecture_tests"]["binary_identity"] = "PASS"
             else:
-                print(f"❌ Binary Identity: Expected 'AXIOM Engine v3.0', got:")
+                print("❌ Binary Identity: Expected 'AXIOM Engine v3.0', got:")
                 print(f"   STDOUT: {result.stdout[:200]}")
                 print(f"   STDERR: {result.stderr[:200]}")
                 self.results["architecture_tests"]["binary_identity"] = "FAIL"
@@ -147,7 +147,7 @@ class AxiomQATestSuite:
                 print(f"   Response: {response[:100]}...")
                 self.results["architecture_tests"]["daemon_handshake"] = "PASS"
             else:
-                print(f"❌ Daemon Handshake: Missing __END_OF_RESPONSE__ marker")
+                print("❌ Daemon Handshake: Missing __END_OF_RESPONSE__ marker")
                 print(f"   Got: {response}")
                 self.results["architecture_tests"]["daemon_handshake"] = "FAIL - Protocol violation"
                 
@@ -492,7 +492,7 @@ class AxiomQATestSuite:
         # Overall assessment
         pass_rate = (passed_tests / total_tests * 100) if total_tests > 0 else 0
         
-        print(f"\n📊 OVERALL ASSESSMENT:")
+        print("\n📊 OVERALL ASSESSMENT:")
         print(f"   Total Tests: {total_tests}")
         print(f"   Passed: {passed_tests}")
         print(f"   Failed: {failed_tests}")
@@ -512,7 +512,7 @@ class AxiomQATestSuite:
         with open("axiom_qa_report.json", "w") as f:
             json.dump(self.results, f, indent=2)
         
-        print(f"\n💾 Detailed results saved to: axiom_qa_report.json")
+        print("\n💾 Detailed results saved to: axiom_qa_report.json")
 
     def run_full_test_suite(self):
         """Execute complete QA test suite"""

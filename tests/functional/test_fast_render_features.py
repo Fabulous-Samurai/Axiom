@@ -185,7 +185,7 @@ def test_fast_plot_with_decimation():
         # With Fast Render (should decimate)
         app.fast_render_var.set(True)
         app.fast_plot_xy(x_large, y_large)
-        print(f"  ✅ Plot with Fast Render: decimation applied")
+        print("  ✅ Plot with Fast Render: decimation applied")
         
         root.destroy()
         print("  ✅ Fast plot with decimation: PASS")

@@ -34,6 +34,6 @@ for cmd, desc in test_cases:
     if output:
         print(f"  ✅ Result: {output[0]}")
     else:
-        print(f"  ❌ No result!")
+        print("  ❌ No result!")
 
 proc.terminate()
