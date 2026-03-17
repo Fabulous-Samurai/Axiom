@@ -1,0 +1,15 @@
+name: Enforce No Dynamic Allocations
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run static analysis
+        run: ./scripts/enforce_no_dynamic_allocs.sh

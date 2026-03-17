@@ -1,0 +1,67 @@
+# Optimized AXIOM Engine CI/CD Workflow
+
+name: AXIOM Engine CI/CD
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+  release:
+    types: [ created ]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build-type: [Release, Debug]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup CMake
+      uses: jwlawson/actions-setup-cmake@v1.14
+      with:
+        cmake-version: '3.25.x'
+
+    - name: Setup Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+
+    - name: Install dependencies
+      run: |
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          sudo apt-get update && sudo apt-get install -y build-essential g++ python3 python3-dev libnuma-dev;
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          brew install python@3.11;
+        else
+          echo "Windows dependencies are pre-installed via MSYS2.";
+        fi
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+
+    - name: Build
+      run: cmake --build build --config ${{ matrix.build-type }}
+
+    - name: Run Tests
+      run: |
+        cd build
+        ctest --output-on-failure --build-config ${{ matrix.build-type }}
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}-${{ matrix.build-type }}
+        path: build/Testing/
+        if-no-files-found: ignore

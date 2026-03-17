@@ -1,0 +1,117 @@
+name: "AXIOM Zenith CI/CD"
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  formal-verification:
+    name: "Step 1: Formal Verification (TLA+)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Setup Java"
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: "Download TLA2Tools"
+        run: |
+          wget https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -O tla2tools.jar
+      - name: "Run TLA+ Model Checks"
+        run: |
+          # Proving Mantis Solver Correctness via TLA+
+          java -jar tla2tools.jar -config formal/tla/MantisAStarCorrectness.cfg formal/tla/MantisAStarCorrectness.tla
+          java -jar tla2tools.jar -config formal/tla/MantisHeuristicDispatch.cfg formal/tla/MantisHeuristicDispatch.tla
+          
+          # [ZENITH PROOF] Proving Lock-Free HarmonicArena Safety
+          java -jar tla2tools.jar -config formal/tla/HarmonicArenaSafety.cfg formal/tla/HarmonicArenaSafety.tla
+          
+          # [ZENITH PROOF] Proving Phase H Secure Vault Isolation
+          java -jar tla2tools.jar -config formal/tla/MantisSecureVaultSafety.cfg formal/tla/MantisSecureVaultSafety.tla
+
+  build-and-test:
+    name: "Step 2: Core Build & Zenith Validation"
+    needs: formal-verification
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: "Install Ninja (Unix)"
+        if: runner.os != 'Windows'
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y ninja-build
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            brew install ninja
+          fi
+      - name: "Install Ninja (Windows)"
+        if: runner.os == 'Windows'
+        run: choco install ninja
+      - name: "Install Build Dependencies"
+        run: |
+          python -m pip install scikit-build-core nanobind
+      - name: "Autonomous Silicon-Aware Build (Unix)"
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x scripts/setup_other_device_unix.sh
+          ./scripts/setup_other_device_unix.sh
+      - name: "Build AXIOM Zenith (Windows)"
+        if: runner.os == 'Windows'
+        run: |
+          cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release -DAXIOM_ENABLE_TELEMETRY=ON
+          cmake --build build --config Release
+      - name: "Run High-Velocity Tests"
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            ./build/run_tests.exe
+          else
+            ./build/run_tests
+          fi
+      - name: "Zenith Pillar Verification"
+        run: |
+          python scripts/verify_zenith_pillars.py
+
+  sonarcloud:
+    name: "Step 4: SonarCloud Quality Gate"
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: "SonarCloud Scan"
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  package-and-distribute:
+    name: "Step 3: Python Wheel (Dark Matter) Forge"
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Install Ninja"
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: "Build Wheel"
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build scikit-build-core nanobind
+          python -m build --wheel
+      - name: "Upload Core Artifacts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: axiom-zenith-wheels
+          path: dist/*.whl

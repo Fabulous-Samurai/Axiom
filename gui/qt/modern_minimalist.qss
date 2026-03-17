@@ -1,0 +1,120 @@
+/* 
+ * AXIOM Zen: Modern Minimalist Design System 
+ * ──────────────────────────────────────────
+ * Focus: High Information Density, Softened Hardness, Zero Bloat.
+ */
+
+QWidget {
+    background: #121417;
+    color: #CFD4DA;
+    font-family: "Inter", "Segoe UI", sans-serif;
+    font-size: 10pt;
+}
+
+QMainWindow {
+    background: #121417;
+}
+
+/* ──── Sidebar ──── */
+QFrame#Sidebar {
+    background: #181A1F;
+    border-right: 1px solid #23272D;
+    min-width: 48px;
+}
+
+QPushButton[nav="true"] {
+    text-align: left;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: #8A9199;
+    font-weight: 500;
+}
+
+QPushButton[nav="true"]:hover {
+    background: #23272D;
+    color: #E6B450;
+}
+
+QPushButton[nav="true"]:checked {
+    background: #1E2227;
+    color: #E6B450;
+    font-weight: 700;
+}
+
+/* ──── Panels (Cards) ──── */
+QFrame#Card, QFrame#HeaderBar {
+    background: #181A1F;
+    border: 1px solid #23272D;
+    border-radius: 6px;
+}
+
+QLabel#PanelHeader {
+    color: #E6B450;
+    font-weight: 700;
+    font-size: 9pt;
+    letter-spacing: 0.5px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #23272D;
+    margin-bottom: 6px;
+}
+
+/* ──── Inputs & Consoles ──── */
+QLineEdit, QPlainTextEdit {
+    background: #0D0F11;
+    border: 1px solid #23272D;
+    border-radius: 4px;
+    padding: 6px;
+    color: #CFD4DA;
+}
+
+QPlainTextEdit#CommandConsole {
+    color: #95E6CB;
+    font-family: "JetBrains Mono", "Cascadia Code", monospace;
+}
+
+QLineEdit#CommandPalette {
+    background: #1E2227;
+    border: 1px solid #3A3F47;
+    color: #E6B450;
+    font-weight: 600;
+}
+
+/* ──── Tabs ──── */
+QTabWidget::pane {
+    border: 1px solid #23272D;
+    border-radius: 4px;
+    background: #181A1F;
+    top: -1px;
+}
+
+QTabBar::tab {
+    background: transparent;
+    color: #8A9199;
+    padding: 8px 16px;
+    border-bottom: 2px solid transparent;
+}
+
+QTabBar::tab:selected {
+    color: #E6B450;
+    border-bottom: 2px solid #E6B450;
+}
+
+/* ──── Telemetry ──── */
+QFrame#TelemetryCard {
+    background: #181A1F;
+    border: 1px solid #23272D;
+}
+
+QLabel#Title {
+    color: #E6B450;
+    font-weight: 800;
+    font-size: 15pt;
+}
+
+QLabel#SubTitle {
+    color: #95E6CB;
+    font-size: 8.5pt;
+    font-weight: 600;
+}

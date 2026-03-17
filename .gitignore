@@ -1,0 +1,217 @@
+# Build artifacts and output
+build*/
+!build/cmake/
+!build/scripts/
+cmake-build*/
+ninja-build*/
+.build-output/
+out/
+bin/
+lib/
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.obj
+*.o
+*.pdb
+*.ilk
+*.exp
+*.manifest
+*.res
+
+# Test executables and temporary files
+test_phase*.exe
+test_*.o
+main.o
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Test coverage and reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+tests/reports/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environment management
+.python-version
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv_ogulator/
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.spyderproject
+.spyproject
+.ropeproject
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Documentation build
+/site
+docs/_build/
+docs/.doctrees/
+
+# Doxygen generated output
+docs/doxygen/
+html/
+html_*/
+html\\_*
+html_*_icgraph.map
+html_*_icgraph.md5
+html_*_icgraph.png
+latex/
+xml/
+rtf/
+man/
+doxygen_sqlite3.db
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# OS specific
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Dependencies
+third_party/
+vendor/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+.cache/
+temp/
+tmp/
+
+# Performance and profiling
+*.prof
+*.trace
+callgrind.out.*
+perf.data
+
+# Generated files
+version.h
+config.h
+autotools.cache/
+
+# Reports and temporary docs
+PR_REPORT_* 
+docs/reports/
+
+# Formal model output
+formal/tla/
+
+# GUI helpers / scratch
+gui/qt/telemetry_reader.py
+gui/qt/icons/tests.svg
+
+# Vulkan development
+gui/vulkan/
+include/telemetry_shm.hpp
+include/vulkan_expressway.h
+src/vulkan_expressway.cpp
+
+# Module pilots (source once compiled elsewhere)
+modules/*.ixx
+
+# Package managers
+conan.lock
+ConanInfo.txt
+.conan/
+vcpkg_installed/
+
+# Enhanced architecture artifacts
+core/engine/generated/
+core/bindings/generated/
+tools/analysis/reports/
+tools/visualization/output/
+examples/*/output/
+scripts/*/logs/
+
+# Archive directories (legacy files)
+archive/
+
+# Local analysis/tooling artifacts (do not commit)
+codeql/
+codeql-*.zip
+
+# Scratch / temporary experiment files
+scratch/
+
+# Local session/temp workspace folders
+tmpclaude-*/
+states/
+
+# Generated benchmark output files
+output/benchmark_results.csv
+output/benchmark_results.json
+
+# Additional exclusions for Axiom Engine
+benchmark_results.*
+sonar_issues.json
+
+# Local CodeQL test project db cache
+codeql-custom-queries-python/*.testproj/
+
+# Local TLA+ tool binary cache
+tools/tla/tla2tools.jar

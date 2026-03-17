@@ -1,0 +1,33 @@
+name: Pull SonarCloud Issues
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  pull-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Dependencies
+        run: pip install requests
+
+      - name: Run Issue Puller
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: python scripts/sonar_issues.py --project Fabulous-Samurai_axiom_engine
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add sonar_tasks.md sonar_issues.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update SonarCloud issues task list" && git push)

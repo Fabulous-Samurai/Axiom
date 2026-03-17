@@ -1,0 +1,7 @@
+#pragma once
+
+#define AXIOM_VERSION_MAJOR @axiom_engine_VERSION_MAJOR@
+#define AXIOM_VERSION_MINOR @axiom_engine_VERSION_MINOR@
+#define AXIOM_VERSION_PATCH @axiom_engine_VERSION_PATCH@
+#define AXIOM_VERSION "@axiom_engine_VERSION@"
+#define AXIOM_BUILD_TIMESTAMP "@BUILD_TIMESTAMP@"
