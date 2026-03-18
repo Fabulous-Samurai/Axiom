@@ -1,138 +1,62 @@
 # AXIOM Engine v3.1.1
 
-[![Version](https://img.shields.io/badge/version-3.1.1-blue.svg)](https://github.com/Fabulous-Samurai/axiom_engine/releases)
+[![Version](https://img.shields.io/badge/version-3.1.1-blue.svg)](https://github.com/Fabulous-Samurai/Axiom)
 [![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
-[![C++](https://img.shields.io/badge/C++-20-blue.svg)](https://isocpp.org/)
+[![C++](https://img.shields.io/badge/C++-23-blue.svg)](https://isocpp.org/)
+[![SonarCloud](https://sonarcloud.io/api/project_badges/measure?project=axiom_engine_fabulous_samurai&metric=alert_status)](https://sonarcloud.io/dashboard?id=axiom_engine_fabulous_samurai)
 
-AXIOM is a C++20-first mathematical engine with a hybrid FFI model.
+AXIOM is a high-performance mathematical engine designed for mission-critical scientific computing and real-time visualization.
 
-- Core computation is in C++.
-- Python is positioned mainly for GUI and visualization.
-- `nanobind` is used as the C++/Python bridge.
+## Key Technical Advancements
 
-## What This Project Provides
+- **Zenith JIT Compiler**: AST-to-x64 machine code translation using AsmJit. Supports complex functions, variables, and follows a strict **W^X (Write XOR Execute)** security policy.
+- **Hardware-Enforced Isolation**: Secure Vault architecture prepared for Intel SGX/TEE integration, ensuring state machine integrity.
+- **Production Sandboxing**: Python-based evaluation sandbox with `ComplexityGuard` for resource-bound process isolation.
+- **Kernel-Bypass Ingress**: High-performance networking path supporting **AF_XDP** zero-copy packet processing.
+- **Lock-Free Concurrency**: `HarmonicArena` allocator optimized for high-throughput, multi-threaded workloads with thread-local profiling.
 
-- Multi-mode computation engine (`algebraic`, `linear`, `statistics`, `symbolic`, `units`, `plot`).
-- CLI execution for single-expression and interactive workflows.
-- Python GUI frontend (`gui/python/axiom_gui.py`) with C++ engine integration.
-- Dedicated benchmark binary with CSV and JSON report export.
-- Large C++ test targets for integration and stress validation.
+## Architecture & Backends
 
-## Architecture Summary
+- **Algebraic Core**: High-precision parser with symbolic differentiation and numeric integration capabilities.
+- **Symbolic Engine**: Advanced equation solving, Taylor series expansion (incremental AST-based), and limit calculations.
+- **Linear Systems**: Matrix operations optimized with **AVX2/FMA** SIMD intrinsics.
+- **Interface**: C++23 core with a hybrid FFI model using `nanobind` for Python integration.
 
-### Core Runtime
-
-- `DynamicCalc` routes requests by `CalculationMode` to parser implementations.
-- Parser-backed path supports algebraic, linear system, statistics, and symbolic modes.
-- Typed arithmetic fast-path (`EvaluateFast`) bypasses parser overhead for hot arithmetic operations.
-
-### Dispatch and Performance Routing
-
-- `SelectiveDispatcher` can route to native compute and optional backends.
-- Native dispatch path reuses `thread_local DynamicCalc` to reduce per-request construction cost.
-- Optional integration points exist for Eigen and nanobind backends when enabled.
-
-### Daemon and IPC
-
-- Daemon implementation exists in source with lock-free SPSC request queue and platform pipe handling.
-- Current default build profile does not explicitly define `ENABLE_DAEMON_MODE` for `axiom` CLI.
-- Treat daemon CLI commands as build-configuration-dependent features.
-
-### Python Integration Model
-
-- Hybrid FFI is the intended primary integration strategy.
-- Embedded Python engine sources are optional (`AXIOM_ENABLE_EMBEDDED_PYTHON_ENGINE=OFF` by default).
-- Optional GUI dependencies are intentionally minimal:
-  - `numpy`
-  - `matplotlib`
-  - `PySide6` (Qt GUI runtime, when using CPython wheels)
-
-## Build System and Presets
+## Build System
 
 ### Requirements
-
-- C++20 compiler
+- C++23 compatible compiler (GCC 12+, MSVC 19.38+)
 - CMake 3.12+
 - Ninja
 
-### Presets
-
-`CMakePresets.json` includes:
-
-- `default-ninja`: release-oriented standard profile (`AXIOM_ENABLE_CXX20_MODULES=OFF`)
-- `modules-ninja`: experimental profile with modules flag enabled
-- `build-release`: build preset for default profile
-- `build-modules`: builds `axiom_modules_pilot`
-
 ### Default Build
-
 ```bash
-cmake --preset default-ninja
-cmake --build build --config Release
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
-### Optional Modules Pilot
-
-```bash
-cmake --preset modules-ninja
-cmake --build --preset build-modules
-```
-
-Notes:
-
-- C++20 modules are incremental/experimental in this repository.
-- GNU/MinGW profiles intentionally skip module compilation and emit a configure-time warning.
-
-## Main CMake Targets
-
-- `axiom`: main CLI engine executable
-- `run_tests`: baseline test executable
-- `axiom_benchmark`: benchmark executable (`tests/benchmark_suite.cpp`)
-- `giga_test_suite`: comprehensive monolithic C++ test executable
-- `ast_drills`: AST-focused test executable
-- `axiom_modules_pilot`: experimental modules target (or skip-stub depending on compiler)
+## Main Targets
+- `axiom`: Primary CLI engine.
+- `run_tests`: Core functionality validation.
+- `giga_test_suite`: Production-grade monolithic validation.
+- `differential_suite`: Cross-backend consistency verification (Interpreted vs JIT vs Symbolic).
+- `arena_stress`: Lock-free allocator concurrency stress test.
+- `enclave_test`: Security vault integrity verification.
 
 ## CLI Usage
 
-### Interactive Mode
-
+### Symbolic Differentiation
 ```bash
-./build/axiom
+./build/axiom "derive x^2 + sin(x)"
 ```
 
-### Single Expression
-
+### Numeric Integration
 ```bash
-./build/axiom "2 + 3 * 4"
+./build/axiom "integrate(x^2, x, 0, 10)"
 ```
 
-### Mode Selection
-
-```bash
-./build/axiom --mode=linear "solve [[2,1],[1,3]] [8,13]"
-./build/axiom --mode=statistics "mean([1,2,3,4,5])"
-./build/axiom --symbolic "x^2 + 2*x + 1"
-```
-
-### GUI Hint Mode
-
-```bash
-./build/axiom --gui
-```
-
-### Python GUI Launcher
-
-```bash
-python gui/python/axiom_gui.py
-```
-
-### Interactive Subprocess Mode (for GUI integrations)
-
-```bash
-./build/axiom --interactive
-```
-
-The interactive subprocess protocol supports mode switching via `:mode <name>` and delimits responses with `__END__`.
+### JIT Accelerated Mode
+JIT is automatically engaged for hot arithmetic operations within the dispatcher.
 
 ## Benchmarking
 
