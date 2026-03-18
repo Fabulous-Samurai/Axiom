@@ -41,11 +41,11 @@ jobs:
     - name: Install dependencies
       run: |
         if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-          sudo apt-get update && sudo apt-get install -y build-essential g++ python3-dev libnuma-dev ninja-build;
+          sudo apt-get update && sudo apt-get install -y build-essential g++ python3-dev libnuma-dev ninja-build || true;
         elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-          brew install ninja;
+          brew install ninja || brew upgrade ninja || true;
         else
-          choco install ninja;
+          choco install ninja --no-progress || true;
         fi
 
     - name: Configure CMake

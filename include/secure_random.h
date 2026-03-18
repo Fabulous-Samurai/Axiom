@@ -8,8 +8,14 @@
     #include <windows.h>
     #include <bcrypt.h>
     #pragma comment(lib, "bcrypt.lib")
-#else
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+    #include <stdlib.h>
+    #include <unistd.h>
+#elif defined(__linux__)
     #include <sys/random.h>
+    #include <fcntl.h>
+    #include <unistd.h>
+#else
     #include <fcntl.h>
     #include <unistd.h>
 #endif
@@ -26,10 +32,14 @@ public:
 #ifdef _WIN32
         NTSTATUS status = BCryptGenRandom(NULL, (PUCHAR)buffer, (ULONG)len, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
         if (status < 0) throw std::runtime_error("BCryptGenRandom failed");
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+        arc4random_buf(buffer, len);
 #else
         // Try getrandom first (modern Linux)
+        #ifdef __linux__
         ssize_t ret = getrandom(buffer, len, 0);
         if (ret == (ssize_t)len) return;
+        #endif
 
         // Fallback to /dev/urandom
         int fd = open("/dev/urandom", O_RDONLY);
