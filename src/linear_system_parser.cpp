@@ -527,6 +527,16 @@ namespace AXIOM
             _mm256_store_pd(temp, vsum);
             sum = temp[0] + temp[1] + temp[2] + temp[3];
         }
+        #elif defined(__aarch64__)
+        if (size >= 2) {
+            float64x2_t vsum = vdupq_n_f64(0.0);
+            for (; i + 1 < size; i += 2) {
+                float64x2_t m1 = vld1q_f64(&v1[i]);
+                float64x2_t m2 = vld1q_f64(&v2[i]);
+                vsum = vfmaq_f64(vsum, m1, m2);
+            }
+            sum = vaddvq_f64(vsum);
+        }
         #endif
 
         // Remainder

@@ -23,10 +23,12 @@
     #define AXIOM_NO_INLINE __attribute__((noinline))
     #define AXIOM_HOT __attribute__((hot))
     #if defined(__i386__) || defined(__x86_64__)
+        #include <immintrin.h>
         #define AXIOM_RDTSC ({ uint32_t lo, hi; __asm__ volatile("rdtsc" : "=a"(lo), "=d"(hi)); ((uint64_t)hi << 32) | lo; })
         #define AXIOM_YIELD_PROCESSOR __builtin_ia32_pause()
         #define AXIOM_LFENCE __asm__ volatile("lfence" ::: "memory")
     #elif defined(__aarch64__)
+        #include <arm_neon.h>
         #define AXIOM_RDTSC ({ uint64_t val; __asm__ volatile("mrs %0, cntvct_el0" : "=r"(val)); val; })
         #define AXIOM_YIELD_PROCESSOR __asm__ volatile("yield" ::: "memory")
         #define AXIOM_LFENCE __asm__ volatile("isb sy" ::: "memory")
@@ -89,6 +91,13 @@ struct CpuFeatureGuard {
 
     static constexpr bool has_avx512 =
 #ifdef AXIOM_SIMD_AVX512_ENABLED
+        true;
+#else
+        false;
+#endif
+
+    static constexpr bool has_neon =
+#if defined(__aarch64__) || defined(__ARM_NEON)
         true;
 #else
         false;

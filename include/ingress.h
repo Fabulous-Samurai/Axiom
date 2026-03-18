@@ -54,10 +54,10 @@ public:
 class AXIOM_EXPORT IngressFactory {
 public:
     enum class ProviderType {
-        AUTO,
-        AF_XDP,
-        POSIX_UDP,
-        MOCK_HFT_FEED
+        PROV_AUTO,
+        PROV_AF_XDP,
+        PROV_POSIX_UDP,
+        PROV_MOCK_HFT_FEED
     };
 
     static std::unique_ptr<IngressChannel> create(ProviderType type, const std::string& interface_name);

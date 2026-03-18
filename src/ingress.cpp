@@ -90,11 +90,11 @@ public:
 
 std::unique_ptr<IngressChannel> IngressFactory::create(ProviderType type, const std::string& interface_name) {
     #ifdef __linux__
-    if (type == ProviderType::AF_XDP || type == ProviderType::AUTO) {
+    if (type == ProviderType::PROV_AF_XDP || type == ProviderType::PROV_AUTO) {
         return std::make_unique<AF_XDP_IngressChannel>(interface_name);
     }
     #else
-    if (type == ProviderType::AF_XDP) {
+    if (type == ProviderType::PROV_AF_XDP) {
         std::cerr << "[AXIOM Ingress] ERROR: AF_XDP requires Linux kernel 5.4+" << std::endl;
         return nullptr;
     }

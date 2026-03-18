@@ -9,6 +9,19 @@ set(CMAKE_GENERATOR "Ninja" CACHE STRING "Generator" FORCE)
 # Project and Version
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 project(axiom_engine VERSION 3.1.1)
+
+# Global Third-Party Configuration (MUST BE BEFORE FetchContent)
+set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+if(APPLE)
+    set(HAVE_PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
+    set(BENCHMARK_HAS_PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
+    add_compile_definitions(BENCHMARK_HAS_PTHREAD_AFFINITY=0)
+endif()
+set(PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
+
 find_package(Threads REQUIRED)
 include(FetchContent)
 
@@ -125,22 +138,6 @@ FetchContent_Declare(
     URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
-
-# GoogleBenchmark
-FetchContent_Declare(
-    googlebenchmark
-    URL https://github.com/google/benchmark/archive/refs/tags/v1.9.1.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
-set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
-set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
-if(APPLE)
-    set(HAVE_PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
-    set(BENCHMARK_HAS_PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
-endif()
-set(PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
 
 # Mimalloc
 FetchContent_Declare(
