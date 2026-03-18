@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include "arena_allocator.h"
+#include "secure_random.h"
 #include <thread>
 #include <vector>
 #include <atomic>
-#include <random>
 #include <cstring>
 
 TEST(ArenaStress, MultiThreadedAllocDealloc) {
@@ -18,12 +18,8 @@ TEST(ArenaStress, MultiThreadedAllocDealloc) {
         threads.emplace_back([&arena, &start, t, iterations]() {
             while (!start) std::this_thread::yield();
             
-            std::random_device rd; // NOSONAR: Only for stress test jitter
-            std::mt19937_64 gen(rd()); 
-            std::uniform_int_distribution<> size_dis(8, 1024);
-
             for (int i = 0; i < iterations; ++i) {
-                size_t size = size_dis(gen);
+                size_t size = (size_t)AXIOM::SecureRandom::range(8, 1024);
                 void* ptr = arena.allocate(size);
                 if (ptr) {
                     // Touch memory

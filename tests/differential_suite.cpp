@@ -3,8 +3,8 @@
 #include "zenith_jit.h"
 #include "symbolic_engine.h"
 #include "dynamic_calc.h"
+#include "secure_random.h"
 #include <iostream>
-#include <random>
 #include <cmath>
 
 class DifferentialTest : public ::testing::Test {
@@ -19,18 +19,15 @@ TEST_F(DifferentialTest, RandomExpressionConsistency) {
     std::vector<std::string> ops = {"+", "-", "*", "/"};
     std::vector<std::string> funcs = {"sin", "cos", "exp", "abs"};
     
-    std::random_device rd; // NOSONAR: This is for testing consistency and rd is generally safer
-    std::mt19937_64 gen(rd()); 
-    std::uniform_real_distribution<> dis(1.0, 10.0);
-    std::uniform_int_distribution<> op_dis(0, ops.size() - 1);
-    std::uniform_int_distribution<> func_dis(0, funcs.size() - 1);
-
     for (int i = 0; i < 50; ++i) {
-        double v1 = dis(gen);
-        double v2 = dis(gen);
+        double v1 = 1.0 + AXIOM::SecureRandom::uniform() * 9.0;
+        double v2 = 1.0 + AXIOM::SecureRandom::uniform() * 9.0;
+        
+        int op_idx = AXIOM::SecureRandom::range(0, (int)ops.size() - 1);
+        int func_idx = AXIOM::SecureRandom::range(0, (int)funcs.size() - 1);
         
         // Construct a simple expression: func(v1) op v2
-        std::string expr = funcs[func_dis(gen)] + "(" + std::to_string(v1) + ") " + ops[op_dis(gen)] + " " + std::to_string(v2);
+        std::string expr = funcs[func_idx] + "(" + std::to_string(v1) + ") " + ops[op_idx] + " " + std::to_string(v2);
         
         // 1. Interpreted Result
         auto res_interp = parser.ParseAndExecute(expr);
