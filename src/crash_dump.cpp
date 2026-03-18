@@ -105,7 +105,11 @@ void CrashVault::record(uint32_t event_id, const char* msg) noexcept {
 #endif
 
     if (msg) {
-        size_t len = std::min(std::strlen(msg), sizeof(rec.message) - 1);
+        // Use strnlen for safety to avoid reading past buffer if not null-terminated
+        size_t len = 0;
+        while (len < sizeof(rec.message) - 1 && msg[len] != '\0') {
+            len++;
+        }
         std::memcpy(rec.message, msg, len);
         rec.message[len] = '\0';
     }

@@ -29,12 +29,12 @@ jobs:
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - name: Setup CMake
-      uses: jwlawson/actions-setup-cmake@v1.14
+      uses: jwlawson/actions-setup-cmake@83691586b907e55127df0f19323e969444938424 # v1.14
       with:
         cmake-version: '3.25.x'
 
     - name: Setup Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+      uses: seanmiddleditch/gha-setup-ninja@7e868db193083521279238953814bb54073c55bf # master
 
     - name: Install dependencies
       run: |

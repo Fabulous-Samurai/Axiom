@@ -23,6 +23,7 @@ import gc
 import math
 import os
 import random
+import secrets
 import statistics
 import sys
 import time
@@ -156,7 +157,7 @@ def bench_bulk_insert(store: HeadlessWorkspaceStore) -> dict:
 def bench_lookups(store: HeadlessWorkspaceStore) -> dict:
     banner(f"PHASE 2 · Random O(1) lookups  ({LOOKUP_SAMPLE:,} samples)")
 
-    keys = [f"var_{random.randint(0, SCALE - 1):07d}" for _ in range(LOOKUP_SAMPLE)]
+    keys = [f"var_{secrets.randbelow(SCALE):07d}" for _ in range(LOOKUP_SAMPLE)]
 
     times: list[float] = []
     gc.disable()
@@ -313,7 +314,7 @@ def bench_scale_ladder() -> list[dict]:
 
         # 1 000 random lookups
         sample = min(1_000, n)
-        keys = [f"v{random.randint(0, n-1)}" for _ in range(sample)]
+        keys = [f"v{secrets.randbelow(n)}" for _ in range(sample)]
         ltimes = []
         for k in keys:
             t0 = time.perf_counter()
@@ -396,13 +397,13 @@ def bench_cache_locality(store: HeadlessWorkspaceStore) -> dict:
 
     # ── tier key lists ───────────────────────────────────────────────────────
     hot_keys  = [f"var_{i:07d}" for i in range(LOCALITY_HOT_KEYS)] * LOCALITY_REPEATS
-    random.shuffle(hot_keys)
+    secrets.SystemRandom().shuffle(hot_keys)
 
     # keys in insertion order (warm — prefetcher-friendly table walk)
     warm_keys = [f"var_{i:07d}" for i in range(LOCALITY_WARM_N)]
 
     # uniformly random keys — cold DRAM accesses
-    cold_keys = [f"var_{random.randint(0, SCALE - 1):07d}" for _ in range(LOCALITY_COLD_N)]
+    cold_keys = [f"var_{secrets.randbelow(SCALE):07d}" for _ in range(LOCALITY_COLD_N)]
 
     gc.disable()
     hot_ns  = _mean_batch_ns(store, hot_keys)
@@ -720,7 +721,7 @@ def test_lookup_p99_under_5us():
     store = HeadlessWorkspaceStore()
     for i in range(SCALE):
         store.store_named(f"var_{i}", str(i))
-    keys = [f"var_{random.randint(0, SCALE - 1)}" for _ in range(LOOKUP_SAMPLE)]
+    keys = [f"var_{secrets.randbelow(SCALE)}" for _ in range(LOOKUP_SAMPLE)]
     times = []
     for k in keys:
         t0 = time.perf_counter()
