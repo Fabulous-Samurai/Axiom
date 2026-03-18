@@ -36,7 +36,7 @@ void AxiomThroughputNode::update(const QRectF& rect, TelemetryScribe& scribe) {
     
     if (current_time - last_time > 0.016) { // ~60Hz update logic
         // Calculate throughput (ops/sec) based on telemetry markers
-        static std::random_device rd;
+        static std::random_device rd; // NOSONAR: PRNG used for UI jitter only
         static std::mt19937_64 gen(rd());
         std::uniform_real_distribution<> jitter_dis(0.0, 500000.0);
         

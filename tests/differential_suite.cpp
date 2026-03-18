@@ -19,7 +19,7 @@ TEST_F(DifferentialTest, RandomExpressionConsistency) {
     std::vector<std::string> ops = {"+", "-", "*", "/"};
     std::vector<std::string> funcs = {"sin", "cos", "exp", "abs"};
     
-    std::random_device rd;
+    std::random_device rd; // NOSONAR: This is for testing consistency and rd is generally safer
     std::mt19937_64 gen(rd()); 
     std::uniform_real_distribution<> dis(1.0, 10.0);
     std::uniform_int_distribution<> op_dis(0, ops.size() - 1);

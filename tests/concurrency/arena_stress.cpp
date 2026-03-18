@@ -18,7 +18,7 @@ TEST(ArenaStress, MultiThreadedAllocDealloc) {
         threads.emplace_back([&arena, &start, t, iterations]() {
             while (!start) std::this_thread::yield();
             
-            std::random_device rd;
+            std::random_device rd; // NOSONAR: Only for stress test jitter
             std::mt19937_64 gen(rd()); 
             std::uniform_int_distribution<> size_dis(8, 1024);
 
