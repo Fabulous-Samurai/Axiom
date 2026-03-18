@@ -184,13 +184,11 @@ struct BinaryOpNode : ExprNode
     }
 };
 
+#include "include/string_helpers.h"
+
 std::optional<double> ToDouble(std::string_view sv)
 {
-    double result;
-    auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
-    if (ec == std::errc())
-        return result;
-    return std::nullopt;
+    return Utils::FastParseDouble(sv);
 }
 NodePtr Parse(Arena &arena, std::string_view input)
 {
