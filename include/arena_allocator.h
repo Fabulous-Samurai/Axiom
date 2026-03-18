@@ -89,7 +89,12 @@ private:
     alignas(CACHE_LINE_SIZE) std::atomic<ArenaBlock*> spare_block_{nullptr};
     alignas(CACHE_LINE_SIZE) std::atomic<ArenaBlock*> pool_head_{nullptr};
 
+#if defined(__apple_build_version__)
+    std::thread maintenance_thread_;
+    std::atomic<bool> stop_requested_{false};
+#else
     std::jthread maintenance_thread_;
+#endif
     size_t block_size_;
     int numa_node_;
 
@@ -115,7 +120,11 @@ private:
     void recycle_spare_block(ArenaBlock* block) noexcept;
     [[nodiscard]] ArenaBlock* pop_pool() noexcept;
     [[nodiscard]] std::byte* switch_and_retry(size_t bytes) noexcept;
+#if defined(__apple_build_version__)
+    void maintenance_worker() noexcept;
+#else
     void maintenance_worker(std::stop_token stop_token) noexcept;
+#endif
 };
 
 /**

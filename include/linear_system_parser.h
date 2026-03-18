@@ -1,11 +1,13 @@
 #pragma once
-#include "IParser.h"
+#include "iParser.h"
 #include "dynamic_calc_types.h"
 #include "arena_allocator.h"
 #include "fixed_vector.h"
 #include <string>
 #include <functional>
-#include <immintrin.h> // SIMD support
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
+    #include <immintrin.h> // SIMD support
+#endif
 #include <unordered_map>
 #include <memory_resource> // PMR allocators
 

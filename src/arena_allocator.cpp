@@ -121,6 +121,11 @@ HarmonicArena::HarmonicArena(size_t block_size, int numa_node)
     first_owner.release();
     spare_owner.release();
 
+#if defined(__apple_build_version__)
+    maintenance_thread_ = std::thread([this]() {
+        maintenance_worker();
+    });
+#else
     maintenance_thread_ = std::jthread([this](std::stop_token st) {
 #ifdef __linux__
         if (numa_node_ >= 0) {
@@ -133,11 +138,19 @@ HarmonicArena::HarmonicArena(size_t block_size, int numa_node)
 #endif
         maintenance_worker(st);
     });
+#endif
 }
 
 HarmonicArena::~HarmonicArena() {
+#if defined(__apple_build_version__)
+    stop_requested_.store(true, std::memory_order_release);
+    if (maintenance_thread_.joinable()) {
+        maintenance_thread_.join();
+    }
+#else
     // jthread destructor requests stop and joins.
     maintenance_thread_.request_stop();
+#endif
 
     std::unordered_set<ArenaBlock*> unique;
 
@@ -276,12 +289,12 @@ HarmonicArena::ArenaBlock* HarmonicArena::pop_pool() noexcept {
     return nullptr;
 }
 
-void HarmonicArena::maintenance_worker(std::stop_token stop_token) noexcept {
-    while (!stop_token.stop_requested()) {
+#if defined(__apple_build_version__)
+void HarmonicArena::maintenance_worker() noexcept {
+    while (!stop_requested_.load(std::memory_order_acquire)) {
         const bool prepare_now = should_prepare_spare();
         bool did_work = false;
 
-        // Prepare spare eagerly near exhaustion to avoid allocator stall.
         if (prepare_now || spare_block_.load(std::memory_order_acquire) == nullptr) {
             ArenaBlock* to_clean = pop_pool();
             if (!to_clean) {
@@ -309,6 +322,42 @@ void HarmonicArena::maintenance_worker(std::stop_token stop_token) noexcept {
         }
     }
 }
+#endif
+
+#if !defined(__apple_build_version__)
+void HarmonicArena::maintenance_worker(std::stop_token stop_token) noexcept {
+    while (!stop_token.stop_requested()) {
+        const bool prepare_now = should_prepare_spare();
+        bool did_work = false;
+
+        if (prepare_now || spare_block_.load(std::memory_order_acquire) == nullptr) {
+            ArenaBlock* to_clean = pop_pool();
+            if (!to_clean) {
+                to_clean = new ArenaBlock(block_size_, numa_node_);
+            }
+            if (to_clean) {
+                std::memset(to_clean->storage.get(), 0, to_clean->capacity);
+                to_clean->offset.store(0, std::memory_order_release);
+                to_clean->is_ready.store(true, std::memory_order_release);
+
+                ArenaBlock* expected_null = nullptr;
+                if (!spare_block_.compare_exchange_strong(expected_null, to_clean,
+                                                          std::memory_order_release,
+                                                          std::memory_order_relaxed)) {
+                    push_pool(to_clean);
+                }
+                did_work = true;
+            }
+        }
+
+        if (did_work) {
+            std::this_thread::yield();
+        } else {
+            std::this_thread::sleep_for(std::chrono::microseconds(50));
+        }
+    }
+}
+#endif
 
 // ============================================================================
 // MemoryArena Implementation

@@ -62,6 +62,7 @@ public:
     template<typename T>
     static T generate() {
         T val;
+        // std::random_device might be used as entropy source fallback if needed, but here we use OS APIs
         bytes(&val, sizeof(T));
         return val;
     }
