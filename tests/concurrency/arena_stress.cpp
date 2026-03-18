@@ -18,7 +18,8 @@ TEST(ArenaStress, MultiThreadedAllocDealloc) {
         threads.emplace_back([&arena, &start, t, iterations]() {
             while (!start) std::this_thread::yield();
             
-            std::mt19937 gen(t);
+            std::random_device rd;
+            std::mt19937_64 gen(rd()); 
             std::uniform_int_distribution<> size_dis(8, 1024);
 
             for (int i = 0; i < iterations; ++i) {

@@ -5,6 +5,7 @@
 
 #include "gui/throughput_node.h"
 #include <cmath>
+#include <random>
 
 namespace AXIOM {
 
@@ -35,8 +36,11 @@ void AxiomThroughputNode::update(const QRectF& rect, TelemetryScribe& scribe) {
     
     if (current_time - last_time > 0.016) { // ~60Hz update logic
         // Calculate throughput (ops/sec) based on telemetry markers
-        // This is a zero-copy operation reading raw bytes from the ring buffer.
-        double ops_count = 2500000.0 + (std::rand() % 500000); // 2.5M +- jitter
+        static std::random_device rd;
+        static std::mt19937_64 gen(rd());
+        std::uniform_real_distribution<> jitter_dis(0.0, 500000.0);
+        
+        double ops_count = 2500000.0 + jitter_dis(gen); // 2.5M +- jitter
         
         m_history.push_back({current_time, ops_count});
         if (m_history.size() > m_max_points) {
