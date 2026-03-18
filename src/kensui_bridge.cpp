@@ -22,10 +22,10 @@ AXIOM_EXPORT uintptr_t AxiomJit_GetDisassembly(const uint8_t* code_ptr, size_t s
     }
 
     if (size > 16 && (size_t)offset < max_len - 1) {
-        snprintf(out_preallocated_buffer + offset, max_len - (size_t)offset, "...");
+        offset += snprintf(out_preallocated_buffer + offset, max_len - (size_t)offset, "...");
     }
 
-    return (uintptr_t)strlen(out_preallocated_buffer);
+    return (uintptr_t)offset;
 }
 
 // Mock implementation for Mantis A* Search Tree

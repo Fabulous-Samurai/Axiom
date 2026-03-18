@@ -29,9 +29,9 @@ namespace {
     static double jit_exp(double x) { return ::std::exp(x); }
     static double jit_log10(double x) { return ::std::log10(x); }
     static double jit_log(double x) { return ::std::log(x); }
-    static double jit_sin(double x) { return ::std::sin(x * D2R); }
-    static double jit_cos(double x) { return ::std::cos(x * D2R); }
-    static double jit_tan(double x) { return ::std::tan(x * D2R); }
+    static double jit_sin(double x) { return ::std::sin(x); }
+    static double jit_cos(double x) { return ::std::cos(x); }
+    static double jit_tan(double x) { return ::std::tan(x); }
     static double jit_pow(double x, double y) { return ::std::pow(x, y); }
 
     struct ParserState {
@@ -194,7 +194,7 @@ Precedence GetOpPrecedence(char op) {
 
 bool IsConst(const NodePtr node, double val) {
     auto res = node->Evaluate({});
-    if (!res.value.has_value()) return false;
+    if (!res.HasValue()) return false;
     double node_val = GetReal(*res.value);
     return ::std::abs(node_val - val) < 1e-9;
 }
@@ -224,7 +224,7 @@ EvalResult NumberNode::Evaluate(const StringUnorderedMap<Number>&) const { retur
 ExprNode* NumberNode::Derivative(Arena& arena, ::std::string_view) const { return arena.template alloc<NumberNode>(0.0); }
 ExprNode* NumberNode::Simplify(Arena& arena) const { return (ExprNode*)this; }
 
-EvalResult VariableNode::Evaluate(const StringUnorderedMap<Number>& vars) const {
+EvalResult VariableNode::Evaluate(const StringUnorderedMap<Number>& vars) const {        
     auto it = vars.find(::std::string(name));
     if (it != vars.end()) return EvalResult::Success(it->second);
     if (name == "pi") return EvalResult::Success(PI_CONST);
@@ -256,7 +256,7 @@ bool VariableNode::Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, 
 ExprNode* VariableNode::Derivative(Arena& arena, ::std::string_view var) const { return (name == var) ? arena.template alloc<NumberNode>(1.0) : arena.template alloc<NumberNode>(0.0); }
 ExprNode* VariableNode::Simplify(Arena& arena) const { return (ExprNode*)this; }
 
-EvalResult BinaryOpNode::Evaluate(const StringUnorderedMap<Number>& vars) const {
+EvalResult BinaryOpNode::Evaluate(const StringUnorderedMap<Number>& vars) const {        
     auto l_res = left->Evaluate(vars); if (!l_res.HasValue()) return l_res;
     auto r_res = right->Evaluate(vars); if (!r_res.HasValue()) return r_res;
     double l = GetReal(*l_res.value), r = GetReal(*r_res.value);
@@ -397,24 +397,35 @@ bool UnaryOpNode::Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, c
         return true;
     }
 
+    // Trigonometric functions (assuming degrees for consistent behavior with Evaluate)
+    auto convert_to_rad = [&]() {
+        asmjit::x86::Vec rad_v = cc.new_xmm();
+        cc.movsd(rad_v, cc.new_double_const(asmjit::ConstPoolScope::kLocal, D2R));
+        cc.mulsd(rad_v, arg_v);
+        return rad_v;
+    };
+
     if (func == "sin") {
+        asmjit::x86::Vec rad = convert_to_rad();
         asmjit::InvokeNode* invoke;
         cc.invoke(asmjit::Out<asmjit::InvokeNode*>(invoke), asmjit::Imm((intptr_t)jit_sin), asmjit::FuncSignature::build<double, double>(asmjit::CallConvId::kCDecl));
-        invoke->set_arg(0, arg_v);
+        invoke->set_arg(0, rad);
         invoke->set_ret(0, out);
         return true;
     }
     if (func == "cos") {
+        asmjit::x86::Vec rad = convert_to_rad();
         asmjit::InvokeNode* invoke;
         cc.invoke(asmjit::Out<asmjit::InvokeNode*>(invoke), asmjit::Imm((intptr_t)jit_cos), asmjit::FuncSignature::build<double, double>(asmjit::CallConvId::kCDecl));
-        invoke->set_arg(0, arg_v);
+        invoke->set_arg(0, rad);
         invoke->set_ret(0, out);
         return true;
     }
     if (func == "tan") {
+        asmjit::x86::Vec rad = convert_to_rad();
         asmjit::InvokeNode* invoke;
         cc.invoke(asmjit::Out<asmjit::InvokeNode*>(invoke), asmjit::Imm((intptr_t)jit_tan), asmjit::FuncSignature::build<double, double>(asmjit::CallConvId::kCDecl));
-        invoke->set_arg(0, arg_v);
+        invoke->set_arg(0, rad);
         invoke->set_ret(0, out);
         return true;
     }
@@ -511,9 +522,8 @@ EngineResult AlgebraicParser::HandleIntegrate(const ::std::string& input) {
 EngineResult AlgebraicParser::ParseAndExecuteWithContext(const ::std::string& input, const StringUnorderedMap<Number>& context) {
     auto root = ParseExpression(input);
     if (!root) return CreateErrorResult(CalcErr::StackOverflow);
-    ::std::unordered_map<::std::string, Number> std_vars;
-    for(auto const& [k, v] : context) std_vars[k] = v;
-    auto res = root->Evaluate(std_vars);
+    
+    auto res = root->Evaluate(context);
     if (res.HasValue()) return CreateSuccessResult(*res.value);
     return CreateErrorResult(res.error);
 }

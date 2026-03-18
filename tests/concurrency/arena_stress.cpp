@@ -15,7 +15,7 @@ TEST(ArenaStress, MultiThreadedAllocDealloc) {
     std::atomic<bool> start{false};
 
     for (int t = 0; t < num_threads; ++t) {
-        threads.emplace_back([&, t]() {
+        threads.emplace_back([&arena, &start, t, iterations]() {
             while (!start) std::this_thread::yield();
             
             std::mt19937 gen(t);

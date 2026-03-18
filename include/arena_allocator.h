@@ -267,7 +267,7 @@ public:
     PoolManager();
     ~PoolManager();
 
-    void* allocate(size_t size, size_t alignment = MemoryArena::CACHE_LINE_SIZE);
+    void* allocate(size_t size, size_t alignment = AXIOM::CACHE_LINE_SIZE);
     void deallocate(void* ptr, size_t size);
 
     std::vector<MemoryArena::ArenaStats> get_all_stats() const;
@@ -363,8 +363,8 @@ public:
         , cols_(cols)
     {
         // Align row stride to cache line boundaries
-        row_stride_ = (cols_ * sizeof(T) + MemoryArena::CACHE_LINE_SIZE - 1) / MemoryArena::CACHE_LINE_SIZE;
-        row_stride_ *= MemoryArena::CACHE_LINE_SIZE / sizeof(T);
+        row_stride_ = (cols_ * sizeof(T) + AXIOM::CACHE_LINE_SIZE - 1) / AXIOM::CACHE_LINE_SIZE;
+        row_stride_ *= AXIOM::CACHE_LINE_SIZE / sizeof(T);
         
         data_.resize(rows_ * row_stride_);
     }

@@ -15,18 +15,8 @@
 
 namespace AXIOM {
 
-struct StringHash {
-    using is_transparent = void;
-    size_t operator()(std::string_view sv) const {
-        return std::hash<std::string_view>{}(sv);
-    }
-};
-
-template<typename V>
-using StringUnorderedMap = std::unordered_map<std::string, V, StringHash, std::equal_to<>>;
-
-template<typename V>
-using StringMap = std::map<std::string, V, std::less<>>;
+using AXIOM::StringUnorderedMap;
+using AXIOM::StringMap;
 
 class AXIOM_EXPORT AlgebraicParser : public IParser {
 public:

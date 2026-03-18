@@ -624,7 +624,7 @@ void TestHarmonicArena(TestRunner& runner) {
             workers.emplace_back([&arena, &ok_count]() {
                 for (int i = 0; i < allocs_per_thread; ++i) {
                     void* p = arena.allocate(128);
-                    if (p != nullptr && (reinterpret_cast<std::uintptr_t>(p) % AXIOM::HarmonicArena::CACHE_LINE_SIZE) == 0) {
+                    if (p != nullptr && (reinterpret_cast<std::uintptr_t>(p) % AXIOM::CACHE_LINE_SIZE) == 0) {
                         ok_count.fetch_add(1, std::memory_order_relaxed);
                     }
                 }

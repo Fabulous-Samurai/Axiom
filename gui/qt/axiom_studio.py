@@ -383,7 +383,8 @@ class AxiomStudio(QMainWindow):
         while not self._ui_tasks.empty():
             try:
                 self._ui_tasks.get_nowait()()
-            except: pass
+            except Exception:
+                pass
             
         # Real-time metrics simulation
         tp = 2.5 + random.uniform(-0.1, 0.2)

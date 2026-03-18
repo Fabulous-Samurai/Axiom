@@ -36,9 +36,6 @@ constexpr bool IsSquareOnlyOperation(std::string_view operation) {
 
 template <typename T>
 constexpr T BlendAtCompileOrRuntime(T lhs, T rhs) {
-    if consteval {
-        return (lhs + rhs) / static_cast<T>(2);
-    }
     return (lhs + rhs) / static_cast<T>(2);
 }
 

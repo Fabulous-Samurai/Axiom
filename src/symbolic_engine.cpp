@@ -399,7 +399,7 @@ EngineResult SymbolicEngine::TaylorSeries(const std::string& expr, const std::st
     bool any_term = false;
 
     for (int k = 0; k <= order; ++k) {
-        std::unordered_map<std::string, AXIOM::Number> context;
+        AXIOM::StringUnorderedMap<AXIOM::Number> context;
         context[variable] = AXIOM::Number(point);
         
         auto res = current_ast->Evaluate(context);

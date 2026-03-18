@@ -602,7 +602,7 @@ TEST(AxiomEngine, Test_ConcurrencyStress) {
     std::vector<std::thread> workers;
     std::atomic<int> success_count{0};
     
-    auto worker_task = [&]() {
+    auto worker_task = [&success_count, iterations_per_thread]() {
         DynamicCalc engine;
         engine.SetMode(CalculationMode::ALGEBRAIC);
         

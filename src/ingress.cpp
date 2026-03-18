@@ -89,17 +89,16 @@ public:
 };
 
 std::unique_ptr<IngressChannel> IngressFactory::create(ProviderType type, const std::string& interface_name) {
-    if (type == ProviderType::AF_XDP) {
+    #ifdef __linux__
+    if (type == ProviderType::AF_XDP || type == ProviderType::AUTO) {
         return std::make_unique<AF_XDP_IngressChannel>(interface_name);
     }
-
-    if (type == ProviderType::AUTO) {
-        #ifdef __linux__
-            return std::make_unique<AF_XDP_IngressChannel>(interface_name);
-        #else
-            return std::make_unique<MockHFTIngress>();
-        #endif
+    #else
+    if (type == ProviderType::AF_XDP) {
+        std::cerr << "[AXIOM Ingress] ERROR: AF_XDP requires Linux kernel 5.4+" << std::endl;
+        return nullptr;
     }
+    #endif
 
     return std::make_unique<MockHFTIngress>();
 }

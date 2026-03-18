@@ -240,19 +240,8 @@ namespace AXIOM
         }
     }
 
-    EngineResult LinearSystemParser::HandleSolve(const std::string &input) const
-    {
-        std::string_view content = std::string_view(input).substr(5);
-
-        std::string processed;
-        processed.reserve(content.size());
-        for (char c : content)
-        {
-            if (c != ' ')
-                processed += c;
-        }
-
-        auto extract_bracket_block = [](const std::string &s, size_t start_pos) -> std::pair<std::string, size_t>
+    namespace {
+        std::pair<std::string, size_t> extract_bracket_block(const std::string &s, size_t start_pos)
         {
             size_t start = s.find('[', start_pos);
             if (start == std::string::npos)
@@ -270,7 +259,20 @@ namespace AXIOM
                 }
             }
             return {"", std::string::npos};
-        };
+        }
+    }
+
+    EngineResult LinearSystemParser::HandleSolve(const std::string &input) const
+    {
+        std::string_view content = std::string_view(input).substr(5);
+
+        std::string processed;
+        processed.reserve(content.size());
+        for (char c : content)
+        {
+            if (c != ' ')
+                processed += c;
+        }
 
         auto [matrix_str, after_matrix] = extract_bracket_block(processed, 0);
         if (matrix_str.empty() || after_matrix == std::string::npos)
@@ -411,15 +413,12 @@ namespace AXIOM
     bool LinearSystemParser::ParseLinearSystem(const std::string &input, ArenaVector<ArenaVector<double>> &A, ArenaVector<double> &b) const
     {
         std::string processed_input;
+        processed_input.reserve(input.size());
         for (char c : input)
-            if (c != ' ')
+            if (!std::isspace(static_cast<unsigned char>(c)))
                 processed_input += c;
 
-        std::vector<std::string> equations;
-        std::stringstream ss_eq(processed_input);
-        std::string eq;
-        while (std::getline(ss_eq, eq, ';'))
-            equations.emplace_back(Utils::Trim(eq));
+        auto equations = Utils::Split(processed_input, ';');
 
         int N = equations.size();
         if (N == 0)
@@ -427,26 +426,22 @@ namespace AXIOM
 
         A.assign(N, ArenaVector<double>(N, 0.0));
         b.assign(N, 0.0);
-        std::map<char, int> var_to_index;
+        std::unordered_map<char, int> var_to_index;
         int var_count = 0;
 
         for (int i = 0; i < N; ++i)
         {
-            std::stringstream ss_eq_part(equations[i]);
-            std::string part;
+            std::string_view eq_sv(equations[i]);
+            size_t equal_pos = eq_sv.find('=');
+            if (equal_pos == std::string_view::npos) return false;
 
-            std::getline(ss_eq_part, part, '=');
-            std::string lhs = Utils::Trim(part);
+            std::string_view lhs = eq_sv.substr(0, equal_pos);
+            std::string_view rhs = eq_sv.substr(equal_pos + 1);
 
-            if (!std::getline(ss_eq_part, part, '='))
-                return false;
-            std::string rhs = Utils::Trim(part);
+            auto rhs_val = Utils::FastParseDouble(rhs);
+            if (!rhs_val) return false;
+            b[i] = *rhs_val;
 
-            if (!Utils::IsNumber(rhs))
-                return false;
-            b[i] = std::stod(rhs);
-
-            std::string term;
             size_t pos = 0;
             while (pos < lhs.size())
             {
@@ -457,42 +452,48 @@ namespace AXIOM
                     ++pos;
                 }
                 size_t start = pos;
-                while (pos < lhs.size() && (std::isdigit(lhs[pos]) || lhs[pos] == '.' || std::isalpha(lhs[pos])))
+                while (pos < lhs.size() && (std::isdigit(static_cast<unsigned char>(lhs[pos])) || lhs[pos] == '.' || std::isalpha(static_cast<unsigned char>(lhs[pos]))))
                     ++pos;
 
-                term = lhs.substr(start, pos - start);
+                std::string_view term = lhs.substr(start, pos - start);
+                if (term.empty()) continue;
+
                 double coefficient = 1.0;
                 char variable = '\0';
 
-                size_t var_pos = term.find_first_of("abcdefghijklmnopqrstuvwxyz");
+                size_t var_pos = term.find_first_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
-                if (var_pos != std::string::npos)
+                if (var_pos != std::string_view::npos)
                 {
                     if (var_pos > 0)
                     {
-                        std::string coef_str = term.substr(0, var_pos);
-                        if (!Utils::IsNumber(coef_str))
-                            return false;
-                        coefficient = std::stod(coef_str);
+                        std::string_view coef_str = term.substr(0, var_pos);
+                        auto c_val = Utils::FastParseDouble(coef_str);
+                        if (!c_val) return false;
+                        coefficient = *c_val;
                     }
                     variable = term[var_pos];
                 }
                 else
                 {
-                    if (!Utils::IsNumber(term))
-                        return false;
-                    b[i] -= (sign == '+' ? 1 : -1) * std::stod(term);
+                    auto t_val = Utils::FastParseDouble(term);
+                    if (!t_val) return false;
+                    b[i] -= (sign == '+' ? 1 : -1) * (*t_val);
                     continue;
                 }
 
                 if (sign == '-')
                     coefficient = -coefficient;
 
-                if (!var_to_index.contains(variable))
-                    var_to_index[variable] = var_count++;
+                auto [it, inserted] = var_to_index.try_emplace(variable, var_count);
+                if (inserted) {
+                    var_count++;
+                }
 
-                int col = var_to_index[variable];
-                A[i][col] += coefficient;
+                int col = it->second;
+                if (col < N) {
+                    A[i][col] += coefficient;
+                }
             }
         }
         if (var_count != N)
@@ -504,14 +505,31 @@ namespace AXIOM
     {
         if (v1.size() != v2.size())
             return 0.0;
+        
         double sum = 0.0;
         size_t i = 0;
         const size_t size = v1.size();
 
-        for (; i + 3 < size; i += 4)
-        {
-            sum += v1[i] * v2[i] + v1[i + 1] * v2[i + 1] + v1[i + 2] * v2[i + 2] + v1[i + 3] * v2[i + 3];
+        #ifdef AXIOM_SIMD_AVX2_ENABLED
+        if (size >= 4) {
+            __m256d vsum = _mm256_setzero_pd();
+            for (; i + 3 < size; i += 4) {
+                __m256d m1 = _mm256_loadu_pd(&v1[i]);
+                __m256d m2 = _mm256_loadu_pd(&v2[i]);
+                #ifdef AXIOM_SIMD_FMA_ENABLED
+                    vsum = _mm256_fmadd_pd(m1, m2, vsum);
+                #else
+                    vsum = _mm256_add_pd(vsum, _mm256_mul_pd(m1, m2));
+                #endif
+            }
+            // Horizontal sum
+            alignas(32) double temp[4];
+            _mm256_store_pd(temp, vsum);
+            sum = temp[0] + temp[1] + temp[2] + temp[3];
         }
+        #endif
+
+        // Remainder
         for (; i < size; i++)
         {
             sum += v1[i] * v2[i];

@@ -13,6 +13,7 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <map>
 
 namespace AXIOM
 {
@@ -36,6 +37,9 @@ namespace AXIOM
 
     template<typename T>
     using StringUnorderedMap = std::unordered_map<std::string, T, StringHash, StringEqual>;
+
+    template<typename T>
+    using StringMap = std::map<std::string, T, std::less<>>;
 
     // --- 2. MATH UTILITIES ---
     inline bool IsReal(const Number &num) { return std::holds_alternative<double>(num); }

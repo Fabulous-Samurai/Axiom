@@ -1,5 +1,6 @@
 import requests
 import json
+from urllib.parse import urljoin, urlparse
 
 # Load configuration from project.json
 def load_config():
@@ -8,7 +9,14 @@ def load_config():
 
 # Trigger SonarQube analysis
 def trigger_sonar_analysis(config):
-    url = f"{config['sonarURL']}/api/ce/submit"
+    base_url = config.get('sonarURL', 'https://sonarcloud.io')
+    
+    # Basic URL validation
+    parsed = urlparse(base_url)
+    if parsed.scheme not in ('http', 'https'):
+        raise ValueError(f"Invalid URL scheme: {parsed.scheme}")
+
+    url = urljoin(base_url, "/api/ce/submit")
     headers = {
         "Authorization": f"Bearer {config['token']}"
     }

@@ -20,6 +20,8 @@ class SonarIssuePuller:
             params["severities"] = severities
         if types:
             params["types"] = types
+        else:
+            params["types"] = "BUG,VULNERABILITY,CODE_SMELL"
 
         issues = []
         page = 1
@@ -39,6 +41,22 @@ class SonarIssuePuller:
                 break
             page += 1
             
+        # Fetch Security Hotspots
+        hotspot_url = "https://sonarcloud.io/api/hotspots/search"
+        hotspot_params = {
+            "projectKey": self.project_key,
+            "status": "TO_REVIEW"
+        }
+        hs_response = requests.get(hotspot_url, params=hotspot_params, auth=(self.token, ""))
+        if hs_response.status_code == 200:
+            hotspots = hs_response.json().get("hotspots", [])
+            for hs in hotspots:
+                # Normalize hotspot to look like an issue for the task list
+                hs["type"] = "SECURITY_HOTSPOT"
+                hs["severity"] = hs.get("vulnerabilityProbability", "MEDIUM")
+                issues.append(hs)
+            print(f"Fetched {len(hotspots)} security hotspots.")
+
         return issues
 
     def export_markdown(self, issues, filename="sonar_tasks.md"):

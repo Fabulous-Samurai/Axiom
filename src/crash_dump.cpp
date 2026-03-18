@@ -105,8 +105,9 @@ void CrashVault::record(uint32_t event_id, const char* msg) noexcept {
 #endif
 
     if (msg) {
-        std::strncpy(rec.message, msg, sizeof(rec.message) - 1);
-        rec.message[sizeof(rec.message) - 1] = '\0';
+        size_t len = std::min(std::strlen(msg), sizeof(rec.message) - 1);
+        std::memcpy(rec.message, msg, len);
+        rec.message[len] = '\0';
     }
 
     // No msync() here! We rely on the OS page cache to flush.

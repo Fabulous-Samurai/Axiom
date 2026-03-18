@@ -26,7 +26,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - name: Setup CMake
       uses: jwlawson/actions-setup-cmake@v1.14
@@ -60,7 +60,7 @@ jobs:
 
     - name: Upload Test Results
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@604373da0ea81b20e9c956fa3dd21a7c21c56ad # v4.4.1
       with:
         name: test-results-${{ matrix.os }}-${{ matrix.build-type }}
         path: build/Testing/

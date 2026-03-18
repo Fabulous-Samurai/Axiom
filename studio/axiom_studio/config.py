@@ -8,8 +8,8 @@ def load_config():
         with open(CONFIG_FILE, 'r') as f:
             try:
                 return json.load(f)
-            except:
-                pass
+            except (json.JSONDecodeError, IOError):
+                return {}
     return {}
 
 def save_config(config_data):
