@@ -284,8 +284,8 @@ void DaemonEngine::stop() noexcept
 DaemonEngine::PipeError DaemonEngine::setup_pipe()
 {
 #ifdef _WIN32
-    std::string full_name = std::format("\\\\.\\pipe\\{}", pipe_name_);
-    pipe_handle_ = CreateNamedPipeA(
+    std::wstring full_name = L"\\\\.\\pipe\\" + std::wstring(pipe_name_.begin(), pipe_name_.end());
+    pipe_handle_ = CreateNamedPipeW(
         full_name.c_str(),
         PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,
         PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,

@@ -69,13 +69,12 @@ public:
  */
 class AXIOM_EXPORT HarmonicArena {
 public:
-    static constexpr size_t CACHE_LINE_SIZE = 64;
     static constexpr size_t DEFAULT_BLOCK_SIZE = 512ull * 1024ull * 1024ull; // 512MB
     static constexpr size_t SCRIBE_PREPARE_THRESHOLD_PERCENT = 85;
 
     // Internal block type is kept public so out-of-class member definitions can
     // use it in signatures without static-analysis accessibility warnings.
-    struct alignas(CACHE_LINE_SIZE) ArenaBlock {
+    struct alignas(AXIOM::CACHE_LINE_SIZE) ArenaBlock {
         std::unique_ptr<std::byte[], void(*)(std::byte*)> storage;
         size_t capacity;
         std::atomic<size_t> offset;
@@ -127,7 +126,6 @@ private:
 class AXIOM_EXPORT MemoryArena {
 public:
     static constexpr size_t DEFAULT_ARENA_SIZE = 64 * 1024 * 1024;  // 64MB
-    static constexpr size_t CACHE_LINE_SIZE = 64;
     static constexpr size_t PAGE_SIZE = 4096;
     
     struct ArenaStats {

@@ -82,6 +82,24 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
 
+# Sanitizer Options
+option(AXIOM_ENABLE_ASAN "Enable AddressSanitizer" OFF)
+option(AXIOM_ENABLE_TSAN "Enable ThreadSanitizer" OFF)
+option(AXIOM_ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
+
+if(AXIOM_ENABLE_ASAN)
+    add_compile_options(-fsanitize=address)
+    add_link_options(-fsanitize=address)
+endif()
+if(AXIOM_ENABLE_TSAN)
+    add_compile_options(-fsanitize=thread)
+    add_link_options(-fsanitize=thread)
+endif()
+if(AXIOM_ENABLE_UBSAN)
+    add_compile_options(-fsanitize=undefined)
+    add_link_options(-fsanitize=undefined)
+endif()
+
 # GoogleTest / GoogleBenchmark integration helper
 option(AXIOM_ENABLE_GTEST "Enable GoogleTest integration" ON)
 option(AXIOM_ENABLE_BENCHMARK "Enable GoogleBenchmark integration" ON)
@@ -203,6 +221,15 @@ target_link_libraries(harmonic_string_test PRIVATE GTest::gtest_main)
 add_executable(enclave_test tests/enclave_test.cpp)
 target_link_libraries(enclave_test PRIVATE axiom_engine GTest::gtest_main)
 
+add_executable(differential_suite tests/differential_suite.cpp)
+target_link_libraries(differential_suite PRIVATE axiom_engine GTest::gtest_main asmjit::asmjit Python::Python)
+
+add_executable(arena_stress tests/concurrency/arena_stress.cpp)
+target_link_libraries(arena_stress PRIVATE axiom_engine GTest::gtest_main)
+
+add_executable(simd_matrix_test tests/hardware/simd_matrix_test.cpp)
+target_link_libraries(simd_matrix_test PRIVATE axiom_engine GTest::gtest_main)
+
 add_executable(ingress_bench tests/benchmarks/ingress_bench.cpp)
 target_link_libraries(ingress_bench PRIVATE axiom_engine benchmark::benchmark_main Threads::Threads)
 
@@ -213,6 +240,9 @@ add_test(NAME alignment_test COMMAND alignment_test)
 add_test(NAME harmonic_arena_test COMMAND harmonic_arena_test)
 add_test(NAME harmonic_string_test COMMAND harmonic_string_test)
 add_test(NAME enclave_test COMMAND enclave_test)
+add_test(NAME differential_suite COMMAND differential_suite)
+add_test(NAME arena_stress COMMAND arena_stress)
+add_test(NAME simd_matrix_test COMMAND simd_matrix_test)
 
 # SIMD flags (simplified)
 if(AXIOM_ENABLE_SIMD_AVX2)

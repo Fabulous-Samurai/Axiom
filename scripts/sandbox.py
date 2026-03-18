@@ -30,10 +30,10 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # Placeholder for actual OS isolation (e.g., using 'runas' or namespaces)
-    # For now, we simulate process isolation using a subprocess.
-    
-    cmd = [sys.executable, "-c", f"print(eval('{expression}'))"]
+    # We use a more robust way to pass the expression to the subprocess
+    # to avoid shell quoting issues.
+    code = f"import os; print(eval({repr(expression)}))"
+    cmd = [sys.executable, "-c", code]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)

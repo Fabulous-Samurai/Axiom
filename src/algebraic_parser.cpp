@@ -25,6 +25,15 @@ namespace {
     constexpr double D2R = ::std::numbers::pi / 180.0;
     constexpr double R2D = 180.0 / ::std::numbers::pi;
 
+    static double jit_abs(double x) { return ::std::abs(x); }
+    static double jit_exp(double x) { return ::std::exp(x); }
+    static double jit_log10(double x) { return ::std::log10(x); }
+    static double jit_log(double x) { return ::std::log(x); }
+    static double jit_sin(double x) { return ::std::sin(x * D2R); }
+    static double jit_cos(double x) { return ::std::cos(x * D2R); }
+    static double jit_tan(double x) { return ::std::tan(x * D2R); }
+    static double jit_pow(double x, double y) { return ::std::pow(x, y); }
+
     struct ParserState {
         ::std::string_view input;
         size_t pos{0};
@@ -63,49 +72,60 @@ namespace {
     NodePtr parse_expression(ParserState& state);
     NodePtr parse_pow(ParserState& state);
 
+    NodePtr parse_number(ParserState& state) {
+        size_t start = state.pos;
+        while (state.has_more() && (::std::isdigit(static_cast<unsigned char>(state.peek())) || state.peek() == '.')) state.get();
+        double val = ::std::stod(::std::string(state.input.substr(start, state.pos - start)));
+        return state.arena.template alloc<NumberNode>(val);
+    }
+
+    NodePtr parse_identifier(ParserState& state) {
+        size_t start = state.pos;
+        while (state.has_more() && (::std::isalnum(static_cast<unsigned char>(state.peek())) || state.peek() == '_')) state.get();
+        ::std::string_view name = state.input.substr(start, state.pos - start);
+        
+        state.skip_ws();
+        if (state.peek() == '(') {
+            state.get(); // '('
+            auto arg = parse_expression(state);
+            if (!arg) return nullptr;
+            state.match(')');
+            return state.arena.template alloc<UnaryOpNode>(state.arena.allocString(name), arg);
+        }
+        
+        // Check for known functions that might be used without parens (e.g. sin 90)
+        if (name == "sin" || name == "cos" || name == "sqrt" || name == "tan" || name == "log" || name == "exp") {
+            auto arg = parse_pow(state);
+            if (!arg) return nullptr;
+            return state.arena.template alloc<UnaryOpNode>(state.arena.allocString(name), arg);
+        }
+        
+        return state.arena.template alloc<VariableNode>(state.arena.allocString(name));
+    }
+
     NodePtr parse_primary(ParserState& state) {
         ParserState::DepthGuard guard(state);
         if (!guard.ok) return nullptr;
 
         state.skip_ws();
-        if (state.match('(')) {
+        char p = state.peek();
+        if (p == '(') {
+            state.pos++;
             auto node = parse_expression(state);
             state.match(')');
             return node;
         }
 
-        if (::std::isdigit(static_cast<unsigned char>(state.peek())) || state.peek() == '.') {
-            size_t start = state.pos;
-            while (state.has_more() && (::std::isdigit(static_cast<unsigned char>(state.peek())) || state.peek() == '.')) state.get();
-            double val = ::std::stod(::std::string(state.input.substr(start, state.pos - start)));
-            return state.arena.template alloc<NumberNode>(val);
+        if (::std::isdigit(static_cast<unsigned char>(p)) || p == '.') {
+            return parse_number(state);
         }
 
-        if (::std::isalpha(static_cast<unsigned char>(state.peek()))) {
-            size_t start = state.pos;
-            while (state.has_more() && (::std::isalnum(static_cast<unsigned char>(state.peek())) || state.peek() == '_')) state.get();
-            ::std::string_view name = state.input.substr(start, state.pos - start);
-            
-            state.skip_ws();
-            if (state.peek() == '(') {
-                state.get(); // '('
-                auto arg = parse_expression(state);
-                if (!arg) return nullptr;
-                state.match(')');
-                return state.arena.template alloc<UnaryOpNode>(state.arena.allocString(name), arg);
-            }
-            
-            // Check for known functions that might be used without parens (e.g. sin 90)
-            if (name == "sin" || name == "cos" || name == "sqrt" || name == "tan" || name == "log" || name == "exp") {
-                auto arg = parse_pow(state);
-                if (!arg) return nullptr;
-                return state.arena.template alloc<UnaryOpNode>(state.arena.allocString(name), arg);
-            }
-            
-            return state.arena.template alloc<VariableNode>(state.arena.allocString(name));
+        if (::std::isalpha(static_cast<unsigned char>(p))) {
+            return parse_identifier(state);
         }
 
-        if (state.match('-')) {
+        if (p == '-') {
+            state.pos++;
             auto arg = parse_primary(state);
             if (!arg) return nullptr;
             return state.arena.template alloc<UnaryOpNode>("u-", arg);
@@ -199,12 +219,12 @@ bool NumberNode::Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, co
     return true;
 }
 
-EvalResult NumberNode::Evaluate(const ::std::unordered_map<::std::string, Number>&) const { return EvalResult::Success(value); }
+EvalResult NumberNode::Evaluate(const StringUnorderedMap<Number>&) const { return EvalResult::Success(value); }
 ::std::string NumberNode::ToString(Precedence) const { return FormatNumber(value); }
 ExprNode* NumberNode::Derivative(Arena& arena, ::std::string_view) const { return arena.template alloc<NumberNode>(0.0); }
 ExprNode* NumberNode::Simplify(Arena& arena) const { return (ExprNode*)this; }
 
-EvalResult VariableNode::Evaluate(const ::std::unordered_map<::std::string, Number>& vars) const {        
+EvalResult VariableNode::Evaluate(const StringUnorderedMap<Number>& vars) const {
     auto it = vars.find(::std::string(name));
     if (it != vars.end()) return EvalResult::Success(it->second);
     if (name == "pi") return EvalResult::Success(PI_CONST);
@@ -236,7 +256,7 @@ bool VariableNode::Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, 
 ExprNode* VariableNode::Derivative(Arena& arena, ::std::string_view var) const { return (name == var) ? arena.template alloc<NumberNode>(1.0) : arena.template alloc<NumberNode>(0.0); }
 ExprNode* VariableNode::Simplify(Arena& arena) const { return (ExprNode*)this; }
 
-EvalResult BinaryOpNode::Evaluate(const ::std::unordered_map<::std::string, Number>& vars) const {        
+EvalResult BinaryOpNode::Evaluate(const StringUnorderedMap<Number>& vars) const {
     auto l_res = left->Evaluate(vars); if (!l_res.HasValue()) return l_res;
     auto r_res = right->Evaluate(vars); if (!r_res.HasValue()) return r_res;
     double l = GetReal(*l_res.value), r = GetReal(*r_res.value);
@@ -261,7 +281,7 @@ bool BinaryOpNode::Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, 
         case '/': cc.divsd(out, r_v); break;
         case '^': {
             asmjit::InvokeNode* invoke;
-            cc.invoke(asmjit::Out<asmjit::InvokeNode*>(invoke), asmjit::Imm((intptr_t)static_cast<double(*)(double, double)>(::std::pow)), asmjit::FuncSignature::build<double, double, double>(asmjit::CallConvId::kCDecl));
+            cc.invoke(asmjit::Out<asmjit::InvokeNode*>(invoke), asmjit::Imm((intptr_t)jit_pow), asmjit::FuncSignature::build<double, double, double>(asmjit::CallConvId::kCDecl));
             invoke->set_arg(0, l_v);
             invoke->set_arg(1, r_v);
             invoke->set_ret(0, out);
@@ -318,7 +338,7 @@ ExprNode* BinaryOpNode::Simplify(Arena& arena) const {
     return arena.template alloc<BinaryOpNode>(op, sl, sr);
 }
 
-EvalResult UnaryOpNode::Evaluate(const ::std::unordered_map<::std::string, Number>& vars) const {
+EvalResult UnaryOpNode::Evaluate(const StringUnorderedMap<Number>& vars) const {
     auto res = operand->Evaluate(vars); if (!res.HasValue()) return res;
     double v = GetReal(*res.value);
     if (func == "sin") return EvalResult::Success(::std::sin(v * D2R));
@@ -357,7 +377,7 @@ bool UnaryOpNode::Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, c
     };
 
     if (func == "abs") {
-        call_math_func(static_cast<double(*)(double)>(::std::abs));
+        call_math_func(jit_abs);
         return true;
     }
     if (func == "sqrt") {
@@ -365,47 +385,36 @@ bool UnaryOpNode::Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, c
         return true;
     }
     if (func == "exp") {
-        call_math_func(static_cast<double(*)(double)>(::std::exp));
+        call_math_func(jit_exp);
         return true;
     }
     if (func == "log") {
-        call_math_func(static_cast<double(*)(double)>(::std::log10));
+        call_math_func(jit_log10);
         return true;
     }
     if (func == "ln") {
-        call_math_func(static_cast<double(*)(double)>(::std::log));
+        call_math_func(jit_log);
         return true;
     }
-// Trigonometric functions (assuming degrees for consistent behavior with Evaluate)
-auto convert_to_rad = [&]() {
-    asmjit::x86::Vec rad_v = cc.new_xmm();
-    cc.movsd(rad_v, cc.new_double_const(asmjit::ConstPoolScope::kLocal, D2R));
-    cc.mulsd(rad_v, arg_v);
-    return rad_v;
-};
 
-if (func == "sin") {
-    asmjit::x86::Vec rad = convert_to_rad();
-    asmjit::InvokeNode* invoke;
-    cc.invoke(asmjit::Out<asmjit::InvokeNode*>(invoke), asmjit::Imm((intptr_t)static_cast<double(*)(double)>(::std::sin)), asmjit::FuncSignature::build<double, double>(asmjit::CallConvId::kCDecl));
-    invoke->set_arg(0, rad);
-    invoke->set_ret(0, out);
-    return true;
-}
-
-    if (func == "cos") {
-        asmjit::x86::Vec rad = convert_to_rad();
+    if (func == "sin") {
         asmjit::InvokeNode* invoke;
-        cc.invoke(asmjit::Out<asmjit::InvokeNode*>(invoke), asmjit::Imm((intptr_t)static_cast<double(*)(double)>(::std::cos)), asmjit::FuncSignature::build<double, double>(asmjit::CallConvId::kCDecl));
-        invoke->set_arg(0, rad);
+        cc.invoke(asmjit::Out<asmjit::InvokeNode*>(invoke), asmjit::Imm((intptr_t)jit_sin), asmjit::FuncSignature::build<double, double>(asmjit::CallConvId::kCDecl));
+        invoke->set_arg(0, arg_v);
+        invoke->set_ret(0, out);
+        return true;
+    }
+    if (func == "cos") {
+        asmjit::InvokeNode* invoke;
+        cc.invoke(asmjit::Out<asmjit::InvokeNode*>(invoke), asmjit::Imm((intptr_t)jit_cos), asmjit::FuncSignature::build<double, double>(asmjit::CallConvId::kCDecl));
+        invoke->set_arg(0, arg_v);
         invoke->set_ret(0, out);
         return true;
     }
     if (func == "tan") {
-        asmjit::x86::Vec rad = convert_to_rad();
         asmjit::InvokeNode* invoke;
-        cc.invoke(asmjit::Out<asmjit::InvokeNode*>(invoke), asmjit::Imm((intptr_t)static_cast<double(*)(double)>(::std::tan)), asmjit::FuncSignature::build<double, double>(asmjit::CallConvId::kCDecl));
-        invoke->set_arg(0, rad);
+        cc.invoke(asmjit::Out<asmjit::InvokeNode*>(invoke), asmjit::Imm((intptr_t)jit_tan), asmjit::FuncSignature::build<double, double>(asmjit::CallConvId::kCDecl));
+        invoke->set_arg(0, arg_v);
         invoke->set_ret(0, out);
         return true;
     }
@@ -416,7 +425,7 @@ if (func == "sin") {
 ExprNode* UnaryOpNode::Derivative(Arena& arena, ::std::string_view var) const { return arena.template alloc<NumberNode>(0.0); }
 ExprNode* UnaryOpNode::Simplify(Arena& arena) const { return arena.template alloc<UnaryOpNode>(func, operand->Simplify(arena)); }
 
-EvalResult MultiArgFunctionNode::Evaluate(const ::std::unordered_map<::std::string, Number>& vars) const { return EvalResult::Failure(CalcErr::OperationNotFound); }
+EvalResult MultiArgFunctionNode::Evaluate(const StringUnorderedMap<Number>& vars) const { return EvalResult::Failure(CalcErr::OperationNotFound); }
 bool MultiArgFunctionNode::Compile(asmjit::x86::Compiler&, asmjit::x86::Gp vars_ptr, const ::std::unordered_map<::std::string, int>&, asmjit::x86::Vec&) const { return false; }
 ::std::string MultiArgFunctionNode::ToString(Precedence) const { return ::std::string(func) + "(...)"; }  
 ExprNode* MultiArgFunctionNode::Derivative(Arena& a, ::std::string_view v) const { return a.template alloc<NumberNode>(0.0); }
@@ -431,7 +440,6 @@ NodePtr AlgebraicParser::ParseExpression(::std::string_view input) {
 }
 EngineResult AlgebraicParser::ParseAndExecute(const ::std::string& input) { 
     ::std::string trimmed = Utils::Trim(input);
-    // std::cout << "[DEBUG] AlgebraicParser::ParseAndExecute: '" << trimmed << "'" << std::endl;
     if (trimmed.rfind("derive ", 0) == 0) {
         return HandleDerivative(trimmed);
     }
@@ -445,8 +453,6 @@ EngineResult AlgebraicParser::ParseAndExecute(const ::std::string& input) {
 }
 
 EngineResult AlgebraicParser::HandleLimit(const ::std::string& input) {
-    // Expected: limit(expr, var, point)
-    // Very simple implementation: evaluate expr at point
     auto start = input.find('(');
     auto end = input.rfind(')');
     if (start == ::std::string::npos || end == ::std::string::npos || end <= start) 
@@ -468,8 +474,6 @@ EngineResult AlgebraicParser::HandleLimit(const ::std::string& input) {
 }
 
 EngineResult AlgebraicParser::HandleIntegrate(const ::std::string& input) {
-    // Expected: integrate(expr, var, a, b)
-    // Simple implementation: numeric integration (Trapezoidal rule)
     auto start = input.find('(');
     auto end = input.rfind(')');
     if (start == ::std::string::npos || end == ::std::string::npos || end <= start) 
@@ -516,7 +520,6 @@ EngineResult AlgebraicParser::ParseAndExecuteWithContext(const ::std::string& in
 EngineResult AlgebraicParser::HandleQuadratic(const ::std::string& input) { return CreateErrorResult(CalcErr::OperationNotFound); }
 EngineResult AlgebraicParser::HandleNonLinearSolve(const ::std::string& input) { return CreateErrorResult(CalcErr::OperationNotFound); }
 EngineResult AlgebraicParser::HandleDerivative(const ::std::string& input) {
-    // Expected format: "derive expression"
     ::std::string target = input;
     if (target.rfind("derive ", 0) == 0) {
         target = target.substr(7);
@@ -525,7 +528,6 @@ EngineResult AlgebraicParser::HandleDerivative(const ::std::string& input) {
     auto root = ParseExpression(target);
     if (!root) return CreateErrorResult(CalcErr::ParseError);
     
-    // Default to differentiating with respect to 'x'
     auto deriv = root->Derivative(arena_, "x");
     if (!deriv) return CreateErrorResult(CalcErr::OperationNotFound);
     
@@ -537,5 +539,3 @@ EngineResult AlgebraicParser::SolveNonLinearSystem(const ::std::vector<::std::st
 EngineResult AlgebraicParser::HandlePlotFunction(const ::std::string& input) { return CreateErrorResult(CalcErr::OperationNotFound); }
 
 } // namespace AXIOM
-
-

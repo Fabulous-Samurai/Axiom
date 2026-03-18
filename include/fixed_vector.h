@@ -15,11 +15,11 @@ private:
 public:
     FixedVector() = default;
     
-    FixedVector(size_t count, const T& value = T()) {
+    explicit FixedVector(size_t count, const T& value = T()) {
         assign(count, value);
     }
     
-    FixedVector(std::initializer_list<T> init) {
+    explicit FixedVector(std::initializer_list<T> init) {
         for (const auto& item : init) {
             push_back(item);
         }

@@ -41,7 +41,7 @@
 #endif
 
 namespace {
-bool try_parse_mode(const std::string& raw_mode, AXIOM::CalculationMode& mode_out);
+bool try_parse_mode(std::string_view raw_mode, AXIOM::CalculationMode& mode_out);
 bool is_mode_supported(AXIOM::CalculationMode mode);
 int launch_gui_interface(bool prefer_qt = false, bool standard_gui = false);
 int print_result(const EngineResult& result, AXIOM::CalculationMode mode);
@@ -442,8 +442,8 @@ int run_benchmark_mode() {
 }
 
 namespace {
-bool try_parse_mode(const std::string& raw_mode, AXIOM::CalculationMode& mode_out) {
-    std::string mode = raw_mode;
+bool try_parse_mode(std::string_view raw_mode, AXIOM::CalculationMode& mode_out) {
+    std::string mode(raw_mode);
     std::transform(mode.begin(), mode.end(), mode.begin(), [](unsigned char c){ return static_cast<char>(std::tolower(c)); });
 
     if (mode == "algebraic" || mode == "alg") {

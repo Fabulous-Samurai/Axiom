@@ -141,17 +141,30 @@ HarmonicArena::~HarmonicArena() {
 
     std::unordered_set<ArenaBlock*> unique;
 
+    // We wrap inserts in try-catch because unordered_set::insert can throw bad_alloc.
+    // Escaping exceptions from a destructor is undefined behavior.
+    auto safe_insert = [&](ArenaBlock* b) {
+        if (!b) return;
+        try {
+            unique.insert(b);
+        } catch (...) {
+            // In a destructor, we can't do much if allocation fails.
+            // We'll just leak this specific block to avoid a crash.
+            std::cerr << "[CRITICAL] bad_alloc in HarmonicArena destructor while tracking blocks." << std::endl;
+        }
+    };
+
     if (ArenaBlock* cur = current_block_.exchange(nullptr, std::memory_order_acq_rel)) {
-        unique.insert(cur);
+        safe_insert(cur);
     }
     if (ArenaBlock* spare = spare_block_.exchange(nullptr, std::memory_order_acq_rel)) {
-        unique.insert(spare);
+        safe_insert(spare);
     }
 
     ArenaBlock* node = pool_head_.exchange(nullptr, std::memory_order_acq_rel);
     while (node) {
         ArenaBlock* next = node->next_in_pool.load(std::memory_order_relaxed);
-        unique.insert(node);
+        safe_insert(node);
         node = next;
     }
 

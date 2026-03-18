@@ -22,6 +22,21 @@ namespace AXIOM
     using Matrix = std::vector<std::vector<double>>;
     using Vector = std::vector<double>;
 
+    struct StringHash {
+        using is_transparent = void;
+        size_t operator()(std::string_view sv) const { return std::hash<std::string_view>{}(sv); }
+        size_t operator()(const std::string& s) const { return std::hash<std::string>{}(s); }
+        size_t operator()(const char* s) const { return std::hash<std::string_view>{}(s); }
+    };
+
+    struct StringEqual {
+        using is_transparent = void;
+        bool operator()(std::string_view lhs, std::string_view rhs) const { return lhs == rhs; }
+    };
+
+    template<typename T>
+    using StringUnorderedMap = std::unordered_map<std::string, T, StringHash, StringEqual>;
+
     // --- 2. MATH UTILITIES ---
     inline bool IsReal(const Number &num) { return std::holds_alternative<double>(num); }
     inline bool IsComplex(const Number &num) { return std::holds_alternative<std::complex<double>>(num); }

@@ -7,6 +7,8 @@
 #include <vector>
 #include <memory>
 
+#include "axiom_export.h"
+
 namespace AXIOM {
 
 /**
@@ -21,7 +23,7 @@ using JiffedFunc = double (*)(const double* vars);
  * 
  * Translates ExprNode AST into optimized x64 machine code using AsmJit.
  */
-class ZenithJIT {
+class AXIOM_EXPORT ZenithJIT {
 public:
     ZenithJIT();
     ~ZenithJIT();
