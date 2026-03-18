@@ -111,7 +111,8 @@ jobs:
           python -m pip install build scikit-build-core nanobind
           python -m build --wheel
       - name: "Upload Core Artifacts"
-        uses: actions/upload-artifact@604373da0ea81b20e9c956fa3dd21a7c21c56ad0 # v4.4.1
+        uses: actions/upload-artifact@4cec3d8aa043f85347ed81d0a446028d2b45ff60 # v4.6.1
         with:
           name: axiom-zenith-wheels
           path: dist/*.whl
+
