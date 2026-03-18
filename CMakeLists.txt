@@ -1,20 +1,23 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.14)
+
 if(POLICY CMP0135)
   cmake_policy(SET CMP0135 NEW)
 endif()
 
+# Project and Version
+project(axiom_engine VERSION 3.1.1)
+
 # FORCE NINJA GENERATOR - MAXIMUM SPEED BUILD SYSTEM
 set(CMAKE_GENERATOR "Ninja" CACHE STRING "Generator" FORCE)
-
-# Project and Version
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-project(axiom_engine VERSION 3.1.1)
 
 # Global Third-Party Configuration (MUST BE BEFORE FetchContent)
 set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
+
 if(APPLE)
     set(HAVE_PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
     set(BENCHMARK_HAS_PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
@@ -22,6 +25,13 @@ if(APPLE)
 endif()
 set(PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
 
+# Detect common CI environments
+set(AXIOM_RUNNING_IN_CI OFF)
+if(DEFINED ENV{GITHUB_ACTIONS} OR DEFINED ENV{CI})
+    set(AXIOM_RUNNING_IN_CI ON)
+endif()
+
+# Dependencies setup
 find_package(Threads REQUIRED)
 include(FetchContent)
 
@@ -31,98 +41,6 @@ FetchContent_Declare(
     URL https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
-FetchContent_MakeAvailable(eigen)
-include_directories(SYSTEM ${eigen_SOURCE_DIR})
-if(NOT TARGET Eigen3::Eigen)
-    add_library(Eigen3::Eigen INTERFACE IMPORTED)
-    target_link_libraries(Eigen3::Eigen INTERFACE Eigen)
-endif()
-
-
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# SIMD / AVX configuration
-option(AXIOM_ENABLE_SIMD_AVX2 "Enable AVX2 SIMD instructions" ON)
-option(AXIOM_ENABLE_SIMD_FMA "Enable FMA instructions" ON)
-option(AXIOM_ENABLE_SIMD_AVX512 "Enable AVX-512 SIMD instructions" OFF)
-option(AXIOM_ENABLE_SIMD_AVX_VNNI "Enable AVX-VNNI integer dot-product instructions (Alder Lake+/Zen4+)" OFF)
-
-# Auto-install optional Python GUI dependencies via pip
-option(AXIOM_AUTO_INSTALL_PYTHON_DEPS "Install optional Python GUI dependencies via pip" ON)
-option(AXIOM_ENABLE_EMBEDDED_PYTHON_ENGINE "Build embedded PythonEngine/PythonParser/PythonREPL sources" OFF)
-option(AXIOM_ENABLE_CXX20_MODULES "Enable incremental C++20 modules migration (experimental)" OFF)
-option(AXIOM_ENABLE_NANOBIND "Enable nanobind FFI integration" ON)
-option(AXIOM_ENABLE_DOXYGEN "Enable Doxygen API documentation target" OFF)
-option(AXIOM_ENABLE_HARMONIC_ARENA "Enable HarmonicArena lock-free fast-path backend" OFF)
-option(AXIOM_ENABLE_MOLD_LINKER "Try to use mold linker for faster incremental links" OFF)
-option(AXIOM_ENABLE_SIZE_GUARDS "Enable section GC and symbol stripping in Release" ON)
-option(AXIOM_AUTO_SIGN_WINDOWS "Automatically Authenticode-sign Windows binaries after build" ON)
-set(AXIOM_WINDOWS_SIGNING_SUBJECT "CN=AXIOM Local Dev Code Signing" CACHE STRING "Subject for local Windows code-signing certificate")
-set(AXIOM_PY_REQUIREMENTS "${CMAKE_SOURCE_DIR}/requirements-optional.txt")
-
-# Detect common CI environments and adjust unsafe, machine-specific defaults.
-set(AXIOM_RUNNING_IN_CI OFF)
-if(DEFINED ENV{GITHUB_ACTIONS})
-    if($ENV{GITHUB_ACTIONS})
-        set(AXIOM_RUNNING_IN_CI ON)
-    endif()
-elseif(DEFINED ENV{CI})
-    if($ENV{CI})
-        set(AXIOM_RUNNING_IN_CI ON)
-    endif()
-endif()
-
-# NINJA PARALLEL BUILD OPTIMIZATION
-include(ProcessorCount)
-ProcessorCount(CPU_COUNT)
-if(NOT CPU_COUNT EQUAL 0)
-    set(CMAKE_BUILD_PARALLEL_LEVEL ${CPU_COUNT})
-else()
-    set(CMAKE_BUILD_PARALLEL_LEVEL 8)
-endif()
-
-# NINJA-ONLY OPTIMIZATION FLAGS
-if(AXIOM_RUNNING_IN_CI)
-    set(CMAKE_CXX_FLAGS_RELEASE "-O0 -g -DNDEBUG -ffast-math " CACHE STRING "Release flags" FORCE)
-else()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O0 -g -march=native -mtune=native -DNDEBUG -ffast-math " CACHE STRING "Release flags" FORCE)
-endif()
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g" CACHE STRING "Debug flags" FORCE)
-
-# Force release mode for maximum speed
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
-endif()
-
-# Sanitizer Options
-option(AXIOM_ENABLE_ASAN "Enable AddressSanitizer" OFF)
-option(AXIOM_ENABLE_TSAN "Enable ThreadSanitizer" OFF)
-option(AXIOM_ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
-
-if(AXIOM_ENABLE_ASAN)
-    add_compile_options(-fsanitize=address)
-    add_link_options(-fsanitize=address)
-endif()
-if(AXIOM_ENABLE_TSAN)
-    add_compile_options(-fsanitize=thread)
-    add_link_options(-fsanitize=thread)
-endif()
-if(AXIOM_ENABLE_UBSAN)
-    add_compile_options(-fsanitize=undefined)
-    add_link_options(-fsanitize=undefined)
-endif()
-
-# GoogleTest / GoogleBenchmark integration helper
-option(AXIOM_ENABLE_GTEST "Enable GoogleTest integration" ON)
-option(AXIOM_ENABLE_BENCHMARK "Enable GoogleBenchmark integration" ON)
-include(cmake/enable_gtest_benchmark.cmake)
-
-# Find Python
-find_package(Python COMPONENTS Interpreter Development REQUIRED)
-
-# DEPENDENCIES (FetchContent)
-include(FetchContent)
 
 # AsmJit
 FetchContent_Declare(
@@ -153,13 +71,89 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
+FetchContent_MakeAvailable(eigen asmjit googletest googlebenchmark mimalloc)
+
+include_directories(SYSTEM ${eigen_SOURCE_DIR})
+if(NOT TARGET Eigen3::Eigen)
+    add_library(Eigen3::Eigen INTERFACE IMPORTED)
+    target_link_libraries(Eigen3::Eigen INTERFACE Eigen)
+endif()
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# SIMD / AVX configuration
+option(AXIOM_ENABLE_SIMD_AVX2 "Enable AVX2 SIMD instructions" ON)
+option(AXIOM_ENABLE_SIMD_FMA "Enable FMA instructions" ON)
+option(AXIOM_ENABLE_SIMD_AVX512 "Enable AVX-512 SIMD instructions" OFF)
+option(AXIOM_ENABLE_SIMD_AVX_VNNI "Enable AVX-VNNI integer dot-product instructions (Alder Lake+/Zen4+)" OFF)
+
+# Auto-install optional Python GUI dependencies via pip
+option(AXIOM_AUTO_INSTALL_PYTHON_DEPS "Install optional Python GUI dependencies via pip" ON)
+option(AXIOM_ENABLE_EMBEDDED_PYTHON_ENGINE "Build embedded PythonEngine/PythonParser/PythonREPL sources" OFF)
+option(AXIOM_ENABLE_CXX20_MODULES "Enable incremental C++20 modules migration (experimental)" OFF)
+option(AXIOM_ENABLE_NANOBIND "Enable nanobind FFI integration" ON)
+option(AXIOM_ENABLE_DOXYGEN "Enable Doxygen API documentation target" OFF)
+option(AXIOM_ENABLE_HARMONIC_ARENA "Enable HarmonicArena lock-free fast-path backend" OFF)
+option(AXIOM_ENABLE_MOLD_LINKER "Try to use mold linker for faster incremental links" OFF)
+option(AXIOM_ENABLE_SIZE_GUARDS "Enable section GC and symbol stripping in Release" ON)
+option(AXIOM_AUTO_SIGN_WINDOWS "Automatically Authenticode-sign Windows binaries after build" ON)
+set(AXIOM_WINDOWS_SIGNING_SUBJECT "CN=AXIOM Local Dev Code Signing" CACHE STRING "Subject for local Windows code-signing certificate")
+set(AXIOM_PY_REQUIREMENTS "${CMAKE_SOURCE_DIR}/requirements-optional.txt")
+
+# NINJA PARALLEL BUILD OPTIMIZATION
+include(ProcessorCount)
+ProcessorCount(CPU_COUNT)
+if(NOT CPU_COUNT EQUAL 0)
+    set(CMAKE_BUILD_PARALLEL_LEVEL ${CPU_COUNT})
+else()
+    set(CMAKE_BUILD_PARALLEL_LEVEL 8)
+endif()
+
+# NINJA-ONLY OPTIMIZATION FLAGS
+if(AXIOM_RUNNING_IN_CI)
+    set(CMAKE_CXX_FLAGS_RELEASE "-O0 -g -DNDEBUG -ffast-math" CACHE STRING "Release flags" FORCE)
+else()
+    set(CMAKE_CXX_FLAGS_RELEASE "-O0 -g -march=native -mtune=native -DNDEBUG -ffast-math" CACHE STRING "Release flags" FORCE)
+endif()
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g" CACHE STRING "Debug flags" FORCE)
+
+# Force default build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
+
+# Sanitizer Options
+option(AXIOM_ENABLE_ASAN "Enable AddressSanitizer" OFF)
+option(AXIOM_ENABLE_TSAN "Enable ThreadSanitizer" OFF)
+option(AXIOM_ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer" OFF)
+
+if(AXIOM_ENABLE_ASAN)
+    add_compile_options(-fsanitize=address)
+    add_link_options(-fsanitize=address)
+endif()
+if(AXIOM_ENABLE_TSAN)
+    add_compile_options(-fsanitize=thread)
+    add_link_options(-fsanitize=thread)
+endif()
+if(AXIOM_ENABLE_UBSAN)
+    add_compile_options(-fsanitize=undefined)
+    add_link_options(-fsanitize=undefined)
+endif()
+
+# GoogleTest / GoogleBenchmark integration helper
+option(AXIOM_ENABLE_GTEST "Enable GoogleTest integration" ON)
+option(AXIOM_ENABLE_BENCHMARK "Enable GoogleBenchmark integration" ON)
+include(cmake/enable_gtest_benchmark.cmake)
+
+# Find Python
+find_package(Python COMPONENTS Interpreter Development REQUIRED)
+
 # Enforce Zero-Exception Policy
 add_compile_definitions(
     GTEST_HAS_EXCEPTIONS=0
     BENCHMARK_HAS_EXCEPTIONS=0
 )
-
-FetchContent_MakeAvailable(asmjit googletest googlebenchmark mimalloc)
 
 # Core library sources
 set(AXIOM_CORE_SOURCES
