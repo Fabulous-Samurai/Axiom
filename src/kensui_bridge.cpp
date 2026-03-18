@@ -13,17 +13,45 @@ namespace AXIOM {
 AXIOM_EXPORT uintptr_t AxiomJit_GetDisassembly(const uint8_t* code_ptr, size_t size, char* out_preallocated_buffer, size_t max_len) {
     if (!out_preallocated_buffer || max_len == 0) return 0;
 
-    int offset = snprintf(out_preallocated_buffer, max_len, "JIT_DISASM (size=%zu): ", size);
-    if (offset < 0) return 0;
+    // Safe prefix copy
+    const char* prefix = "JIT_DISASM (size=";
+    size_t offset = 0;
+    while (prefix[offset] != '\0' && offset < max_len - 1) {
+        out_preallocated_buffer[offset] = prefix[offset];
+        offset++;
+    }
     
-    for (size_t i = 0; i < std::min(size, (size_t)16); ++i) {
-        if ((size_t)offset >= max_len - 1) break;
-        offset += snprintf(out_preallocated_buffer + offset, max_len - (size_t)offset, "%02X ", code_ptr[i]);
+    // Simple integer to string conversion for size (avoid snprintf if possible)
+    char size_buf[32];
+    int size_len = std::snprintf(size_buf, sizeof(size_buf), "%zu", size);
+    if (size_len > 0) {
+        for (int j = 0; j < size_len && offset < max_len - 1; ++j) {
+            out_preallocated_buffer[offset++] = size_buf[j];
+        }
     }
 
-    if (size > 16 && (size_t)offset < max_len - 1) {
-        offset += snprintf(out_preallocated_buffer + offset, max_len - (size_t)offset, "...");
+    const char* suffix = "): ";
+    int sj = 0;
+    while (suffix[sj] != '\0' && offset < max_len - 1) {
+        out_preallocated_buffer[offset++] = suffix[sj++];
     }
+    out_preallocated_buffer[offset] = '\0';
+    
+    for (size_t i = 0; i < std::min(size, (size_t)16); ++i) {
+        if (offset + 3 >= max_len) break;
+        // %02X replacement
+        static const char hex_chars[] = "0123456789ABCDEF";
+        out_preallocated_buffer[offset++] = hex_chars[(code_ptr[i] >> 4) & 0xF];
+        out_preallocated_buffer[offset++] = hex_chars[code_ptr[i] & 0xF];
+        out_preallocated_buffer[offset++] = ' ';
+    }
+
+    if (size > 16 && offset + 3 < max_len) {
+        out_preallocated_buffer[offset++] = '.';
+        out_preallocated_buffer[offset++] = '.';
+        out_preallocated_buffer[offset++] = '.';
+    }
+    out_preallocated_buffer[offset] = '\0';
 
     return (uintptr_t)offset;
 }
