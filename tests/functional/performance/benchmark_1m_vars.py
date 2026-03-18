@@ -396,7 +396,11 @@ def bench_cache_locality(store: HeadlessWorkspaceStore) -> dict:
 
     # ── tier key lists ───────────────────────────────────────────────────────
     hot_keys  = [f"var_{i:07d}" for i in range(LOCALITY_HOT_KEYS)] * LOCALITY_REPEATS
-    secrets.SystemRandom().shuffle(hot_keys)
+    
+    # Secure Fisher-Yates shuffle using secrets.randbelow
+    for i in range(len(hot_keys) - 1, 0, -1):
+        j = secrets.randbelow(i + 1)
+        hot_keys[i], hot_keys[j] = hot_keys[j], hot_keys[i]
 
     # keys in insertion order (warm — prefetcher-friendly table walk)
     warm_keys = [f"var_{i:07d}" for i in range(LOCALITY_WARM_N)]
