@@ -149,6 +149,44 @@ AXIOM_FORCE_INLINE float normalize_fma3(
 #endif // AVX2 + FMA
 
 // ============================================================================
+// NEON Kernel — 4× float32 dot-product using ARM NEON
+// ============================================================================
+#if defined(__aarch64__)
+
+/**
+ * @brief Vectorized dot-product using NEON vfmaq_f32.
+ */
+AXIOM_FORCE_INLINE float evaluate_heuristic_neon(
+    const NodeFeatureVecF32& node,
+    const TargetProfileF32& profile) noexcept
+{
+    // NEON registers are 128-bit, so we process 4 floats at a time.
+    // For 8 floats, we do two 4-float passes.
+    float32x4_t vnode1 = vld1q_f32(&node.data[0]);
+    float32x4_t vweights1 = vld1q_f32(&profile.weights[0]);
+    float32x4_t vprod1 = vmulq_f32(vnode1, vweights1);
+
+    float32x4_t vnode2 = vld1q_f32(&node.data[4]);
+    float32x4_t vweights2 = vld1q_f32(&profile.weights[4]);
+    // vfmaq_f32: res = a + (b * c)
+    float32x4_t vfinal = vfmaq_f32(vprod1, vnode2, vweights2);
+
+    // Horizontal sum of the 4 floats in vfinal
+    return vaddvq_f32(vfinal);
+}
+
+/**
+ * @brief NEON normalization: score = score * scale + bias
+ */
+AXIOM_FORCE_INLINE float normalize_neon(
+    float score, float scale, float bias) noexcept
+{
+    return score * scale + bias;
+}
+
+#endif // __aarch64__
+
+// ============================================================================
 // AVX-VNNI Kernel — 32× int8 multiply-accumulate in one instruction
 // ============================================================================
 #if defined(AXIOM_SIMD_AVX_VNNI_ENABLED)
@@ -212,14 +250,18 @@ public:
 
 #if defined(AXIOM_SIMD_AVX2_ENABLED) && defined(AXIOM_SIMD_FMA_ENABLED)
         score = evaluate_heuristic_fma3(node, profile);
+#elif defined(__aarch64__)
+        score = evaluate_heuristic_neon(node, profile);
 #else
         score = dot_scalar_f32(node, profile);
 #endif
 
-        // Dog threshold: normalize via FMA3 if score exceeds threshold
+        // Dog threshold: normalize via FMA3/NEON if score exceeds threshold
         if (score > dog_threshold) [[unlikely]] {
 #if defined(AXIOM_SIMD_AVX2_ENABLED) && defined(AXIOM_SIMD_FMA_ENABLED)
             score = normalize_fma3(score, kNormScale, kNormBias);
+#elif defined(__aarch64__)
+            score = normalize_neon(score, kNormScale, kNormBias);
 #else
             score = score * kNormScale + kNormBias;
 #endif
