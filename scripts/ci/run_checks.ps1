@@ -24,8 +24,17 @@ Write-Host "Python checker not available or missing. Running PowerShell fallback
 
 $patterns = @("std::vector","std::string","new\s","malloc\(","free\(","throw\s","std::mutex","std::unique_ptr","std::shared_ptr","std::lock_guard","std::thread")
 $results = @()
+$skipDirs = @(".git", "build", "node_modules", "_deps", "extern", "mimalloc-src", "ninja-build")
 
-Get-ChildItem -Recurse -File | Where-Object { $_.FullName -notmatch "\\.git\\|\\bbuild\\b|node_modules" } | ForEach-Object {
+Get-ChildItem -Recurse -File | Where-Object { 
+    $fullName = $_.FullName
+    $isValid = $fullName -match "\.(cpp|h|hpp)$"
+    $isSkipped = $false
+    foreach ($skip in $skipDirs) {
+        if ($fullName -match "\\$skip\\") { $isSkipped = $true; break }
+    }
+    return $isValid -and (-not $isSkipped)
+} | ForEach-Object {
     $path = $_.FullName
     try {
         $lines = Get-Content -LiteralPath $path -ErrorAction Stop

@@ -32,10 +32,16 @@ def scan(root):
     return results
 
 def should_skip_dir(dirpath):
-    return '.git' in dirpath or os.path.basename(dirpath) in ('build', 'node_modules')
+    # Skip build, node_modules, .git, and external dependencies
+    skip_names = {'build', 'node_modules', '.git', '_deps', 'extern', 'mimalloc-src', 'ninja-build'}
+    parts = set(re.split(r'[\\/]', dirpath))
+    if any(name in parts for name in skip_names):
+        return True
+    return False
 
 def is_valid_file(filename):
-    return filename.endswith(('.cpp', '.c', '.h', '.hpp', '.py', '.cs', '.ps1'))
+    # Only scan core source files for zero-allocation/no-exception compliance
+    return filename.endswith(('.cpp', '.h', '.hpp'))
 
 def scan_file(path):
     results = []

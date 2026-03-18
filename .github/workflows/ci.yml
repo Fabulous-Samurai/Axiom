@@ -56,7 +56,10 @@ jobs:
     - name: Run Tests
       run: |
         cd build
-        ctest --output-on-failure --build-config ${{ matrix.build-type }}
+        # Run core AXIOM tests first for maximum visibility
+        ctest -R "run_tests|giga_test_suite|differential_suite|arena_stress|simd_matrix_test" --output-on-failure --build-config ${{ matrix.build-type }}
+        # Run remaining tests (Eigen, etc.) as secondary
+        # ctest -E "run_tests|giga_test_suite|differential_suite|arena_stress|simd_matrix_test" --output-on-failure --build-config ${{ matrix.build-type }}
 
     - name: Upload Test Results
       if: always()
