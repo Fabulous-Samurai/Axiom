@@ -139,6 +139,13 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
+# GoogleBenchmark
+FetchContent_Declare(
+    googlebenchmark
+    URL https://github.com/google/benchmark/archive/refs/tags/v1.9.1.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+
 # Mimalloc
 FetchContent_Declare(
     mimalloc
@@ -246,9 +253,18 @@ add_test(NAME differential_suite COMMAND differential_suite)
 add_test(NAME arena_stress COMMAND arena_stress)
 add_test(NAME simd_matrix_test COMMAND simd_matrix_test)
 
-# SIMD flags (simplified)
+# SIMD flags and definitions
 if(AXIOM_ENABLE_SIMD_AVX2)
-    add_compile_options(-mavx2 -mfma)
+    if(MSVC)
+        add_compile_options(/arch:AVX2)
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
+        add_compile_options(-mavx2 -mfma)
+        add_compile_definitions(AXIOM_SIMD_AVX2_ENABLED AXIOM_SIMD_FMA_ENABLED)
+    endif()
+endif()
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+    add_compile_definitions(AXIOM_SIMD_NEON_ENABLED)
 endif()
 
 # Include asmjit headers globally
