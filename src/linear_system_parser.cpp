@@ -751,10 +751,9 @@ namespace AXIOM
             }
             else if (token.type == TokenType::Number)
             {
-                double val = 0.0;
-                auto [ptr, ec] = std::from_chars(token.value.data(), token.value.data() + token.value.size(), val);
-                if (ec == std::errc()) {
-                    current_row.emplace_back(val);
+                auto val = Utils::FastParseDouble(token.value);
+                if (val) {
+                    current_row.emplace_back(*val);
                 }
             }
             else if (token.type == TokenType::Semicolon || token.type == TokenType::RBracket)

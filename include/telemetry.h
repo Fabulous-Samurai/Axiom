@@ -83,7 +83,7 @@ public:
         auto hw = PMUOrchestrator::instance().ReadContext();
         
         // Final serialization before timestamp
-        _mm_lfence();
+        AXIOM_LFENCE;
         rec.timestamp = AXIOM_RDTSC;
         
         rec.hw_instructions = hw.instructions;
@@ -110,7 +110,12 @@ private:
     AXIOM_ALIGN_CACHE std::atomic<size_t> tail_{0};
     
     std::atomic<bool> running_{false};
+#if defined(__apple_build_version__)
+    std::thread scribe_thread_;
+    std::atomic<bool> scribe_stop_{false};
+#else
     std::jthread scribe_thread_;
+#endif
     std::string log_file_path_;
     std::atomic<uint64_t> dropped_records_{0};
 };

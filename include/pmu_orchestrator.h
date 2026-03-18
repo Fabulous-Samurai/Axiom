@@ -44,9 +44,7 @@ public:
         PMUMetrics metrics;
         
         // Serialize pipeline
-        #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
-            _mm_lfence();
-        #endif
+        AXIOM_LFENCE;
         
         #if defined(__linux__)
             // On Linux, indices are determined by mmap'd perf_event page.

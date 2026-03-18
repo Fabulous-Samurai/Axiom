@@ -25,10 +25,15 @@
     #if defined(__i386__) || defined(__x86_64__)
         #define AXIOM_RDTSC ({ uint32_t lo, hi; __asm__ volatile("rdtsc" : "=a"(lo), "=d"(hi)); ((uint64_t)hi << 32) | lo; })
         #define AXIOM_YIELD_PROCESSOR __builtin_ia32_pause()
+        #define AXIOM_LFENCE __asm__ volatile("lfence" ::: "memory")
     #elif defined(__aarch64__)
+        #define AXIOM_RDTSC ({ uint64_t val; __asm__ volatile("mrs %0, cntvct_el0" : "=r"(val)); val; })
         #define AXIOM_YIELD_PROCESSOR __asm__ volatile("yield" ::: "memory")
+        #define AXIOM_LFENCE __asm__ volatile("isb sy" ::: "memory")
     #else
+        #define AXIOM_RDTSC 0
         #define AXIOM_YIELD_PROCESSOR
+        #define AXIOM_LFENCE __asm__ volatile("" ::: "memory")
     #endif
 #else
     #define AXIOM_FORCE_INLINE inline

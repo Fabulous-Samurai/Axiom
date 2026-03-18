@@ -193,7 +193,7 @@ target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
 target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
 target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit Threads::Threads)
 if(WIN32)
-    target_link_libraries(axiom_engine PRIVATE bcrypt)
+    target_link_libraries(axiom_engine PUBLIC bcrypt)
 endif()
 target_include_directories(axiom_engine PRIVATE ${Python_INCLUDE_DIRS})
 
