@@ -257,10 +257,10 @@ target_link_libraries(ingress_bench PRIVATE axiom_engine benchmark::benchmark_ma
 
 # New Mantis/Pluto Tests
 add_executable(test_ida_star tests/unit/test_ida_star.cpp)
-target_link_libraries(test_ida_star PRIVATE axiom_engine GTest::gtest_main)
+target_link_libraries(test_ida_star PRIVATE axiom_engine Threads::Threads asmjit::asmjit Python::Python GTest::gtest_main)
 
 add_executable(test_pluto_core tests/unit/test_pluto_core.cpp)
-target_link_libraries(test_pluto_core PRIVATE axiom_engine GTest::gtest_main)
+target_link_libraries(test_pluto_core PRIVATE axiom_engine Threads::Threads asmjit::asmjit Python::Python GTest::gtest_main)
 
 # Register with CTest
 # Register with CTest
