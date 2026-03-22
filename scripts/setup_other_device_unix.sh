@@ -22,9 +22,20 @@ echo "[AXIOM] Probing Silicon Architecture..."
 # In CI environments, we use more conservative flags to ensure compatibility
 if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
     echo "[AXIOM] CI Environment Detected. Using conservative architecture flags."
-    ARCH_FLAG="x86-64"
-    if [[ "$(uname -m)" == "arm64" || "$(uname -m)" == "aarch64" ]]; then
-        ARCH_FLAG="armv8-a"
+    if [[ "$(uname)" == "Darwin" ]]; then
+        # macOS Clang uses -arch
+        if [[ "$(uname -m)" == "arm64" ]]; then
+            ARCH_FLAG="" # Let compiler decide for Apple Silicon
+            EXTRA_CXX_FLAGS="$EXTRA_CXX_FLAGS -arch arm64"
+        else
+            ARCH_FLAG="x86-64"
+        fi
+    else
+        # Linux GCC/Clang
+        ARCH_FLAG="x86-64"
+        if [[ "$(uname -m)" == "arm64" || "$(uname -m)" == "aarch64" ]]; then
+            ARCH_FLAG="armv8-a"
+        fi
     fi
 else
     if [[ $CPU_FEATURES == *"avx512"* ]]; then
@@ -61,13 +72,17 @@ if [ "$BUILD_TYPE" == "Debug" ]; then
     LTO_FLAG=""
 fi
 
-# Respect environment CXXFLAGS and LDFLAGS if present
 EXTRA_CXX_FLAGS=${CXXFLAGS:-""}
 EXTRA_LD_FLAGS=${LDFLAGS:-""}
 
+MARCH_FLAGS=""
+if [[ -n "$ARCH_FLAG" ]]; then
+    MARCH_FLAGS="-march=$ARCH_FLAG -mtune=$ARCH_FLAG"
+fi
+
 cmake -G Ninja .. \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-    -DCMAKE_CXX_FLAGS="$EXTRA_CXX_FLAGS -march=$ARCH_FLAG -mtune=$ARCH_FLAG $OPT_FLAG $LTO_FLAG" \
+    -DCMAKE_CXX_FLAGS="$EXTRA_CXX_FLAGS $MARCH_FLAGS $OPT_FLAG $LTO_FLAG" \
     -DCMAKE_EXE_LINKER_FLAGS="$EXTRA_LD_FLAGS" \
     -DCMAKE_SHARED_LINKER_FLAGS="$EXTRA_LD_FLAGS" \
     -DAXIOM_ENABLE_TELEMETRY=ON
