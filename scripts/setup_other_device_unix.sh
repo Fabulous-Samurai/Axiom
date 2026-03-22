@@ -46,8 +46,10 @@ mkdir -p build && cd build
 # Allow dynamic Build Type for CI/CD flexibility
 BUILD_TYPE=${BUILD_TYPE:-Release}
 OPT_FLAG="-O3"
+LTO_FLAG="-flto"
 if [ "$BUILD_TYPE" == "Debug" ]; then
     OPT_FLAG="-Og -g"
+    LTO_FLAG=""
 fi
 
 # Respect environment CXXFLAGS and LDFLAGS if present
@@ -56,7 +58,7 @@ EXTRA_LD_FLAGS=${LDFLAGS:-""}
 
 cmake -G Ninja .. \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-    -DCMAKE_CXX_FLAGS="$EXTRA_CXX_FLAGS -march=$ARCH_FLAG -mtune=$ARCH_FLAG $OPT_FLAG -flto" \
+    -DCMAKE_CXX_FLAGS="$EXTRA_CXX_FLAGS -march=$ARCH_FLAG -mtune=$ARCH_FLAG $OPT_FLAG $LTO_FLAG" \
     -DCMAKE_EXE_LINKER_FLAGS="$EXTRA_LD_FLAGS" \
     -DCMAKE_SHARED_LINKER_FLAGS="$EXTRA_LD_FLAGS" \
     -DAXIOM_ENABLE_TELEMETRY=ON
