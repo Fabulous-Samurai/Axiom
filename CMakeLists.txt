@@ -73,6 +73,10 @@ FetchContent_Declare(
     URL https://github.com/microsoft/mimalloc/archive/refs/tags/v2.0.9.zip
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
+set(MI_OVERRIDE ON CACHE BOOL "" FORCE)
+set(MI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(MI_BUILD_OBJECT OFF CACHE BOOL "" FORCE)
+set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(eigen asmjit googletest googlebenchmark mimalloc)
 
@@ -208,7 +212,7 @@ set(AXIOM_CORE_SOURCES
 add_library(axiom_engine SHARED ${AXIOM_CORE_SOURCES})
 target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
 target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
-target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit Threads::Threads)
+target_link_libraries(axiom_engine PUBLIC Python::Python mimalloc PRIVATE asmjit::asmjit Threads::Threads)
 if(WIN32)
     target_link_libraries(axiom_engine PUBLIC bcrypt)
 endif()
