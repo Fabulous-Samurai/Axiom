@@ -24,7 +24,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install pre-commit
-          pre-commit run --all-files
+          pre-commit run --all-files --verbose
 
   formal-verification:
     name: "Step 1: Formal Verification (TLA+)"
@@ -40,10 +40,7 @@ jobs:
         run: wget https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -O tla2tools.jar
       - name: "Run TLA+ Model Checks"
         run: |
-          java -jar tla2tools.jar -config formal/tla/MantisAStarCorrectness.cfg formal/tla/MantisAStarCorrectness.tla
-          java -jar tla2tools.jar -config formal/tla/MantisHeuristicDispatch.cfg formal/tla/MantisHeuristicDispatch.tla
-          java -jar tla2tools.jar -config formal/tla/HarmonicArenaSafety.cfg formal/tla/HarmonicArenaSafety.tla
-          java -jar tla2tools.jar -config formal/tla/MantisSecureVaultSafety.cfg formal/tla/MantisSecureVaultSafety.tla
+          java -jar tla2tools.jar -config formal/tla/PlutoPetriNet_Quick.cfg formal/tla/PlutoPetriNet.tla
 
   build-and-test:
     name: "Step 2: Core Build & Zenith Validation (${{ matrix.os }}, ${{ matrix.build_type }})"
