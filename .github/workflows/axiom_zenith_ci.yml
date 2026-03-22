@@ -46,8 +46,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: "Install System Dependencies"
-        run: sudo apt-get update && sudo apt-get install -y ninja-build valgrind libnuma-dev
+        run: sudo apt-get update && sudo apt-get install -y ninja-build valgrind python3-dev
       - name: "Direct CMake Build"
         run: |
           mkdir -p build && cd build
@@ -71,6 +75,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: "Download Artifacts"
         uses: actions/download-artifact@v4
         with:
@@ -87,6 +95,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: "Install Ninja"
         run: choco install ninja
       - name: "Build"
@@ -110,6 +122,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: "Download Artifacts"
         uses: actions/download-artifact@v4
         with:
