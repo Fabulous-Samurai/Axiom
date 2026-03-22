@@ -73,10 +73,6 @@ FetchContent_Declare(
     URL https://github.com/microsoft/mimalloc/archive/refs/tags/v2.0.9.zip
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
-set(MI_OVERRIDE ON CACHE BOOL "" FORCE)
-set(MI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
-set(MI_BUILD_OBJECT OFF CACHE BOOL "" FORCE)
-set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(eigen asmjit googletest googlebenchmark mimalloc)
 
@@ -212,7 +208,7 @@ set(AXIOM_CORE_SOURCES
 add_library(axiom_engine SHARED ${AXIOM_CORE_SOURCES})
 target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
 target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
-target_link_libraries(axiom_engine PUBLIC Python::Python mimalloc PRIVATE asmjit::asmjit Threads::Threads)
+target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit Threads::Threads)
 if(WIN32)
     target_link_libraries(axiom_engine PUBLIC bcrypt)
 endif()
@@ -261,12 +257,11 @@ target_link_libraries(ingress_bench PRIVATE axiom_engine benchmark::benchmark_ma
 
 # New Mantis/Pluto Tests
 add_executable(test_ida_star tests/unit/test_ida_star.cpp)
-target_link_libraries(test_ida_star PRIVATE axiom_engine Threads::Threads asmjit::asmjit Python::Python GTest::gtest_main)
+target_link_libraries(test_ida_star PRIVATE axiom_engine GTest::gtest_main)
 
 add_executable(test_pluto_core tests/unit/test_pluto_core.cpp)
-target_link_libraries(test_pluto_core PRIVATE axiom_engine Threads::Threads asmjit::asmjit Python::Python GTest::gtest_main)
+target_link_libraries(test_pluto_core PRIVATE axiom_engine GTest::gtest_main)
 
-# Register with CTest
 # Register with CTest
 add_test(NAME run_tests COMMAND run_tests)
 add_test(NAME test_ida_star COMMAND test_ida_star)
@@ -281,4 +276,3 @@ add_test(NAME simd_matrix_test COMMAND simd_matrix_test)
 
 # Include asmjit headers globally
 include_directories(SYSTEM "${asmjit_SOURCE_DIR}")
-
