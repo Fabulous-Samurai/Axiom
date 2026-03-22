@@ -16,10 +16,12 @@
 #define MANTIS_SOLVER_H
 
 #include "mantis_heuristic.h"
+#include "axiom_export.h"
 #include <array>
 #include <cstdint>
 #include <cstddef>
 #include <limits>
+#include <cmath>
 
 namespace AXIOM {
 namespace Mantis {
@@ -104,20 +106,20 @@ private:
 };
 
 // ============================================================================
-// AStarSolver — zero-allocation A* with Mantis heuristic
+// IDAStarSolver — zero-allocation IDDFS+A* with Binary Scaling
 // ============================================================================
-class AStarSolver {
+class AXIOM_EXPORT IDAStarSolver {
 public:
     struct SearchResult {
-        bool     found     = false;
-        uint32_t goal_id   = UINT32_MAX;
-        float    total_cost = 0.0f;
-        uint32_t nodes_evaluated = 0;
+        bool     found             = false;
+        uint32_t goal_id           = UINT32_MAX;
+        float    total_cost        = 0.0f;
+        uint32_t nodes_evaluated   = 0;
+        uint32_t iterations        = 0;
     };
 
     /**
      * @brief Set the target profile that the heuristic matches against.
-     * Must be called before solve().
      */
     void set_target_profile(const TargetProfileF32& profile) noexcept {
         target_profile_ = profile;
@@ -131,24 +133,26 @@ public:
     }
 
     /**
-     * @brief Evaluate the heuristic for a single node.
-     * This is the HOT PATH — must be < 5ns.
+     * @brief Binary Up/Down Scaling.
+     * @param exponent Power of 2 to scale the heuristic (2^exp).
+     * Positive = Up-scaling (more conservative/precise).
+     * Negative = Down-scaling (faster/greedier).
      */
-    AXIOM_FORCE_INLINE float Heuristic(const AStarNode& node) const noexcept {
-        return MantisHeuristic::evaluate_f32(
-            node.features, target_profile_, dog_threshold_);
+    void set_binary_scaling(int32_t exponent) noexcept {
+        scaling_factor_ = std::pow(2.0f, static_cast<float>(exponent));
     }
 
     /**
-     * @brief Run A* search over the node array.
-     * @param nodes     Pointer to node storage (caller-owned)
-     * @param num_nodes Number of nodes in the graph
-     * @param start_id  Starting node ID
-     * @param goal_id   Goal node ID
-     * @param adjacency Function that fills neighbor IDs for a node
-     *
-     * Uses thread_local scratch buffers internally — fully reentrant
-     * across threads but NOT recursion-safe within the same thread.
+     * @brief Evaluate the heuristic with binary scaling.
+     */
+    AXIOM_FORCE_INLINE float Heuristic(const AStarNode& node) const noexcept {
+        float raw_h = MantisHeuristic::evaluate_f32(
+            node.features, target_profile_, dog_threshold_);
+        return raw_h * scaling_factor_;
+    }
+
+    /**
+     * @brief Run IDA* search (Iterative Deepening A*).
      */
     template<typename AdjacencyFn>
     SearchResult solve(
@@ -158,72 +162,99 @@ public:
         uint32_t goal_id,
         AdjacencyFn&& get_neighbors) noexcept
     {
-        if (num_nodes == 0 || num_nodes > kMaxNodes) [[unlikely]] {
+        if (num_nodes == 0 || num_nodes > kMaxNodes || start_id >= num_nodes) [[unlikely]] {
             return {};
         }
 
-        // Reset node states
-        for (uint32_t i = 0; i < num_nodes; ++i) {
-            nodes[i].g_cost = std::numeric_limits<float>::max();
-            nodes[i].f_cost = std::numeric_limits<float>::max();
-            nodes[i].parent_id = UINT32_MAX;
-            nodes[i].in_closed = false;
-        }
-
-        // thread_local scratch: neighbor buffer
-        thread_local std::array<uint32_t, 64> neighbor_buf{};
-        thread_local FixedMinHeap open_set{};
-
-        // Clear open set
-        open_set = FixedMinHeap{};
-
-        // Initialize start node
-        nodes[start_id].g_cost = 0.0f;
-        nodes[start_id].h_cost = Heuristic(nodes[start_id]);
-        nodes[start_id].f_cost = nodes[start_id].h_cost;
-        open_set.push(start_id, nodes[start_id].f_cost);
-
         SearchResult result{};
+        float threshold = Heuristic(nodes[start_id]);
 
-        while (!open_set.empty()) {
-            const uint32_t current = open_set.pop();
-            ++result.nodes_evaluated;
+        while (true) {
+            ++result.iterations;
+            
+            // Reset node visit states for this DFS pass
+            for (uint32_t i = 0; i < num_nodes; ++i) {
+                nodes[i].in_closed = false;
+            }
 
-            if (current == goal_id) {
+            float next_threshold = std::numeric_limits<float>::max();
+            bool found = search(nodes, start_id, goal_id, 0.0f, threshold, 
+                                next_threshold, result, get_neighbors, num_nodes);
+
+            if (found) {
                 result.found = true;
                 result.goal_id = goal_id;
                 result.total_cost = nodes[goal_id].g_cost;
                 return result;
             }
 
-            if (nodes[current].in_closed) continue;
-            nodes[current].in_closed = true;
-
-            // Get neighbors — caller fills neighbor_buf, returns count
-            const uint32_t n_count = get_neighbors(
-                current, neighbor_buf.data(), neighbor_buf.size());
-
-            for (uint32_t i = 0; i < n_count; ++i) {
-                const uint32_t neighbor = neighbor_buf[i];
-                if (neighbor >= num_nodes || nodes[neighbor].in_closed) continue;
-
-                const float tentative_g = nodes[current].g_cost + 1.0f; // Unit cost
-                if (tentative_g < nodes[neighbor].g_cost) {
-                    nodes[neighbor].parent_id = current;
-                    nodes[neighbor].g_cost = tentative_g;
-                    nodes[neighbor].h_cost = Heuristic(nodes[neighbor]);
-                    nodes[neighbor].f_cost = tentative_g + nodes[neighbor].h_cost;
-                    open_set.push(neighbor, nodes[neighbor].f_cost);
-                }
+            if (next_threshold == std::numeric_limits<float>::max()) {
+                return result; // No path exists
             }
+            
+            threshold = next_threshold;
+            
+            // Safety break to prevent infinite loops in malformed graphs
+            if (result.iterations > 1024) break;
         }
 
-        return result; // Not found
+        return result;
     }
 
 private:
+    /**
+     * @brief Recursive DFS search for IDA*.
+     */
+    template<typename AdjacencyFn>
+    bool search(
+        AStarNode* nodes,
+        uint32_t current_id,
+        uint32_t goal_id,
+        float g_cost,
+        float threshold,
+        float& next_threshold,
+        SearchResult& result,
+        AdjacencyFn& get_neighbors,
+        uint32_t num_nodes) noexcept
+    {
+        ++result.nodes_evaluated;
+        const float f_cost = g_cost + Heuristic(nodes[current_id]);
+
+        if (f_cost > threshold) {
+            if (f_cost < next_threshold) next_threshold = f_cost;
+            return false;
+        }
+
+        if (current_id == goal_id) {
+            nodes[goal_id].g_cost = g_cost;
+            return true;
+        }
+
+        nodes[current_id].in_closed = true;
+
+        thread_local std::array<uint32_t, 64> neighbor_buf{};
+        const uint32_t n_count = get_neighbors(
+            current_id, neighbor_buf.data(), neighbor_buf.size());
+
+        for (uint32_t i = 0; i < n_count; ++i) {
+            const uint32_t neighbor = neighbor_buf[i];
+            if (neighbor >= num_nodes || nodes[neighbor].in_closed) continue;
+
+            // IDA* depth-first branch
+            if (search(nodes, neighbor, goal_id, g_cost + 1.0f, threshold, 
+                       next_threshold, result, get_neighbors, num_nodes)) {
+                nodes[neighbor].parent_id = current_id;
+                return true;
+            }
+        }
+
+        nodes[current_id].in_closed = false; // Backtrack
+        return false;
+    }
+
     TargetProfileF32 target_profile_{};
-    float dog_threshold_ = kDogThreshold;
+    float dog_threshold_  = kDogThreshold;
+    float scaling_factor_ = 1.0f;
 };
 
 } // namespace Mantis
