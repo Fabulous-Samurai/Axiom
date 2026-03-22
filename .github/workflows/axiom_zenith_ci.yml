@@ -41,7 +41,7 @@ jobs:
       - name: "Run TLA+ Model Checks"
         run: |
           cd formal/tla
-          java -cp ../../tla2tools.jar tlc2.TLC -config PlutoPetriNet_Quick.cfg PlutoPetriNet.tla
+          java -jar ../../tla2tools.jar -config PlutoPetriNet_Quick.cfg PlutoPetriNet.tla
 
   build-and-test:
     name: "Step 2: Core Build & Zenith Validation (${{ matrix.os }}, ${{ matrix.build_type }})"
