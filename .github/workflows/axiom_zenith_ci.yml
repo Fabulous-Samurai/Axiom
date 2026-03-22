@@ -2,11 +2,30 @@ name: "AXIOM Zenith CI/CD"
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, master ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, master ]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
+  lint:
+    name: "Step 0: Pre-Commit Linting"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: "Run Pre-Commit"
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pre-commit
+          pre-commit run --all-files
+
   formal-verification:
     name: "Step 1: Formal Verification (TLA+)"
     runs-on: ubuntu-latest
@@ -18,26 +37,22 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: "Download TLA2Tools"
-        run: |
-          wget https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -O tla2tools.jar
+        run: wget https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -O tla2tools.jar
       - name: "Run TLA+ Model Checks"
         run: |
-          # Proving Mantis Solver Correctness via TLA+
           java -jar tla2tools.jar -config formal/tla/MantisAStarCorrectness.cfg formal/tla/MantisAStarCorrectness.tla
           java -jar tla2tools.jar -config formal/tla/MantisHeuristicDispatch.cfg formal/tla/MantisHeuristicDispatch.tla
-          
-          # [ZENITH PROOF] Proving Lock-Free HarmonicArena Safety
           java -jar tla2tools.jar -config formal/tla/HarmonicArenaSafety.cfg formal/tla/HarmonicArenaSafety.tla
-          
-          # [ZENITH PROOF] Proving Phase H Secure Vault Isolation
           java -jar tla2tools.jar -config formal/tla/MantisSecureVaultSafety.cfg formal/tla/MantisSecureVaultSafety.tla
 
   build-and-test:
-    name: "Step 2: Core Build & Zenith Validation"
+    name: "Step 2: Core Build & Zenith Validation (${{ matrix.os }}, ${{ matrix.build_type }})"
     needs: formal-verification
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        build_type: [Release, Debug]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -48,40 +63,95 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: "Install Ninja (Unix)"
-        if: runner.os != 'Windows'
-        run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            sudo apt-get update && sudo apt-get install -y ninja-build
-          elif [ "$RUNNER_OS" == "macOS" ]; then
-            brew install ninja
-          fi
-      - name: "Install Ninja (Windows)"
+      - name: "Install System Dependencies (Linux)"
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ninja-build valgrind libnuma-dev
+      - name: "Install System Dependencies (macOS)"
+        if: runner.os == 'macOS'
+        run: brew install ninja
+      - name: "Install System Dependencies (Windows)"
         if: runner.os == 'Windows'
         run: choco install ninja
-      - name: "Install Build Dependencies"
+      - name: "Install Python Dependencies"
         run: |
-          python -m pip install scikit-build-core nanobind
+          python -m pip install scikit-build-core nanobind pytest pytest-cov
       - name: "Autonomous Silicon-Aware Build (Unix)"
         if: runner.os != 'Windows'
+        env:
+          BUILD_TYPE: ${{ matrix.build_type }}
         run: |
+          if [[ "$RUNNER_OS" == "Linux" && "$BUILD_TYPE" == "Debug" ]]; then
+            export CXXFLAGS="--coverage"
+            export LDFLAGS="--coverage"
+          fi
           chmod +x scripts/setup_other_device_unix.sh
           ./scripts/setup_other_device_unix.sh
       - name: "Build AXIOM Zenith (Windows)"
         if: runner.os == 'Windows'
         run: |
-          cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release -DAXIOM_ENABLE_TELEMETRY=ON
-          cmake --build build --config Release
-      - name: "Run High-Velocity Tests"
+          cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DAXIOM_ENABLE_TELEMETRY=ON
+          cmake --build build --config ${{ matrix.build_type }}
+      - name: "Run Zero-Allocation Enforcer"
+        if: matrix.os == 'ubuntu-latest' && matrix.build_type == 'Debug'
         run: |
+          chmod +x scripts/ci/zero_alloc_checker.sh
+          ./scripts/ci/zero_alloc_checker.sh
+      - name: "Run High-Velocity C++ Tests"
+        run: |
+          cd build
           if [ "$RUNNER_OS" == "Windows" ]; then
-            ./build/run_tests.exe
+            ctest -C ${{ matrix.build_type }} --output-on-failure
           else
-            ./build/run_tests
+            ctest --output-on-failure
           fi
+      - name: "Run Valgrind Memory Analysis"
+        if: matrix.os == 'ubuntu-latest' && matrix.build_type == 'Debug'
+        run: |
+          valgrind --leak-check=full --error-exitcode=1 build/run_tests
+      - name: "Run Python Tests with Coverage"
+        if: matrix.os == 'ubuntu-latest' && matrix.build_type == 'Debug'
+        run: |
+          python -m pip install -e .
+          python -m pytest --cov=axiom tests/ --cov-report=xml:coverage.xml
       - name: "Zenith Pillar Verification"
         run: |
           python scripts/verify_zenith_pillars.py
+      - name: "Prepare SonarCloud Artifacts"
+        if: matrix.os == 'ubuntu-latest' && matrix.build_type == 'Debug'
+        run: |
+          find build -name "*.gcno" -exec gcov {} +
+          mv build/compile_commands.json . || true
+      - name: "Upload SonarCloud Artifacts"
+        if: matrix.os == 'ubuntu-latest' && matrix.build_type == 'Debug'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-artifacts
+          path: |
+            compile_commands.json
+            *.gcov
+            coverage.xml
+          retention-days: 1
+
+  package-and-distribute:
+    name: "Step 3: Python Wheel (Dark Matter) Forge"
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: "Install Ninja"
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: "Build Wheel"
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build scikit-build-core nanobind setuptools-scm
+          python -m build --wheel
+      - name: "Upload Core Artifacts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: axiom-zenith-wheels
+          path: dist/*.whl
 
   sonarcloud:
     name: "Step 4: SonarCloud Quality Gate"
@@ -91,28 +161,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: "Download SonarCloud Artifacts"
+        uses: actions/download-artifact@v4
+        with:
+          name: sonar-artifacts
       - name: "SonarCloud Scan"
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-  package-and-distribute:
-    name: "Step 3: Python Wheel (Dark Matter) Forge"
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Install Ninja"
-        run: sudo apt-get update && sudo apt-get install -y ninja-build
-      - name: "Build Wheel"
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install build scikit-build-core nanobind
-          python -m build --wheel
-      - name: "Upload Core Artifacts"
-        uses: actions/upload-artifact@v4
         with:
-          name: axiom-zenith-wheels
-          path: dist/*.whl
-
+          args: >
+            -Dsonar.cfamily.compile-commands=compile_commands.json
+            -Dsonar.cfamily.gcov.reportsPath=.
+            -Dsonar.python.coverage.reportPaths=coverage.xml

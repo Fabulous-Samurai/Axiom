@@ -43,13 +43,26 @@ echo "[AXIOM] Initializing Build Forge for architecture: $ARCH_FLAG"
 # We bypass generic binaries to ensure L1 cache locality and Vector Port saturation.
 mkdir -p build && cd build
 
+# Allow dynamic Build Type for CI/CD flexibility
+BUILD_TYPE=${BUILD_TYPE:-Release}
+OPT_FLAG="-O3"
+if [ "$BUILD_TYPE" == "Debug" ]; then
+    OPT_FLAG="-Og -g"
+fi
+
+# Respect environment CXXFLAGS and LDFLAGS if present
+EXTRA_CXX_FLAGS=${CXXFLAGS:-""}
+EXTRA_LD_FLAGS=${LDFLAGS:-""}
+
 cmake -G Ninja .. \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS="-march=$ARCH_FLAG -mtune=$ARCH_FLAG -O3 -flto" \
+    -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+    -DCMAKE_CXX_FLAGS="$EXTRA_CXX_FLAGS -march=$ARCH_FLAG -mtune=$ARCH_FLAG $OPT_FLAG -flto" \
+    -DCMAKE_EXE_LINKER_FLAGS="$EXTRA_LD_FLAGS" \
+    -DCMAKE_SHARED_LINKER_FLAGS="$EXTRA_LD_FLAGS" \
     -DAXIOM_ENABLE_TELEMETRY=ON
 
-echo "[AXIOM] Building Zenith Core..."
-ninja axiom
+echo "[AXIOM] Building Zenith Core and Tests ($BUILD_TYPE)..."
+ninja
 
 # 4. Final Validation
 if [[ -x ./axiom ]]; then

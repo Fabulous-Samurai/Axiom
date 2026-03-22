@@ -7,6 +7,9 @@ endif()
 # Project and Version
 project(axiom_engine VERSION 3.1.1)
 
+# Enable Compilation Database
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # FORCE NINJA GENERATOR - MAXIMUM SPEED BUILD SYSTEM
 set(CMAKE_GENERATOR "Ninja" CACHE STRING "Generator" FORCE)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
@@ -87,6 +90,21 @@ option(AXIOM_ENABLE_SIMD_AVX2 "Enable AVX2 SIMD instructions" ON)
 option(AXIOM_ENABLE_SIMD_FMA "Enable FMA instructions" ON)
 option(AXIOM_ENABLE_SIMD_AVX512 "Enable AVX-512 SIMD instructions" OFF)
 option(AXIOM_ENABLE_SIMD_AVX_VNNI "Enable AVX-VNNI integer dot-product instructions (Alder Lake+/Zen4+)" OFF)
+
+# Process SIMD flags globally
+if(AXIOM_ENABLE_SIMD_AVX2)
+    if(MSVC)
+        add_compile_options(/arch:AVX2)
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
+        add_compile_options(-mavx2 -mfma)
+        add_compile_definitions(AXIOM_SIMD_AVX2_ENABLED AXIOM_SIMD_FMA_ENABLED)
+    endif()
+endif()
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+    add_compile_definitions(AXIOM_SIMD_NEON_ENABLED)
+endif()
+
 
 # Auto-install optional Python GUI dependencies via pip
 option(AXIOM_AUTO_INSTALL_PYTHON_DEPS "Install optional Python GUI dependencies via pip" ON)
@@ -179,6 +197,7 @@ set(AXIOM_CORE_SOURCES
     src/eigen_engine.cpp
     src/cpu_optimization.cpp
     src/mantis_heuristic.cpp
+    src/pluto_controller.cpp
     src/telemetry.cpp
     src/ingress.cpp
     src/cognitive_ecu.cpp
@@ -236,30 +255,26 @@ target_link_libraries(simd_matrix_test PRIVATE axiom_engine GTest::gtest_main)
 add_executable(ingress_bench tests/benchmarks/ingress_bench.cpp)
 target_link_libraries(ingress_bench PRIVATE axiom_engine benchmark::benchmark_main Threads::Threads)
 
+# New Mantis/Pluto Tests
+add_executable(test_ida_star tests/unit/test_ida_star.cpp)
+target_link_libraries(test_ida_star PRIVATE axiom_engine GTest::gtest_main)
+
+add_executable(test_pluto_core tests/unit/test_pluto_core.cpp)
+target_link_libraries(test_pluto_core PRIVATE axiom_engine GTest::gtest_main)
+
+# Register with CTest
 # Register with CTest
 add_test(NAME run_tests COMMAND run_tests)
+add_test(NAME test_ida_star COMMAND test_ida_star)
+add_test(NAME test_pluto_core COMMAND test_pluto_core)
 add_test(NAME giga_test_suite COMMAND giga_test_suite)
 add_test(NAME alignment_test COMMAND alignment_test)
 add_test(NAME harmonic_arena_test COMMAND harmonic_arena_test)
-add_test(NAME harmonic_string_test COMMAND harmonic_string_test)
 add_test(NAME enclave_test COMMAND enclave_test)
 add_test(NAME differential_suite COMMAND differential_suite)
 add_test(NAME arena_stress COMMAND arena_stress)
 add_test(NAME simd_matrix_test COMMAND simd_matrix_test)
 
-# SIMD flags and definitions
-if(AXIOM_ENABLE_SIMD_AVX2)
-    if(MSVC)
-        add_compile_options(/arch:AVX2)
-    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
-        add_compile_options(-mavx2 -mfma)
-        add_compile_definitions(AXIOM_SIMD_AVX2_ENABLED AXIOM_SIMD_FMA_ENABLED)
-    endif()
-endif()
-
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
-    add_compile_definitions(AXIOM_SIMD_NEON_ENABLED)
-endif()
-
 # Include asmjit headers globally
 include_directories(SYSTEM "${asmjit_SOURCE_DIR}")
+
