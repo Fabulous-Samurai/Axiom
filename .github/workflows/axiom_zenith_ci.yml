@@ -55,7 +55,9 @@ jobs:
           LDFLAGS: "--coverage"
         run: |
           chmod +x scripts/setup_other_device_unix.sh
-          ./scripts/setup_other_device_unix.sh || (cat build/CMakeFiles/CMakeError.log && exit 1)
+          ./scripts/setup_other_device_unix.sh || (find build -name "CMakeError.log" -exec cat {} + && find build -name "CMakeOutput.log" -exec cat {} + && exit 1)
+      - name: "List Build Directory"
+        run: ls -R build
       - name: "Upload Artifacts"
         uses: actions/upload-artifact@v4
         with:
@@ -77,7 +79,7 @@ jobs:
       - name: "Run Tests"
         run: |
           chmod +x build/run_tests build/test_ida_star build/test_pluto_core
-          cd build && ctest --output-on-failure || (cat Testing/Temporary/LastTest.log && exit 1)
+          cd build && ctest --output-on-failure || (find Testing -name "LastTest.log" -exec cat {} + && exit 1)
 
   build-windows:
     name: "Phase 1: Build Windows (Debug)"
@@ -92,6 +94,9 @@ jobs:
         run: |
           cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Debug -DAXIOM_ENABLE_TELEMETRY=ON
           cmake --build build --config Debug --verbose
+      - name: "List Build Directory"
+        shell: bash
+        run: ls -R build
       - name: "Upload Artifacts"
         uses: actions/upload-artifact@v4
         with:
@@ -113,7 +118,8 @@ jobs:
       - name: "Run Tests"
         shell: bash
         run: |
-          cd build && ctest -C Debug --output-on-failure || (cat Testing/Temporary/LastTest.log && exit 1)
+          export PATH="$PATH:$(pwd)/build"
+          cd build && ctest --output-on-failure || (find Testing -name "LastTest.log" -exec cat {} + && exit 1)
 
   sonarcloud:
     name: "Phase 3: SonarCloud"

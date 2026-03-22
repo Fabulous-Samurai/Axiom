@@ -19,24 +19,10 @@ fi
 
 echo "[AXIOM] Probing Silicon Architecture..."
 
-# In CI environments, we use more conservative flags to ensure compatibility
+# In CI environments, we let CMakeLists.txt handle SIMD flags to avoid conflicts with -march=x86-64
 if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
-    echo "[AXIOM] CI Environment Detected. Using conservative architecture flags."
-    if [[ "$(uname)" == "Darwin" ]]; then
-        # macOS Clang uses -arch
-        if [[ "$(uname -m)" == "arm64" ]]; then
-            ARCH_FLAG="" # Let compiler decide for Apple Silicon
-            EXTRA_CXX_FLAGS="$EXTRA_CXX_FLAGS -arch arm64"
-        else
-            ARCH_FLAG="x86-64"
-        fi
-    else
-        # Linux GCC/Clang
-        ARCH_FLAG="x86-64"
-        if [[ "$(uname -m)" == "arm64" || "$(uname -m)" == "aarch64" ]]; then
-            ARCH_FLAG="armv8-a"
-        fi
-    fi
+    echo "[AXIOM] CI Environment Detected. Letting CMake handle architecture flags."
+    ARCH_FLAG=""
 else
     if [[ $CPU_FEATURES == *"avx512"* ]]; then
         echo "[FOUND] AVX-512 Support Detected. Unleashing Giga-Vector Units."
