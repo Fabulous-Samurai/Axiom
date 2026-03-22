@@ -41,9 +41,10 @@ jobs:
         run: wget https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -O tla2tools.jar
       - name: "Run TLA+ Model Checks"
         run: |
-          pwd
-          ls -la
-          java -jar $GITHUB_WORKSPACE/tla2tools.jar -config formal/tla/PlutoPetriNet_Quick.cfg formal/tla/PlutoPetriNet.tla
+          cp tla2tools.jar formal/tla/
+          cd formal/tla
+          mkdir -p logs
+          python run_pluto_verification.py
 
   build-and-test:
     name: "Step 2: Core Build & Zenith Validation (${{ matrix.os }}, ${{ matrix.build_type }})"
