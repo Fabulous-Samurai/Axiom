@@ -239,6 +239,7 @@ target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit 
 if(UNIX AND NOT APPLE)
     target_link_libraries(axiom_engine PUBLIC numa)
 endif()
+
 if(AXIOM_ENABLE_NANOBIND)
     nanobind_add_module(axiom_core src/python_bindings.cpp)
     target_include_directories(axiom_core PUBLIC "${CMAKE_SOURCE_DIR}/include" "${asmjit_SOURCE_DIR}/src")
@@ -310,9 +311,13 @@ target_link_libraries(test_pluto_core PRIVATE axiom_engine GTest::gtest_main)
 add_executable(test_statistics_optimized tests/unit/test_statistics_optimized.cpp)
 target_link_libraries(test_statistics_optimized PRIVATE axiom_engine GTest::gtest_main)
 
+add_executable(test_mantis_solver tests/unit/test_mantis_solver.cpp)
+target_link_libraries(test_mantis_solver PRIVATE axiom_engine GTest::gtest_main)
+
 # Register with CTest
 add_test(NAME run_tests COMMAND run_tests)
 add_test(NAME test_ida_star COMMAND test_ida_star)
+add_test(NAME test_mantis_solver COMMAND test_mantis_solver)
 add_test(NAME test_pluto_core COMMAND test_pluto_core)
 add_test(NAME giga_test_suite COMMAND giga_test_suite)
 add_test(NAME alignment_test COMMAND alignment_test)
