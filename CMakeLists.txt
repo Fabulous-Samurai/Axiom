@@ -11,7 +11,7 @@ project(axiom_engine VERSION 3.1.1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # FORCE NINJA GENERATOR - MAXIMUM SPEED BUILD SYSTEM
-set(CMAKE_GENERATOR "Ninja" CACHE STRING "Generator" FORCE)
+# set(CMAKE_GENERATOR "Ninja" CACHE STRING "Generator" FORCE)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # Global Third-Party Configuration (MUST BE BEFORE FetchContent)
@@ -88,7 +88,7 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
-FetchContent_MakeAvailable(eigen asmjit googletest googlebenchmark mimalloc nanobind)
+FetchContent_MakeAvailable(eigen asmjit googletest googlebenchmark mimalloc nanobind robin-map)
 
 include_directories(SYSTEM ${eigen_SOURCE_DIR})
 if(NOT TARGET Eigen3::Eigen)
