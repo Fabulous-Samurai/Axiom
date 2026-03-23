@@ -41,40 +41,48 @@ jobs:
           python3 run_pluto_verification.py
 
   build-linux:
-    name: "Phase 1: Build Linux (Debug)"
+    name: "Phase 1: Build Linux (Coverage)"
     needs: lint-and-verify
     runs-on: ubuntu-latest
+    env:
+      BUILD_WRAPPER_OUT_DIR: build-wrapper-output
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: "Set up Python"
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: "Install System Dependencies"
         run: |
-          sudo apt-get update && sudo apt-get install -y ninja-build valgrind python3-dev libnuma-dev
+          sudo apt-get update && sudo apt-get install -y ninja-build python3-dev libnuma-dev
           python -m pip install nanobind
-
-      - name: "Direct CMake Build"
+      - name: Install SonarCloud Tools
+        uses: SonarSource/sonarcloud-github-c-cpp@v2
+      - name: "Configure CMake (Coverage)"
         run: |
-          mkdir -p build && cd build
-          cmake -G "Ninja" .. \
+          cmake -G "Ninja" -B build \
             -DCMAKE_BUILD_TYPE=Debug \
             -DAXIOM_ENABLE_TELEMETRY=ON \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-            -DCMAKE_VERBOSE_MAKEFILE=ON
-          ninja -v
-      - name: "List Build Directory"
-        run: ls -R build
+            -DCMAKE_CXX_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
+            -DCMAKE_C_FLAGS="--coverage -fprofile-arcs -ftest-coverage" \
+            -DCMAKE_EXE_LINKER_FLAGS="--coverage" \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - name: "Build with build-wrapper"
+        run: |
+          build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build -j$(nproc)
       - name: "Upload Artifacts"
         uses: actions/upload-artifact@v4
         with:
-          name: axiom-linux-debug
-          path: build/
+          name: axiom-linux-coverage
+          path: |
+            build/
+            ${{ env.BUILD_WRAPPER_OUT_DIR }}
           retention-days: 1
 
   test-linux:
-    name: "Phase 2: Test Linux"
+    name: "Phase 2: Test Linux & Coverage"
     needs: build-linux
     runs-on: ubuntu-latest
     steps:
@@ -83,34 +91,30 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: "Install LCOV"
+        run: sudo apt-get update && sudo apt-get install -y lcov
       - name: "Download Artifacts"
         uses: actions/download-artifact@v4
         with:
-          name: axiom-linux-debug
+          name: axiom-linux-coverage
           path: build/
       - name: "Run Tests"
         run: |
           chmod +x build/run_tests build/test_ida_star build/test_pluto_core
-          cd build && ctest --output-on-failure -j4 --timeout 600 || (find Testing -name "LastTest.log" -exec cat {} + && exit 1)
-
-      - name: "Collect Diagnostic Logs (Linux)"
-        if: always()
+          cd build && ctest --output-on-failure -j4 --timeout 600
+      - name: "Generate LCOV Report"
         run: |
-          mkdir -p logs/linux/ctest logs/linux/build logs/linux/formal
-          [ -d build/Testing/Temporary ] && cp build/Testing/Temporary/* logs/linux/ctest/ || true
-          [ -f build/compile_commands.json ] && cp build/compile_commands.json logs/linux/build/ || true
-          [ -d formal/tla/logs ] && cp formal/tla/logs/* logs/linux/formal/ || true
-
-      - name: "Upload Diagnostic Logs (Linux)"
-        if: always()
+          lcov --capture --directory build --output-file coverage-raw.info --ignore-errors mismatch
+          lcov --remove coverage-raw.info '/usr/*' '*/_deps/*' '*/tests/*' '*/extern/*' --output-file coverage-filtered.info --ignore-errors unused
+      - name: "Upload Coverage Report"
         uses: actions/upload-artifact@v4
         with:
-          name: diagnostic-logs-linux-${{ github.run_id }}
-          path: logs/linux/
-          retention-days: 5
+          name: axiom-coverage-report
+          path: coverage-filtered.info
+          retention-days: 1
 
   build-windows:
-    name: "Phase 1: Build Windows (Debug)"
+    name: "Phase 1: Build Windows"
     needs: lint-and-verify
     runs-on: windows-latest
     steps:
@@ -126,11 +130,8 @@ jobs:
       - name: "Build"
         shell: bash
         run: |
-          cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Debug -DAXIOM_ENABLE_TELEMETRY=ON -DCMAKE_VERBOSE_MAKEFILE=ON
-          cmake --build build --config Debug --verbose
-      - name: "List Build Directory"
-        shell: bash
-        run: ls -R build
+          cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Debug -DAXIOM_ENABLE_TELEMETRY=ON
+          cmake --build build --config Debug
       - name: "Upload Artifacts"
         uses: actions/upload-artifact@v4
         with:
@@ -144,10 +145,6 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: "Set up Python"
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - name: "Download Artifacts"
         uses: actions/download-artifact@v4
         with:
@@ -156,33 +153,66 @@ jobs:
       - name: "Run Tests"
         shell: bash
         run: |
-          export PATH="$PATH:$(pwd)/build"
-          cd build && ctest --output-on-failure -j4 --timeout 600 || (find Testing -name "LastTest.log" -exec cat {} + && exit 1)
+          cd build && ctest --output-on-failure -j4 --timeout 600
 
-      - name: "Collect Diagnostic Logs (Windows)"
-        if: always()
-        shell: bash
+  build-macos:
+    name: "Phase 1: Build MacOS"
+    needs: lint-and-verify
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: "Install Dependencies"
         run: |
-          mkdir -p logs/windows/ctest logs/windows/build
-          [ -d build/Testing/Temporary ] && cp build/Testing/Temporary/* logs/windows/ctest/ || true
-          [ -f build/compile_commands.json ] && cp build/compile_commands.json logs/windows/build/ || true
-
-      - name: "Upload Diagnostic Logs (Windows)"
-        if: always()
+          brew install ninja
+          python -m pip install nanobind
+      - name: "Build"
+        run: |
+          cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Debug -DAXIOM_ENABLE_TELEMETRY=ON
+          cmake --build build --config Debug
+      - name: "Upload Artifacts"
         uses: actions/upload-artifact@v4
         with:
-          name: diagnostic-logs-windows-${{ github.run_id }}
-          path: logs/windows/
-          retention-days: 5
+          name: axiom-macos-debug
+          path: build/
+          retention-days: 1
+
+  test-macos:
+    name: "Phase 2: Test MacOS"
+    needs: build-macos
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Download Artifacts"
+        uses: actions/download-artifact@v4
+        with:
+          name: axiom-macos-debug
+          path: build/
+      - name: "Run Tests"
+        run: |
+          cd build && ctest --output-on-failure -j4 --timeout 600
 
   sonarcloud:
     name: "Phase 3: SonarCloud"
-    needs: [test-linux, test-windows]
+    needs: [test-linux, test-windows, test-macos]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: "Download Build Artifacts"
+        uses: actions/download-artifact@v4
+        with:
+          name: axiom-linux-coverage
+          path: .
+      - name: "Download Coverage Report"
+        uses: actions/download-artifact@v4
+        with:
+          name: axiom-coverage-report
+          path: .
       - name: "SonarCloud Scan"
         uses: SonarSource/sonarqube-scan-action@v5
         env:
@@ -190,4 +220,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.cfamily.compile-commands=build/compile_commands.json
+            -Dsonar.projectKey=axiom_engine_fabulous_samurai
+            -Dsonar.organization=fabulous-samurai
+            -Dsonar.cfamily.build-wrapper-output=build-wrapper-output
+            -Dsonar.coverageReportPaths=coverage-filtered.info
+            -Dsonar.cfamily.gcov.reportsPath=build
