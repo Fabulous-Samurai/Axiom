@@ -112,3 +112,28 @@ static void BM_TaylorSeriesThroughput(benchmark::State& state) {
     }
 }
 BENCHMARK(BM_TaylorSeriesThroughput);
+
+static void BM_StringConcatSuboptimal(benchmark::State& state) {
+    for (auto _ : state) {
+        std::string expr = "sin(cos(tan(log(sqrt(144)))))";
+        for (int i = 0; i < 50; ++i) {
+            expr += " + " + std::to_string(i) + " * sin(" + std::to_string(i) + ")";
+        }
+        benchmark::DoNotOptimize(expr);
+    }
+}
+BENCHMARK(BM_StringConcatSuboptimal);
+
+static void BM_StringConcatOptimized(benchmark::State& state) {
+    for (auto _ : state) {
+        std::string expr;
+        expr.reserve(1024);
+        expr = "sin(cos(tan(log(sqrt(144)))))";
+        for (int i = 0; i < 50; ++i) {
+            auto s = std::to_string(i);
+            expr.append(" + ").append(s).append(" * sin(").append(s).append(")");
+        }
+        benchmark::DoNotOptimize(expr);
+    }
+}
+BENCHMARK(BM_StringConcatOptimized);
