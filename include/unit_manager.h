@@ -25,6 +25,8 @@ struct Unit {
 
 #include "axiom_export.h"
 
+namespace AXIOM {
+
 class AXIOM_EXPORT UnitManager {
 private:
     std::unordered_map<std::string, Unit> units_;
@@ -42,3 +44,5 @@ public:
     void RegisterUnit(const std::string& symbol, UnitType type, double scale, const std::string& name);
     std::vector<std::string> GetUnitsOfType(UnitType type);
 };
+
+} // namespace AXIOM

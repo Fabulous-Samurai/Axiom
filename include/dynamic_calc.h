@@ -21,15 +21,14 @@
 #include "plot_parser.h"
 #include "python_parser.h"
 
-// Engine classes are declared in global namespace in this codebase.
-class SymbolicEngine;
-class StatisticsEngine;
-class UnitManager;
-
 #include "axiom_export.h"
 
 namespace AXIOM
 {
+    // Engine classes
+    class SymbolicEngine;
+    class StatisticsEngine;
+    class UnitManager;
 
     enum class FastArithmeticOp
     {

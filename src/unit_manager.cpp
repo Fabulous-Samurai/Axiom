@@ -4,6 +4,8 @@
 
 #include <numbers>
 
+namespace AXIOM {
+
 UnitManager::UnitManager() {
     // Length units
     RegisterUnit("m", UnitType::Length, 1.0, "meter");
@@ -132,3 +134,4 @@ std::vector<std::string> UnitManager::GetUnitsOfType(UnitType type) {
     return result;
 }
 
+} // namespace AXIOM

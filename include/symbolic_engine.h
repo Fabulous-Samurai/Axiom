@@ -10,6 +10,8 @@
 
 #include "axiom_export.h"
 
+namespace AXIOM {
+
 class AXIOM_EXPORT SymbolicEngine {
 public:
     // Advanced algebraic operations
@@ -33,3 +35,5 @@ public:
     EngineResult FindLimits(const std::string& expr, const std::string& var, double approach_point);
     EngineResult FindRoots(const std::string& expr, const std::string& var, double range_min, double range_max);
 };
+
+} // namespace AXIOM
