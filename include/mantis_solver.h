@@ -168,9 +168,6 @@ public:
 
         SearchResult result{};
         float threshold = Heuristic(nodes[start_id]);
-        
-        // Use a persistent neighbor buffer to avoid thread_local overhead in recursion
-        std::array<uint32_t, 64> neighbor_buf{};
 
         while (true) {
             ++result.iterations;
@@ -182,7 +179,7 @@ public:
 
             float next_threshold = std::numeric_limits<float>::max();
             bool found = search(nodes, start_id, goal_id, 0.0f, threshold, 
-                                next_threshold, result, get_neighbors, num_nodes, neighbor_buf);
+                                next_threshold, result, get_neighbors, num_nodes);
 
             if (found) {
                 result.found = true;
@@ -218,8 +215,7 @@ private:
         float& next_threshold,
         SearchResult& result,
         AdjacencyFn& get_neighbors,
-        uint32_t num_nodes,
-        std::array<uint32_t, 64>& neighbor_buf) noexcept
+        uint32_t num_nodes) noexcept
     {
         ++result.nodes_evaluated;
         const float f_cost = g_cost + Heuristic(nodes[current_id]);
@@ -236,10 +232,6 @@ private:
 
         nodes[current_id].in_closed = true;
 
-        // Note: neighbor_buf is shared across recursion levels, so we need to copy locally 
-        // if we want to iterate after recursive calls.
-        // For IDA*, we can iterate and recurse immediately.
-        
         uint32_t local_neighbors[64];
         const uint32_t n_count = get_neighbors(
             current_id, local_neighbors, 64);
@@ -250,7 +242,7 @@ private:
 
             // IDA* depth-first branch
             if (search(nodes, neighbor, goal_id, g_cost + 1.0f, threshold, 
-                       next_threshold, result, get_neighbors, num_nodes, neighbor_buf)) {
+                       next_threshold, result, get_neighbors, num_nodes)) {
                 nodes[neighbor].parent_id = current_id;
                 return true;
             }

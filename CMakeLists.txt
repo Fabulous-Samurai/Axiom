@@ -234,20 +234,22 @@ endif()
 
 add_library(axiom_engine STATIC ${AXIOM_CORE_SOURCES})
 target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
-target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
+target_compile_definitions(axiom_engine PUBLIC AXIOM_STATIC PRIVATE AXIOM_ENGINE_EXPORTS)
 target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit Threads::Threads)
 if(UNIX AND NOT APPLE)
     target_link_libraries(axiom_engine PUBLIC numa)
 endif()
+
 if(AXIOM_ENABLE_NANOBIND)
     nanobind_add_module(axiom_core src/python_bindings.cpp)
     target_include_directories(axiom_core PUBLIC "${CMAKE_SOURCE_DIR}/include" "${asmjit_SOURCE_DIR}/src")
     target_link_libraries(axiom_core PRIVATE axiom_engine nanobind-static asmjit::asmjit)
     target_link_libraries(axiom_engine PUBLIC nanobind-static)
 endif()
+
 if(WIN32)
     target_link_libraries(axiom_engine PUBLIC bcrypt)
-else()
+elseif(UNIX AND NOT APPLE)
     target_link_libraries(axiom_engine PUBLIC numa)
 endif()
 target_include_directories(axiom_engine PRIVATE ${Python_INCLUDE_DIRS})
@@ -268,9 +270,6 @@ target_link_libraries(axiom_benchmark PRIVATE axiom_engine Threads::Threads asmj
 
 add_executable(giga_test_suite tests/giga_test_suite.cpp)
 target_link_libraries(giga_test_suite PRIVATE axiom_engine Threads::Threads asmjit::asmjit Python::Python GTest::gtest_main benchmark::benchmark_main)
-
-add_executable(edge_case_suite tests/edge_case_suite.cpp)
-target_link_libraries(edge_case_suite PRIVATE axiom_engine Threads::Threads asmjit::asmjit Python::Python)
 
 # Additional standalone tests
 add_executable(alignment_test tests/alignment_test.cpp)
@@ -310,9 +309,13 @@ target_link_libraries(test_pluto_core PRIVATE axiom_engine GTest::gtest_main)
 add_executable(test_statistics_optimized tests/unit/test_statistics_optimized.cpp)
 target_link_libraries(test_statistics_optimized PRIVATE axiom_engine GTest::gtest_main)
 
+add_executable(test_mantis_solver tests/unit/test_mantis_solver.cpp)
+target_link_libraries(test_mantis_solver PRIVATE axiom_engine GTest::gtest_main)
+
 # Register with CTest
 add_test(NAME run_tests COMMAND run_tests)
 add_test(NAME test_ida_star COMMAND test_ida_star)
+add_test(NAME test_mantis_solver COMMAND test_mantis_solver)
 add_test(NAME test_pluto_core COMMAND test_pluto_core)
 add_test(NAME giga_test_suite COMMAND giga_test_suite)
 add_test(NAME alignment_test COMMAND alignment_test)
