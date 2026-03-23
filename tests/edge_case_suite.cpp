@@ -12,6 +12,9 @@
 #include "../include/symbolic_engine.h"
 #include "../include/unit_manager.h"
 
+using AXIOM::AlgebraicParser;
+using AXIOM::LinearSystemParser;
+
 class EdgeCaseRunner {
 public:
     EdgeCaseRunner() {}
@@ -120,12 +123,9 @@ void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
 
     // Enormous complex expression (Sandbox check)
     runner.RunTest("Enormous complex expression (Stress Test)", [&parser]() {
-        std::string expr;
-        expr.reserve(2048);
-        expr = "sin(cos(tan(log(sqrt(144)))))";
+        std::string expr = "sin(cos(tan(log(sqrt(144)))))";
         for (int i = 0; i < 50; ++i) {
-            auto s = std::to_string(i);
-            expr.append(" + ").append(s).append(" * sin(").append(s).append(")");
+            expr += " + " + std::to_string(i) + " * sin(" + std::to_string(i) + ")";
         }
         auto result = parser.ParseAndExecute(expr);
         return result.HasResult();
