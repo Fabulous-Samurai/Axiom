@@ -103,6 +103,7 @@ BENCHMARK(BM_MantisSIMDF32);
 
 
 #include "../include/symbolic_engine.h"
+using AXIOM::SymbolicEngine;
 
 static void BM_TaylorSeriesThroughput(benchmark::State& state) {
     SymbolicEngine engine;

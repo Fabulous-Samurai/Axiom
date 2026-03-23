@@ -16,6 +16,9 @@
 
 using namespace AXIOM;
 
+using AXIOM::AlgebraicParser;
+using AXIOM::LinearSystemParser;
+
 class EdgeCaseRunner {
 public:
     EdgeCaseRunner() = default;
