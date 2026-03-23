@@ -11,7 +11,7 @@ project(axiom_engine VERSION 3.1.1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # FORCE NINJA GENERATOR - MAXIMUM SPEED BUILD SYSTEM
-set(CMAKE_GENERATOR "Ninja" CACHE STRING "Generator" FORCE)
+# set(CMAKE_GENERATOR "Ninja" CACHE STRING "Generator" FORCE)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # Global Third-Party Configuration (MUST BE BEFORE FetchContent)
@@ -52,6 +52,7 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 set(ASMJIT_STATIC ON CACHE BOOL "" FORCE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # GoogleTest
 FetchContent_Declare(
@@ -77,15 +78,9 @@ FetchContent_Declare(
 # Nanobind (for Python FFI)
 FetchContent_Declare(
     nanobind
-    URL https://github.com/wjakob/nanobind/archive/refs/tags/v2.4.0.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-
-# Robin-map (Nanobind dependency)
-FetchContent_Declare(
-    robin-map
-    URL https://github.com/Tessil/robin-map/archive/refs/tags/v1.3.0.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    GIT_REPOSITORY https://github.com/wjakob/nanobind.git
+    GIT_TAG v2.4.0
+    GIT_SUBMODULES "ext/robin_map"
 )
 
 FetchContent_MakeAvailable(eigen asmjit googletest googlebenchmark mimalloc nanobind)
@@ -232,8 +227,16 @@ add_library(axiom_engine SHARED ${AXIOM_CORE_SOURCES})
 target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
 target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
 target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit Threads::Threads)
+if(AXIOM_ENABLE_NANOBIND)
+    nanobind_add_module(axiom_core src/python_bindings.cpp)
+    target_include_directories(axiom_core PUBLIC "${CMAKE_SOURCE_DIR}/include" "${asmjit_SOURCE_DIR}/src")
+    target_link_libraries(axiom_core PRIVATE axiom_engine nanobind-static asmjit::asmjit)
+    target_link_libraries(axiom_engine PUBLIC nanobind-static)
+endif()
 if(WIN32)
     target_link_libraries(axiom_engine PUBLIC bcrypt)
+else()
+    target_link_libraries(axiom_engine PUBLIC numa)
 endif()
 target_include_directories(axiom_engine PRIVATE ${Python_INCLUDE_DIRS})
 
