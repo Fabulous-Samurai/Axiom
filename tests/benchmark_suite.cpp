@@ -101,3 +101,14 @@ static void BM_MantisSIMDF32(benchmark::State& state) {
 }
 BENCHMARK(BM_MantisSIMDF32);
 
+
+#include "../include/symbolic_engine.h"
+
+static void BM_TaylorSeriesThroughput(benchmark::State& state) {
+    SymbolicEngine engine;
+    for (auto _ : state) {
+        auto res = engine.TaylorSeries("sin(x) + cos(x) + x^2 + x^3 + x^4", "x", 0.5, 10);
+        benchmark::DoNotOptimize(res);
+    }
+}
+BENCHMARK(BM_TaylorSeriesThroughput);

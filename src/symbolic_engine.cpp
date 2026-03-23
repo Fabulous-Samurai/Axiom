@@ -398,10 +398,10 @@ EngineResult SymbolicEngine::TaylorSeries(const std::string& expr, const std::st
     std::ostringstream series;
     bool any_term = false;
 
+    AXIOM::StringUnorderedMap<AXIOM::Number> context;
+    context[variable] = AXIOM::Number(point);
+
     for (int k = 0; k <= order; ++k) {
-        AXIOM::StringUnorderedMap<AXIOM::Number> context;
-        context[variable] = AXIOM::Number(point);
-        
         auto res = current_ast->Evaluate(context);
         if (res.HasValue()) {
             const double coeff = GetReal(*res.value) / fact;
