@@ -6,7 +6,7 @@
 #pragma once
 
 #include "dynamic_calc_types.h"
-#include "iParser.h"
+#include "IParser.h"
 #include "cpu_optimization.h"
 #include <array>
 #include <cstddef>

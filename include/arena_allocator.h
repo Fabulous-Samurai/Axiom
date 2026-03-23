@@ -75,7 +75,11 @@ public:
     // Internal block type is kept public so out-of-class member definitions can
     // use it in signatures without static-analysis accessibility warnings.
     struct alignas(AXIOM::CACHE_LINE_SIZE) ArenaBlock {
-        std::unique_ptr<std::byte[], void(*)(std::byte*)> storage;
+        struct Deleter {
+            size_t cap;
+            void operator()(std::byte* p) const noexcept;
+        };
+        std::unique_ptr<std::byte[], Deleter> storage;
         size_t capacity;
         std::atomic<size_t> offset;
         std::atomic<bool> is_ready;

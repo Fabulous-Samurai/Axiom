@@ -93,8 +93,8 @@ uint64_t PMUOrchestrator::ReadCounter(int idx) const noexcept {
 
     if (index == 0) return 0; // Hardware counter not available
 
-    // [MANDATORY PATH]: _mm_lfence() serialization BEFORE rdpmc
-    _mm_lfence();
+    // [MANDATORY PATH]: AXIOM_LFENCE serialization BEFORE rdpmc
+    AXIOM_LFENCE;
     
     // Index-1 because rdpmc uses 0-based indexing for hardware counters
     // but perf_event_mmap_page index is 1-based (0 is disabled).

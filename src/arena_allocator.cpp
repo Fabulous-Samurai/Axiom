@@ -68,16 +68,17 @@ AXIOM_FORCE_INLINE bool HarmonicArena::should_prepare_spare() const noexcept {
 // HarmonicArena Implementation
 // ============================================================================
 
-HarmonicArena::ArenaBlock::ArenaBlock(size_t cap, int node) noexcept
-    : storage(nullptr, [](std::byte* p) {
+void HarmonicArena::ArenaBlock::Deleter::operator()(std::byte* p) const noexcept {
+    if (!p) return;
 #ifdef _WIN32
-        VirtualFree(p, 0, MEM_RELEASE);
+    VirtualFree(p, 0, MEM_RELEASE);
 #else
-        // cap is lost here in unique_ptr deleters usually, but we can assume aligned 
-        // Or we use a capture lambda. For simplicity in Zenith:
-        // (In production we should use munmap with stored capacity)
+    munmap(p, cap);
 #endif
-    })
+}
+
+HarmonicArena::ArenaBlock::ArenaBlock(size_t cap, int node) noexcept
+    : storage(nullptr, Deleter{cap})
     , capacity(cap)
     , offset(0)
     , is_ready(false)
@@ -92,14 +93,17 @@ HarmonicArena::ArenaBlock::ArenaBlock(size_t cap, int node) noexcept
     }
 #else
     ptr = mmap(nullptr, cap, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (ptr == MAP_FAILED) {
+        ptr = nullptr;
+    }
 #ifdef __linux__
-    if (ptr != MAP_FAILED && node >= 0) {
+    if (ptr && node >= 0) {
         unsigned long nodemask = 1UL << node;
         mbind(ptr, cap, MPOL_BIND, &nodemask, sizeof(nodemask)*8, MPOL_MF_STRICT);
     }
 #endif
 #endif
-    if (ptr && ptr != (void*)-1) {
+    if (ptr) {
         storage.reset(static_cast<std::byte*>(ptr));
     }
 }

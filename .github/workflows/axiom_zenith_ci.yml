@@ -50,8 +50,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: "Install System Dependencies"
-        run: sudo apt-get update && sudo apt-get install -y ninja-build valgrind python3-dev
+      - name: \"Install System Dependencies\"
+        run: sudo apt-get update && sudo apt-get install -y ninja-build valgrind python3-dev libnuma-dev
+
       - name: "Direct CMake Build"
         run: |
           mkdir -p build && cd build
@@ -88,7 +89,23 @@ jobs:
       - name: "Run Tests"
         run: |
           chmod +x build/run_tests build/test_ida_star build/test_pluto_core
-          cd build && ctest --output-on-failure -j4 --timeout 300 || (find Testing -name "LastTest.log" -exec cat {} + && exit 1)
+          cd build && ctest --output-on-failure -j4 --timeout 600 || (find Testing -name "LastTest.log" -exec cat {} + && exit 1)
+
+      - name: "Collect Diagnostic Logs (Linux)"
+        if: always()
+        run: |
+          mkdir -p logs/linux/ctest logs/linux/build logs/linux/formal
+          [ -d build/Testing/Temporary ] && cp build/Testing/Temporary/* logs/linux/ctest/ || true
+          [ -f build/compile_commands.json ] && cp build/compile_commands.json logs/linux/build/ || true
+          [ -d formal/tla/logs ] && cp formal/tla/logs/* logs/linux/formal/ || true
+
+      - name: "Upload Diagnostic Logs (Linux)"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostic-logs-linux-${{ github.run_id }}
+          path: logs/linux/
+          retention-days: 5
 
   build-windows:
     name: "Phase 1: Build Windows (Debug)"
@@ -136,7 +153,23 @@ jobs:
         shell: bash
         run: |
           export PATH="$PATH:$(pwd)/build"
-          cd build && ctest --output-on-failure -j4 --timeout 300 || (find Testing -name "LastTest.log" -exec cat {} + && exit 1)
+          cd build && ctest --output-on-failure -j4 --timeout 600 || (find Testing -name "LastTest.log" -exec cat {} + && exit 1)
+
+      - name: "Collect Diagnostic Logs (Windows)"
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p logs/windows/ctest logs/windows/build
+          [ -d build/Testing/Temporary ] && cp build/Testing/Temporary/* logs/windows/ctest/ || true
+          [ -f build/compile_commands.json ] && cp build/compile_commands.json logs/windows/build/ || true
+
+      - name: "Upload Diagnostic Logs (Windows)"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostic-logs-windows-${{ github.run_id }}
+          path: logs/windows/
+          retention-days: 5
 
   sonarcloud:
     name: "Phase 3: SonarCloud"

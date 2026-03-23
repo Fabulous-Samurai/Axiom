@@ -74,13 +74,31 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
-FetchContent_MakeAvailable(eigen asmjit googletest googlebenchmark mimalloc)
+# Nanobind (for Python FFI)
+FetchContent_Declare(
+    nanobind
+    URL https://github.com/wjakob/nanobind/archive/refs/tags/v2.4.0.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+
+# Robin-map (Nanobind dependency)
+FetchContent_Declare(
+    robin-map
+    URL https://github.com/Tessil/robin-map/archive/refs/tags/v1.3.0.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+
+FetchContent_MakeAvailable(eigen asmjit googletest googlebenchmark mimalloc nanobind)
 
 include_directories(SYSTEM ${eigen_SOURCE_DIR})
 if(NOT TARGET Eigen3::Eigen)
     add_library(Eigen3::Eigen INTERFACE IMPORTED)
     target_link_libraries(Eigen3::Eigen INTERFACE Eigen)
 endif()
+
+# Robin-map and nanobind include paths
+include_directories(SYSTEM ${nanobind_SOURCE_DIR}/include)
+include_directories(SYSTEM ${robin-map_SOURCE_DIR}/include)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -205,6 +223,11 @@ set(AXIOM_CORE_SOURCES
     src/crash_dump.cpp
 )
 
+if(AXIOM_ENABLE_NANOBIND)
+    list(APPEND AXIOM_CORE_SOURCES src/nanobind_interface.cpp src/python_bindings.cpp)
+    add_compile_definitions(ENABLE_NANOBIND)
+endif()
+
 add_library(axiom_engine SHARED ${AXIOM_CORE_SOURCES})
 target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
 target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
@@ -275,4 +298,5 @@ add_test(NAME arena_stress COMMAND arena_stress)
 add_test(NAME simd_matrix_test COMMAND simd_matrix_test)
 
 # Include asmjit headers globally
-include_directories(SYSTEM "${asmjit_SOURCE_DIR}")
+include_directories(SYSTEM \"${asmjit_SOURCE_DIR}/src\")
+

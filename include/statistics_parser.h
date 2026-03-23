@@ -1,5 +1,5 @@
 #pragma once
-#include "iParser.h"
+#include "IParser.h"
 #include "statistics_engine.h"
 #include "dynamic_calc_types.h"
 #include <string>

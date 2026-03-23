@@ -1,6 +1,6 @@
 #pragma once
 
-#include "iParser.h"
+#include "IParser.h"
 #include "plot_engine.h"
 #include <string>
 

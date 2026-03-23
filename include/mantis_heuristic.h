@@ -148,10 +148,9 @@ AXIOM_FORCE_INLINE float normalize_fma3(
 
 #endif // AVX2 + FMA
 
-// ============================================================================
-// NEON Kernel — 4× float32 dot-product using ARM NEON
-// ============================================================================
-#if defined(__aarch64__)
+#if defined(AXIOM_SIMD_NEON_ENABLED)
+
+#include <arm_neon.h>
 
 /**
  * @brief Vectorized dot-product using NEON vfmaq_f32.
@@ -184,7 +183,7 @@ AXIOM_FORCE_INLINE float normalize_neon(
     return score * scale + bias;
 }
 
-#endif // __aarch64__
+#endif // AXIOM_SIMD_NEON_ENABLED
 
 // ============================================================================
 // AVX-VNNI Kernel — 32× int8 multiply-accumulate in one instruction
@@ -250,7 +249,7 @@ public:
 
 #if defined(AXIOM_SIMD_AVX2_ENABLED) && defined(AXIOM_SIMD_FMA_ENABLED)
         score = evaluate_heuristic_fma3(node, profile);
-#elif defined(__aarch64__)
+#elif defined(AXIOM_SIMD_NEON_ENABLED)
         score = evaluate_heuristic_neon(node, profile);
 #else
         score = dot_scalar_f32(node, profile);
@@ -260,7 +259,7 @@ public:
         if (score > dog_threshold) [[unlikely]] {
 #if defined(AXIOM_SIMD_AVX2_ENABLED) && defined(AXIOM_SIMD_FMA_ENABLED)
             score = normalize_fma3(score, kNormScale, kNormBias);
-#elif defined(__aarch64__)
+#elif defined(AXIOM_SIMD_NEON_ENABLED)
             score = normalize_neon(score, kNormScale, kNormBias);
 #else
             score = score * kNormScale + kNormBias;
