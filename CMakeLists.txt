@@ -234,7 +234,7 @@ endif()
 
 add_library(axiom_engine STATIC ${AXIOM_CORE_SOURCES})
 target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
-target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
+target_compile_definitions(axiom_engine PUBLIC AXIOM_STATIC PRIVATE AXIOM_ENGINE_EXPORTS)
 target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit Threads::Threads)
 if(UNIX AND NOT APPLE)
     target_link_libraries(axiom_engine PUBLIC numa)

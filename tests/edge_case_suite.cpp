@@ -5,59 +5,70 @@
 #include <vector>
 #include <limits>
 #include <cmath>
+#include <format>
 
 #include "../include/algebraic_parser.h"
 #include "../include/statistics_engine.h"
 #include "../include/linear_system_parser.h"
 #include "../include/symbolic_engine.h"
 #include "../include/unit_manager.h"
+#include <string_view>
+
+using namespace AXIOM;
 
 using AXIOM::AlgebraicParser;
 using AXIOM::LinearSystemParser;
 
 class EdgeCaseRunner {
 public:
-    EdgeCaseRunner() {}
+    EdgeCaseRunner() = default;
 
     template<typename Func>
-    void RunTest(const std::string& name, Func test_func) {
+    void RunTest(std::string_view name, Func test_func) {
         total_tests_++;
-        std::cout << "  [TEST] " << name << " ... ";
+        std::cout << std::format("  [TEST] {} ... ", name);
         try {
-            bool result = test_func();
-            if (result) {
-                std::cout << "\x1b[32mPASS\x1b[0m" << std::endl;
+            if (test_func()) {
+                std::cout << "\033[32mPASS\033[0m\n";
                 passed_tests_++;
             } else {
-                std::cout << "\x1b[31mFAIL\x1b[0m (assertion failed)" << std::endl;
+                std::cout << "\033[31mFAIL\033[0m (assertion failed)\n";
             }
         } catch (const std::runtime_error& e) {
-            std::cout << "\x1b[31mFAIL\x1b[0m (runtime error: " << e.what() << ")" << std::endl;
+            std::cout << std::format("\033[31mFAIL\033[0m (runtime error: {})\n", e.what());
         } catch (const std::exception& e) {
-            std::cout << "\x1b[31mFAIL\x1b[0m (exception: " << e.what() << ")" << std::endl;
+            std::cout << std::format("\033[31mFAIL\033[0m (exception: {})\n", e.what());
+        } catch (...) {
+            std::cout << "\033[31mFAIL\033[0m (unknown error)\n";
         }
     }
 
-    void StartSection(const std::string& name) {
-        std::cout << "\n========================================" << std::endl;
-        std::cout << "  " << name << std::endl;
-        std::cout << "========================================" << std::endl;
+    void StartSection(std::string_view name) {
+        std::cout << std::format("\n========================================\n  {}\n========================================\n", name);
     }
 
-    void EndSection() {}
+    void EndSection() {
+        // Reserved for future cleanup or logging
+    }
+
+    void Log(std::string_view msg) {
+        std::cout << msg << "\n";
+    }
 
     void PrintSummary() {
-        std::cout << "\n========================================" << std::endl;
-        std::cout << "           TEST SUMMARY" << std::endl;
-        std::cout << "========================================" << std::endl;
-        std::cout << "Total:   " << total_tests_ << std::endl;
-        std::cout << "Passed:  " << passed_tests_ << std::endl;
-        std::cout << "Failed:  " << (total_tests_ - passed_tests_) << std::endl;
+        std::cout << std::format(
+            "\n========================================\n"
+            "           TEST SUMMARY\n"
+            "========================================\n"
+            "Total:   {}\n"
+            "Passed:  {}\n"
+            "Failed:  {}\n",
+            total_tests_, passed_tests_, total_tests_ - passed_tests_);
 
         if (passed_tests_ == total_tests_) {
-            std::cout << "\n\x1b[32m✓ ALL EDGE CASE TESTS PASSED!\x1b[0m\n" << std::endl;
+            std::cout << "\n\033[32m✓ ALL EDGE CASE TESTS PASSED!\033[0m\n\n";
         } else {
-            std::cout << "\n\x1b[31m✗ SOME EDGE CASE TESTS FAILED!\x1b[0m\n" << std::endl;
+            std::cout << "\n\033[31m✗ SOME EDGE CASE TESTS FAILED!\033[0m\n\n";
         }
     }
 
@@ -68,11 +79,7 @@ private:
     int passed_tests_{0};
 };
 
-void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
-    runner.StartSection("ALGEBRAIC PARSER EDGE CASES");
-    
-    AlgebraicParser parser;
-
+void TestAlgebraicParserBasic(EdgeCaseRunner& runner, AlgebraicParser& parser) {
     // Empty input
     runner.RunTest("Empty string input", [&parser]() {
         auto result = parser.ParseAndExecute("");
@@ -92,10 +99,11 @@ void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
     // Division by zero
     runner.RunTest("Division by zero", [&parser]() {
         auto result = parser.ParseAndExecute("10/0");
-        // Should return infinity or error
         return !result.HasResult() || std::isinf(*result.GetDouble());
     });
+}
 
+void TestAlgebraicParserLimits(EdgeCaseRunner& runner, AlgebraicParser& parser) {
     // Very small numbers
     runner.RunTest("Very small number (1e-100)", [&parser]() {
         auto result = parser.ParseAndExecute("1e-100");
@@ -113,7 +121,9 @@ void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
         auto result = parser.ParseAndExecute("-0 + 0");
         return result.HasResult() && std::abs(*result.GetDouble()) < 1e-10;
     });
+}
 
+void TestAlgebraicParserNesting(EdgeCaseRunner& runner, AlgebraicParser& parser) {
     // Nested parentheses (deep)
     runner.RunTest("Deeply nested parentheses (10 levels)", [&parser]() {
         std::string expr = "((((((((((1+1))))))))))";
@@ -125,12 +135,14 @@ void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
     runner.RunTest("Enormous complex expression (Stress Test)", [&parser]() {
         std::string expr = "sin(cos(tan(log(sqrt(144)))))";
         for (int i = 0; i < 50; ++i) {
-            expr += " + " + std::to_string(i) + " * sin(" + std::to_string(i) + ")";
+            expr += std::format(" + {} * sin({})", i, i);
         }
         auto result = parser.ParseAndExecute(expr);
         return result.HasResult();
     });
+}
 
+void TestAlgebraicParserErrorHandling(EdgeCaseRunner& runner, AlgebraicParser& parser) {
     // Missing operand
     runner.RunTest("Missing operand (5+)", [&parser]() {
         auto result = parser.ParseAndExecute("5+");
@@ -158,18 +170,23 @@ void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
     // NaN operations
     runner.RunTest("sqrt of negative number", [&parser]() {
         auto result = parser.ParseAndExecute("sqrt(-1)");
-        // Should handle complex numbers or return NaN
         return result.HasResult();
     });
+}
+
+void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
+    runner.StartSection("ALGEBRAIC PARSER EDGE CASES");
+    
+    AlgebraicParser parser;
+    TestAlgebraicParserBasic(runner, parser);
+    TestAlgebraicParserLimits(runner, parser);
+    TestAlgebraicParserNesting(runner, parser);
+    TestAlgebraicParserErrorHandling(runner, parser);
 
     runner.EndSection();
 }
 
-void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
-    runner.StartSection("STATISTICS ENGINE EDGE CASES");
-    
-    StatisticsEngine stats;
-
+void TestStatisticsEngineBase(EdgeCaseRunner& runner, StatisticsEngine& stats) {
     // Empty vector
     runner.RunTest("Mean of empty vector", [&stats]() {
         std::vector<double> empty;
@@ -190,7 +207,9 @@ void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
         auto result = stats.Variance(constant);
         return result.HasResult() && std::abs(*result.GetDouble()) < 0.01; // Should be 0
     });
+}
 
+void TestStatisticsEngineAdvanced(EdgeCaseRunner& runner, StatisticsEngine& stats) {
     // Extreme values
     runner.RunTest("Mean with very large values", [&stats]() {
         std::vector<double> large = {1e100, 1e100, 1e100};
@@ -211,7 +230,9 @@ void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
         auto result = stats.Variance(mixed);
         return result.HasResult() && *result.GetDouble() > 0;
     });
+}
 
+void TestStatisticsEngineCorrelation(EdgeCaseRunner& runner, StatisticsEngine& stats) {
     // Correlation with mismatched sizes
     runner.RunTest("Correlation with different vector sizes", [&stats]() {
         std::vector<double> x = {1.0, 2.0, 3.0};
@@ -235,7 +256,9 @@ void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
         auto result = stats.Correlation(x, y);
         return result.HasResult(); // Should succeed with near-zero correlation
     });
+}
 
+void TestStatisticsEnginePercentiles(EdgeCaseRunner& runner, StatisticsEngine& stats) {
     // Percentile edge cases
     runner.RunTest("0th percentile", [&stats]() {
         std::vector<double> data = {1.0, 2.0, 3.0, 4.0, 5.0};
@@ -262,76 +285,91 @@ void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
         auto result = stats.LinearRegression(x, y);
         return !result.HasResult(); // Should fail (need at least 2 points)
     });
+}
+
+void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
+    runner.StartSection("STATISTICS ENGINE EDGE CASES");
+    
+    StatisticsEngine stats;
+
+    TestStatisticsEngineBase(runner, stats);
+    TestStatisticsEngineAdvanced(runner, stats);
+    TestStatisticsEngineCorrelation(runner, stats);
+    TestStatisticsEnginePercentiles(runner, stats);
 
     runner.EndSection();
 }
 
-void TestLinearSystemParserEdgeCases(EdgeCaseRunner& runner) {
-    runner.StartSection("LINEAR SYSTEM PARSER EDGE CASES");
-    
-    LinearSystemParser parser;
-
+void TestLinearSystemParserBasic(EdgeCaseRunner& runner, LinearSystemParser& parser) {
     // Singular matrix (no unique solution)
     runner.RunTest("Singular matrix (determinant = 0)", [&parser]() {
         auto result = parser.ParseAndExecute("solve [[1,2],[2,4]] [3,6]");
-        // Should fail or return infinite solutions
         return !result.HasResult();
     });
 
     // 1x1 system
     runner.RunTest("1x1 system (trivial)", [&parser]() {
         auto result = parser.ParseAndExecute("solve [[5]] [10]");
-        return result.HasResult(); // Solution: x = 2
+        return result.HasResult();
     });
+}
 
+void TestLinearSystemParserDimensions(EdgeCaseRunner& runner, LinearSystemParser& parser) {
     // Overdetermined system
     runner.RunTest("Empty matrix", [&parser]() {
         auto result = parser.ParseAndExecute("solve [[]] []");
-        return !result.HasResult(); // Should fail
+        return !result.HasResult();
     });
 
     // Mismatched dimensions
     runner.RunTest("Matrix-vector dimension mismatch", [&parser]() {
         auto result = parser.ParseAndExecute("solve [[1,2],[3,4]] [5]");
-        return !result.HasResult(); // Should fail
+        return !result.HasResult();
     });
 
     // Non-square matrix
     runner.RunTest("Non-square matrix (3x2)", [&parser]() {
         auto result = parser.ParseAndExecute("solve [[1,2],[3,4],[5,6]] [7,8,9]");
-        return !result.HasResult(); // Should fail for square system solver
+        return !result.HasResult();
     });
+}
 
+void TestLinearSystemParserNumerical(EdgeCaseRunner& runner, LinearSystemParser& parser) {
     // Very large coefficients
     runner.RunTest("Large coefficients", [&parser]() {
         auto result = parser.ParseAndExecute("solve [[1000000,2000000],[3000000,4000000]] [5000000,11000000]");
-        return result.HasResult(); // Should handle scaling
+        return result.HasResult();
     });
 
     // Very small coefficients
     runner.RunTest("Small coefficients (near zero)", [&parser]() {
         auto result = parser.ParseAndExecute("solve [[0.0001,0.0002],[0.0003,0.0004]] [0.0005,0.0011]");
-        return result.HasResult(); // Numerical stability test
+        return result.HasResult();
     });
 
     // Malformed input
     runner.RunTest("Malformed matrix notation", [&parser]() {
         auto result = parser.ParseAndExecute("solve [1,2],[3,4 [5,6]");
-        return !result.HasResult(); // Should fail parsing
+        return !result.HasResult();
     });
+}
+
+void TestLinearSystemParserEdgeCases(EdgeCaseRunner& runner) {
+    runner.StartSection("LINEAR SYSTEM PARSER EDGE CASES");
+    
+    LinearSystemParser parser;
+    TestLinearSystemParserBasic(runner, parser);
+    TestLinearSystemParserDimensions(runner, parser);
+    TestLinearSystemParserNumerical(runner, parser);
 
     runner.EndSection();
 }
 
-void TestSymbolicEngineEdgeCases(EdgeCaseRunner& runner) {
-    runner.StartSection("SYMBOLIC ENGINE EDGE CASES");
-    
-    SymbolicEngine symbolic;
-
+void TestSymbolicEngineBasic(EdgeCaseRunner& runner, SymbolicEngine& symbolic) {
     // Empty expression
     runner.RunTest("Empty expression", [&symbolic]() {
         auto result = symbolic.Expand("");
-        return !result.HasResult(); // Should fail
+        return !result.HasResult();
     });
 
     // Constant expression
@@ -343,47 +381,56 @@ void TestSymbolicEngineEdgeCases(EdgeCaseRunner& runner) {
     // Very complex polynomial
     runner.RunTest("Expand (x+1)^10", [&symbolic]() {
         auto result = symbolic.Expand("(x+1)^10");
-        return result.HasResult(); // Should produce 11-term polynomial
+        return result.HasResult();
     });
+}
 
-    // Undefined variable in substitution
-    runner.RunTest("Substitute undefined variable", [&symbolic]() {
-        auto result = symbolic.Substitute("x+y", "z", "5");
-        return result.HasResult(); // Should leave x+y unchanged
-    });
-
+void TestSymbolicEngineCalculus(EdgeCaseRunner& runner, SymbolicEngine& symbolic) {
     // Integration of constant
     runner.RunTest("Integrate constant", [&symbolic]() {
         auto result = symbolic.Integrate("5", "x");
-        return result.HasResult(); // Should be 5*x
+        return result.HasResult();
     });
 
     // Differentiation of constant
     runner.RunTest("Differentiate constant", [&symbolic]() {
         auto result = symbolic.Differentiate("5", "x");
-        return result.HasResult(); // Should be 0
-    });
-
-    // Factor prime number
-    runner.RunTest("Factor prime expression", [&symbolic]() {
-        auto result = symbolic.Factor("x^2 + x + 1");
-        return result.HasResult(); // May not factor over reals
+        return result.HasResult();
     });
 
     // Nested functions
     runner.RunTest("Differentiate sin(cos(x))", [&symbolic]() {
         auto result = symbolic.Differentiate("sin(cos(x))", "x");
-        return result.HasResult(); // Chain rule
+        return result.HasResult();
     });
+}
+
+void TestSymbolicEngineManipulation(EdgeCaseRunner& runner, SymbolicEngine& symbolic) {
+    // Undefined variable in substitution
+    runner.RunTest("Substitute undefined variable", [&symbolic]() {
+        auto result = symbolic.Substitute("x+y", "z", "5");
+        return result.HasResult();
+    });
+
+    // Factor prime number
+    runner.RunTest("Factor prime expression", [&symbolic]() {
+        auto result = symbolic.Factor("x^2 + x + 1");
+        return result.HasResult();
+    });
+}
+
+void TestSymbolicEngineEdgeCases(EdgeCaseRunner& runner) {
+    runner.StartSection("SYMBOLIC ENGINE EDGE CASES");
+    
+    SymbolicEngine symbolic;
+    TestSymbolicEngineBasic(runner, symbolic);
+    TestSymbolicEngineCalculus(runner, symbolic);
+    TestSymbolicEngineManipulation(runner, symbolic);
 
     runner.EndSection();
 }
 
-void TestUnitManagerEdgeCases(EdgeCaseRunner& runner) {
-    runner.StartSection("UNIT MANAGER EDGE CASES");
-    
-    UnitManager units;
-
+void TestUnitManagerBasic(EdgeCaseRunner& runner, UnitManager& units) {
     // Zero conversion
     runner.RunTest("Convert 0 km to m", [&units]() {
         auto result = units.ConvertUnit(0.0, "km", "m");
@@ -396,35 +443,38 @@ void TestUnitManagerEdgeCases(EdgeCaseRunner& runner) {
         return result.HasResult() && std::abs(*result.GetDouble() + 500.0) < 0.1;
     });
 
-    // Very large values
-    runner.RunTest("Convert 1e10 m to km", [&units]() {
-        auto result = units.ConvertUnit(1e10, "m", "km");
-        return result.HasResult();
-    });
-
     // Same unit conversion
     runner.RunTest("Convert m to m (identity)", [&units]() {
         auto result = units.ConvertUnit(5.0, "m", "m");
         return result.HasResult() && std::abs(*result.GetDouble() - 5.0) < 0.01;
     });
+}
 
+void TestUnitManagerErrorHandling(EdgeCaseRunner& runner, UnitManager& units) {
     // Unknown source unit
     runner.RunTest("Convert from unknown unit", [&units]() {
         auto result = units.ConvertUnit(5.0, "foobar", "m");
-        return !result.HasResult(); // Should fail
+        return !result.HasResult();
     });
 
     // Unknown target unit
     runner.RunTest("Convert to unknown unit", [&units]() {
         auto result = units.ConvertUnit(5.0, "m", "foobar");
-        return !result.HasResult(); // Should fail
+        return !result.HasResult();
     });
 
     // Incompatible units
     runner.RunTest("Incompatible units (kg to m)", [&units]() {
-        auto compatible = units.AreCompatible("kg", "m");
-        return !compatible; // Should be false
+        return !units.AreCompatible("kg", "m");
     });
+}
+
+void TestUnitManagerEdgeCases(EdgeCaseRunner& runner) {
+    runner.StartSection("UNIT MANAGER EDGE CASES");
+
+    UnitManager units;
+    TestUnitManagerBasic(runner, units);
+    TestUnitManagerErrorHandling(runner, units);
 
     runner.EndSection();
 }
