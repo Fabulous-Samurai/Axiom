@@ -58,8 +58,11 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y ninja-build python3-dev libnuma-dev
           python -m pip install nanobind
-      - name: Install SonarCloud Tools
-        uses: SonarSource/sonarcloud-github-c-cpp@v2
+      - name: "Install build-wrapper"
+        run: |
+          curl -sSLo $HOME/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+          unzip -o $HOME/build-wrapper-linux-x86.zip -d $HOME/
+          echo "$HOME/build-wrapper-linux-x86" >> $GITHUB_PATH
       - name: "Configure CMake (Coverage)"
         run: |
           cmake -G "Ninja" -B build \
