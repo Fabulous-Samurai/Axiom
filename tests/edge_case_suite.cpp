@@ -12,6 +12,8 @@
 #include "../include/symbolic_engine.h"
 #include "../include/unit_manager.h"
 
+using namespace AXIOM;
+
 class EdgeCaseRunner {
 public:
     EdgeCaseRunner() {}
