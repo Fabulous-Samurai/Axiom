@@ -5,9 +5,7 @@ Enforces Pillar 1 (Zero-Allocation) and Pillar 5 (Zero-Exception)
 by scanning for forbidden Keywords in the hot-path sources.
 """
 
-import sys
 import os
-import re
 
 # Forbidden patterns for Zenith compliance
 FORBIDDEN_KEYWORDS = {
