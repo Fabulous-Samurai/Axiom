@@ -11,7 +11,7 @@ class DifferentialTest : public ::testing::Test {
 protected:
     AXIOM::AlgebraicParser parser;
     AXIOM::ZenithJIT jit;
-    SymbolicEngine symbolic;
+    AXIOM::SymbolicEngine symbolic;
 };
 
 TEST_F(DifferentialTest, RandomExpressionConsistency) {

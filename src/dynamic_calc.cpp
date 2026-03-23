@@ -31,9 +31,9 @@ std::size_t DynamicCalc::ModeToIndex(CalculationMode mode) noexcept {
 }
 
 DynamicCalc::DynamicCalc() {
-    statistics_engine_ = std::make_unique<StatisticsEngine>();
-    symbolic_engine_   = std::make_unique<SymbolicEngine>();
-    unit_manager_      = std::make_unique<UnitManager>();
+    statistics_engine_ = std::make_unique<AXIOM::StatisticsEngine>();
+    symbolic_engine_   = std::make_unique<AXIOM::SymbolicEngine>();
+    unit_manager_      = std::make_unique<AXIOM::UnitManager>();
 
     parsers_[ModeToIndex(CalculationMode::ALGEBRAIC)].emplace<AXIOM::AlgebraicParser>();
     parsers_[ModeToIndex(CalculationMode::LINEAR_SYSTEM)].emplace<AXIOM::LinearSystemParser>();

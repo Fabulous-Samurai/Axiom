@@ -20,7 +20,7 @@ static std::vector<double> generate_random_vector(size_t size) {
 
 static void BM_Median(benchmark::State& state) {
     size_t size = static_cast<size_t>(state.range(0));
-    StatisticsEngine engine;
+    AXIOM::StatisticsEngine engine;
     auto data = generate_random_vector(size);
     for (auto _ : state) {
         auto res = engine.Median(data);
@@ -31,7 +31,7 @@ BENCHMARK(BM_Median)->RangeMultiplier(10)->Range(100, 100000);
 
 static void BM_Percentile(benchmark::State& state) {
     size_t size = static_cast<size_t>(state.range(0));
-    StatisticsEngine engine;
+    AXIOM::StatisticsEngine engine;
     auto data = generate_random_vector(size);
     for (auto _ : state) {
         auto res = engine.Percentile(data, 50.0);

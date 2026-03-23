@@ -10,7 +10,7 @@ using namespace AXIOM;
 
 void TestBasicArithmetic() {
     std::cout << "[ZenithJIT] Testing Basic Arithmetic..." << std::endl;
-    AlgebraicParser parser;
+    AXIOM::AlgebraicParser parser;
     ZenithJIT jit;
 
     std::string expr = "2 + 3 * 4 - 8 / 2"; // 2 + 12 - 4 = 10
@@ -29,7 +29,7 @@ void TestBasicArithmetic() {
 
 void TestVariables() {
     std::cout << "[ZenithJIT] Testing Variables..." << std::endl;
-    AlgebraicParser parser;
+    AXIOM::AlgebraicParser parser;
     ZenithJIT jit;
 
     std::string expr = "x * x + y"; // x=3, y=5 => 3*3+5 = 14
@@ -49,7 +49,7 @@ void TestVariables() {
 
 void TestNestedComplexity() {
     std::cout << "[ZenithJIT] Testing Nested Complexity..." << std::endl;
-    AlgebraicParser parser;
+    AXIOM::AlgebraicParser parser;
     ZenithJIT jit;
 
     std::string expr = "(a + b) * (a - b) / (a * a + b * b)"; // a=4, b=2 => (6 * 2) / (16 + 4) = 12 / 20 = 0.6

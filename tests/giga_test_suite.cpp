@@ -270,62 +270,62 @@ void TestLinearSystemParser(TestRunner& runner) {
 void TestStatisticsEngine(TestRunner& runner) {
     runner.StartSection("STATISTICS ENGINE TESTS");
     
-    StatisticsEngine stats;
+    AXIOM::StatisticsEngine stats;
     
     // Test 1: Mean calculation
     runner.RunTest("Mean of [1,2,3,4,5]", [&stats]() {
-        Vector data = {1.0, 2.0, 3.0, 4.0, 5.0};
+        AXIOM::Vector data = {1.0, 2.0, 3.0, 4.0, 5.0};
         auto result = stats.Mean(data);
         return result.HasResult() && approx_equal(*result.GetDouble(), 3.0);
     });
     
     // Test 2: Standard deviation
     runner.RunTest("StdDev of [2,4,6,8,10]", [&stats]() {
-        Vector data = {2.0, 4.0, 6.0, 8.0, 10.0};
+        AXIOM::Vector data = {2.0, 4.0, 6.0, 8.0, 10.0};
         auto result = stats.StandardDeviation(data);
         return result.HasResult() && *result.GetDouble() > 0.0;
     });
     
     // Test 3: Median
     runner.RunTest("Median of [1,2,3,4,5]", [&stats]() {
-        Vector data = {1.0, 2.0, 3.0, 4.0, 5.0};
+        AXIOM::Vector data = {1.0, 2.0, 3.0, 4.0, 5.0};
         auto result = stats.Median(data);
         return result.HasResult() && approx_equal(*result.GetDouble(), 3.0);
     });
     
     // Test 4: Variance
     runner.RunTest("Variance of [1,2,3,4,5]", [&stats]() {
-        Vector data = {1.0, 2.0, 3.0, 4.0, 5.0};
+        AXIOM::Vector data = {1.0, 2.0, 3.0, 4.0, 5.0};
         auto result = stats.Variance(data);
         return result.HasResult() && approx_equal(*result.GetDouble(), 2.5, 0.1);
     });
     
     // Test 5: Linear regression
     runner.RunTest("Linear regression y=2x+1", [&stats]() {
-        Vector x = {1.0, 2.0, 3.0, 4.0, 5.0};
-        Vector y = {3.0, 5.0, 7.0, 9.0, 11.0};
+        AXIOM::Vector x = {1.0, 2.0, 3.0, 4.0, 5.0};
+        AXIOM::Vector y = {3.0, 5.0, 7.0, 9.0, 11.0};
         auto result = stats.LinearRegression(x, y);
         return result.HasResult();
     });
     
     // Test 6: Correlation
     runner.RunTest("Correlation coefficient", [&stats]() {
-        Vector x = {1.0, 2.0, 3.0, 4.0, 5.0};
-        Vector y = {2.0, 4.0, 6.0, 8.0, 10.0};
+        AXIOM::Vector x = {1.0, 2.0, 3.0, 4.0, 5.0};
+        AXIOM::Vector y = {2.0, 4.0, 6.0, 8.0, 10.0};
         auto result = stats.Correlation(x, y);
         return result.HasResult() && approx_equal(*result.GetDouble(), 1.0, 0.01);
     });
     
     // Test 7: Mode
     runner.RunTest("Mode of dataset", [&stats]() {
-        Vector data = {1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 4.0};
+        AXIOM::Vector data = {1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 4.0};
         auto result = stats.Mode(data);
         return result.HasResult();
     });
     
     // Test 8: Percentile
     runner.RunTest("50th Percentile (Median)", [&stats]() {
-        Vector data = {1.0, 2.0, 3.0, 4.0, 5.0};
+        AXIOM::Vector data = {1.0, 2.0, 3.0, 4.0, 5.0};
         auto result = stats.Percentile(data, 50.0);
         return result.HasResult() && approx_equal(*result.GetDouble(), 3.0);
     });
@@ -336,7 +336,7 @@ void TestStatisticsEngine(TestRunner& runner) {
 void TestSymbolicEngine(TestRunner& runner) {
     runner.StartSection("SYMBOLIC ENGINE TESTS");
     
-    SymbolicEngine symbolic;
+    AXIOM::SymbolicEngine symbolic;
     
     // Test 1: Expand expression
     runner.RunTest("Expand (x+1)^2", [&symbolic]() {
@@ -380,7 +380,7 @@ void TestSymbolicEngine(TestRunner& runner) {
 void TestUnitManager(TestRunner& runner) {
     runner.StartSection("UNIT MANAGER TESTS");
     
-    UnitManager units;
+    AXIOM::UnitManager units;
     
     // Test 1: Length conversion km to m
     runner.RunTest("Convert 1 km to m", [&units]() {
@@ -428,8 +428,8 @@ void TestUnitManager(TestRunner& runner) {
 void TestPlotEngine(TestRunner& runner) {
     runner.StartSection("PLOT ENGINE TESTS");
     
-    PlotEngine plot;
-    PlotConfig config;
+    AXIOM::PlotEngine plot;
+    AXIOM::PlotConfig config;
     config.width = 40;
     config.height = 10;
     
@@ -453,15 +453,15 @@ void TestPlotEngine(TestRunner& runner) {
     
     // Test 4: Plot data points
     runner.RunTest("Plot data points", [&plot, &config]() {
-        Vector x = {1.0, 2.0, 3.0, 4.0, 5.0};
-        Vector y = {1.0, 4.0, 9.0, 16.0, 25.0};
+        AXIOM::Vector x = {1.0, 2.0, 3.0, 4.0, 5.0};
+        AXIOM::Vector y = {1.0, 4.0, 9.0, 16.0, 25.0};
         std::string result = plot.PlotData(x, y, config);
         return !result.empty();
     });
     
     // Test 5: Histogram
     runner.RunTest("Generate histogram", [&plot, &config]() {
-        Vector data = {1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 4.0, 5.0};
+        AXIOM::Vector data = {1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 4.0, 5.0};
         std::string result = plot.Histogram(data, 5, config);
         return !result.empty();
     });
@@ -530,7 +530,7 @@ void TestEigenEngine(TestRunner& runner) {
         return approx_equal(C(0, 0), 6.0) && approx_equal(C(1, 1), 12.0);
     });
     
-    // Test 7: Solve linear system
+    // Test 7: Solve linear system Ax=b
     runner.RunTest("Solve linear system Ax=b", [&eigen]() {
         std::vector<std::vector<double>> data_a = {{2, 1}, {1, 3}};
         std::vector<double> data_b = {8, 13};
@@ -731,4 +731,3 @@ int main(int argc, char** argv) {
     
     return runner.GetExitCode();
 }
-

@@ -238,6 +238,7 @@ target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
 target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit Threads::Threads)
 if(UNIX AND NOT APPLE)
     target_link_libraries(axiom_engine PUBLIC numa)
+endif()
 if(AXIOM_ENABLE_NANOBIND)
     nanobind_add_module(axiom_core src/python_bindings.cpp)
     target_include_directories(axiom_core PUBLIC "${CMAKE_SOURCE_DIR}/include" "${asmjit_SOURCE_DIR}/src")
@@ -246,8 +247,6 @@ if(AXIOM_ENABLE_NANOBIND)
 endif()
 if(WIN32)
     target_link_libraries(axiom_engine PUBLIC bcrypt)
-else()
-    target_link_libraries(axiom_engine PUBLIC numa)
 endif()
 target_include_directories(axiom_engine PRIVATE ${Python_INCLUDE_DIRS})
 
@@ -319,5 +318,4 @@ add_test(NAME arena_stress COMMAND arena_stress)
 add_test(NAME simd_matrix_test COMMAND simd_matrix_test)
 
 # Include asmjit headers globally
-include_directories(SYSTEM \"${asmjit_SOURCE_DIR}/src\")
-
+include_directories(SYSTEM "${asmjit_SOURCE_DIR}/src")

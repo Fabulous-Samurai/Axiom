@@ -441,30 +441,12 @@ std::string EigenEngine::GetPerformanceReport() const {
         metrics = last_metrics_;
     }
 
-    CPUPerformanceMetrics metrics_copy;
-    {
-        std::lock_guard<std::mutex> lock(metrics_mutex_);
-        metrics_copy = last_metrics_;
-    }
-
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
     std::stringstream ss;
-    CPUPerformanceMetrics metrics_copy;
-
-    {
-        std::lock_guard<std::mutex> lock(metrics_mutex_);
-        metrics_copy = last_metrics_;
-    }
-
     ss << "Eigen Engine Performance Report:\n";
     ss << "   Last Operation: " << metrics.operation_type << "\n";
     ss << "   Execution Time: " << metrics.execution_time_ms << " ms\n";
     ss << "   Memory Used: " << metrics.memory_used_bytes << " bytes\n";
     ss << "   SIMD Used: " << (metrics.simd_used ? "Yes" : "No") << "\n";
-    ss << "   Last Operation: " << metrics_copy.operation_type << "\n";
-    ss << "   Execution Time: " << metrics_copy.execution_time_ms << " ms\n";
-    ss << "   Memory Used: " << metrics_copy.memory_used_bytes << " bytes\n";
-    ss << "   SIMD Used: " << (metrics_copy.simd_used ? "Yes" : "No") << "\n";
     ss << "   Optimization Level: ";
     
     switch (optimization_level_) {
@@ -484,14 +466,6 @@ std::string EigenEngine::GetPerformanceReport() const {
         ss << "\n   🚗 Racing Speed: Fast! (<100ms)";
     } else {
         ss << "\n   🐌 Needs Optimization (>" << metrics.execution_time_ms << "ms)";
-    if (metrics_copy.execution_time_ms < 1.0) {
-        ss << "\n   SENNA SPEED: Lightning Fast! (<1ms)";
-    } else if (metrics_copy.execution_time_ms < 10.0) {
-        ss << "\n   🏁 FORMULA 1 Speed: Very Fast! (<10ms)";
-    } else if (metrics_copy.execution_time_ms < 100.0) {
-        ss << "\n   🚗 Racing Speed: Fast! (<100ms)";
-    } else {
-        ss << "\n   🐌 Needs Optimization (>" << metrics_copy.execution_time_ms << "ms)";
     }
     
     return ss.str();
@@ -502,13 +476,12 @@ EigenEngine::Matrix EigenEngine::OptimizedMatMul(const Matrix& A, const Matrix& 
     // Use Eigen's optimized BLAS if available
     Matrix result = A * B;
     
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    // THREAD-SAFETY FIX: Protect mutable metrics with mutex
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    last_metrics_.simd_used = simd_enabled_;
+    {
+        std::lock_guard<std::mutex> lock(metrics_mutex_);
+        // THREAD-SAFETY FIX: Protect mutable metrics with mutex
+        // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
+        last_metrics_.simd_used = simd_enabled_;
+    }
     
     return result;
 }
@@ -516,13 +489,12 @@ EigenEngine::Matrix EigenEngine::OptimizedMatMul(const Matrix& A, const Matrix& 
 EigenEngine::Vector EigenEngine::OptimizedMatVecMul(const Matrix& A, const Vector& x) const {
     Vector result = A * x;
     
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    // THREAD-SAFETY FIX: Protect mutable metrics with mutex
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    last_metrics_.simd_used = simd_enabled_;
+    {
+        std::lock_guard<std::mutex> lock(metrics_mutex_);
+        // THREAD-SAFETY FIX: Protect mutable metrics with mutex
+        // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
+        last_metrics_.simd_used = simd_enabled_;
+    }
     
     return result;
 }
@@ -547,8 +519,9 @@ PerformanceTimer::PerformanceTimer(const std::string& operation_name)
 }
 
 PerformanceTimer::~PerformanceTimer() {
-    // Performance timing suppressed for maximum speed
-    // Timing data stored internally but not printed to avoid I/O overhead
+    // Performance timing suppressed for maximum speed.
+    // Timing data is stored internally but not printed to avoid I/O overhead
+    // during compute-intensive operations.
 }
 
 double PerformanceTimer::GetElapsedMs() const {
@@ -574,10 +547,7 @@ auto EigenEngine::MeasurePerformance(Func&& func, const std::string& operation) 
 void EigenEngine::UpdateMetrics(const std::string& operation, double time_ms, size_t memory_bytes) const {
     std::lock_guard<std::mutex> lock(metrics_mutex_);
     // THREAD-SAFETY FIX: Protect mutable metrics with mutex
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
     // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
     last_metrics_.operation_type = operation;
     last_metrics_.execution_time_ms = time_ms;
     last_metrics_.memory_used_bytes = memory_bytes;

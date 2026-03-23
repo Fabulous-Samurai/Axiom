@@ -21,15 +21,14 @@
 #include "plot_parser.h"
 #include "python_parser.h"
 
-// Engine classes are declared in global namespace in this codebase.
-class SymbolicEngine;
-class StatisticsEngine;
-class UnitManager;
-
 #include "axiom_export.h"
 
 namespace AXIOM
 {
+    // Forward declarations within AXIOM namespace
+    class SymbolicEngine;
+    class StatisticsEngine;
+    class UnitManager;
 
     enum class FastArithmeticOp
     {
@@ -57,9 +56,9 @@ namespace AXIOM
         std::array<ParserVariant, kModeSlots> parsers_{};
         CalculationMode current_mode_ = CalculationMode::ALGEBRAIC;
 
-        std::unique_ptr<SymbolicEngine> symbolic_engine_;
-        std::unique_ptr<StatisticsEngine> statistics_engine_;
-        std::unique_ptr<UnitManager> unit_manager_;
+        std::unique_ptr<AXIOM::SymbolicEngine> symbolic_engine_;
+        std::unique_ptr<AXIOM::StatisticsEngine> statistics_engine_;
+        std::unique_ptr<AXIOM::UnitManager> unit_manager_;
 
         [[nodiscard]] static std::size_t ModeToIndex(CalculationMode mode) noexcept;
 
@@ -103,6 +102,3 @@ namespace AXIOM
     };
 
 } // namespace AXIOM
-
-
-

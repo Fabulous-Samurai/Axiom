@@ -68,7 +68,7 @@ private:
 void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("ALGEBRAIC PARSER EDGE CASES");
     
-    AlgebraicParser parser;
+    AXIOM::AlgebraicParser parser;
 
     // Empty input
     runner.RunTest("Empty string input", [&parser]() {
@@ -165,7 +165,7 @@ void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
 void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("STATISTICS ENGINE EDGE CASES");
     
-    StatisticsEngine stats;
+    AXIOM::StatisticsEngine stats;
 
     // Empty vector
     runner.RunTest("Mean of empty vector", [&stats]() {
@@ -266,7 +266,7 @@ void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
 void TestLinearSystemParserEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("LINEAR SYSTEM PARSER EDGE CASES");
     
-    LinearSystemParser parser;
+    AXIOM::LinearSystemParser parser;
 
     // Singular matrix (no unique solution)
     runner.RunTest("Singular matrix (determinant = 0)", [&parser]() {
@@ -323,7 +323,7 @@ void TestLinearSystemParserEdgeCases(EdgeCaseRunner& runner) {
 void TestSymbolicEngineEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("SYMBOLIC ENGINE EDGE CASES");
     
-    SymbolicEngine symbolic;
+    AXIOM::SymbolicEngine symbolic;
 
     // Empty expression
     runner.RunTest("Empty expression", [&symbolic]() {
@@ -379,7 +379,7 @@ void TestSymbolicEngineEdgeCases(EdgeCaseRunner& runner) {
 void TestUnitManagerEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("UNIT MANAGER EDGE CASES");
     
-    UnitManager units;
+    AXIOM::UnitManager units;
 
     // Zero conversion
     runner.RunTest("Convert 0 km to m", [&units]() {
@@ -447,4 +447,3 @@ int main() {
 
     return runner.GetFailedCount();
 }
-

@@ -10,7 +10,7 @@ int main() {
     std::cout << "     CALCULUS FUNCTIONS SUCCESS!    \n";  
     std::cout << "========================================\n";
 
-    AlgebraicParser parser;
+    AXIOM::AlgebraicParser parser;
     int tests_passed = 0;
     int tests_failed = 0;
 

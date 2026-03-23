@@ -4,7 +4,7 @@
 using namespace AXIOM;
 
 TEST(StatisticsEngineTest, MedianOdd) {
-    StatisticsEngine engine;
+    AXIOM::StatisticsEngine engine;
     Vector data = {3.0, 1.0, 2.0};
     auto result = engine.Median(data);
     EXPECT_TRUE(result.HasResult());
@@ -12,7 +12,7 @@ TEST(StatisticsEngineTest, MedianOdd) {
 }
 
 TEST(StatisticsEngineTest, MedianEven) {
-    StatisticsEngine engine;
+    AXIOM::StatisticsEngine engine;
     Vector data = {4.0, 1.0, 3.0, 2.0};
     auto result = engine.Median(data);
     EXPECT_TRUE(result.HasResult());
@@ -20,7 +20,7 @@ TEST(StatisticsEngineTest, MedianEven) {
 }
 
 TEST(StatisticsEngineTest, PercentileBasic) {
-    StatisticsEngine engine;
+    AXIOM::StatisticsEngine engine;
     Vector data = {1.0, 2.0, 3.0, 4.0, 5.0};
     // 50th percentile of {1,2,3,4,5} is 3
     auto result = engine.Percentile(data, 50.0);
@@ -35,7 +35,7 @@ TEST(StatisticsEngineTest, PercentileBasic) {
 }
 
 TEST(StatisticsEngineTest, PercentileEdge) {
-    StatisticsEngine engine;
+    AXIOM::StatisticsEngine engine;
     Vector data = {10.0, 1.0, 5.0};
     // sorted: 1, 5, 10
     EXPECT_NEAR(*engine.Percentile(data, 0.0).GetDouble(), 1.0, 1e-9);
