@@ -23,6 +23,7 @@
 #include <chrono>
 #include <thread>
 #include <optional>
+#include <mutex>
 
 namespace AXIOM {
 
@@ -123,7 +124,10 @@ public:
                            const std::string& method = "BFGS");
     
     // Performance monitoring
-    CPUPerformanceMetrics GetLastMetrics() const { return last_metrics_; }
+    CPUPerformanceMetrics GetLastMetrics() const {
+        std::lock_guard<std::mutex> lock(metrics_mutex_);
+        return last_metrics_;
+    }
     void ResetMetrics();
     std::string GetPerformanceReport() const;
     
@@ -142,6 +146,8 @@ private:
     bool simd_enabled_{true};
     int num_threads_{static_cast<int>(std::thread::hardware_concurrency())};
     // THREAD-SAFETY FIX: mutable allows modification in const methods without const_cast
+    // metrics_mutex_ protects concurrent access to last_metrics_
+    mutable std::mutex metrics_mutex_;
     mutable CPUPerformanceMetrics last_metrics_;
     
     // Internal cache for performance

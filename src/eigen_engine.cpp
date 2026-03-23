@@ -441,17 +441,25 @@ std::string EigenEngine::VectorToString(const Vector& vec, int precision) const 
 }
 
 void EigenEngine::ResetMetrics() {
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
     last_metrics_ = CPUPerformanceMetrics();
     last_metrics_.operation_type = "None";
 }
 
 std::string EigenEngine::GetPerformanceReport() const {
     std::stringstream ss;
+    CPUPerformanceMetrics metrics_copy;
+
+    {
+        std::lock_guard<std::mutex> lock(metrics_mutex_);
+        metrics_copy = last_metrics_;
+    }
+
     ss << "Eigen Engine Performance Report:\n";
-    ss << "   Last Operation: " << last_metrics_.operation_type << "\n";
-    ss << "   Execution Time: " << last_metrics_.execution_time_ms << " ms\n";
-    ss << "   Memory Used: " << last_metrics_.memory_used_bytes << " bytes\n";
-    ss << "   SIMD Used: " << (last_metrics_.simd_used ? "Yes" : "No") << "\n";
+    ss << "   Last Operation: " << metrics_copy.operation_type << "\n";
+    ss << "   Execution Time: " << metrics_copy.execution_time_ms << " ms\n";
+    ss << "   Memory Used: " << metrics_copy.memory_used_bytes << " bytes\n";
+    ss << "   SIMD Used: " << (metrics_copy.simd_used ? "Yes" : "No") << "\n";
     ss << "   Optimization Level: ";
     
     switch (optimization_level_) {
@@ -463,14 +471,14 @@ std::string EigenEngine::GetPerformanceReport() const {
     }
     
     // Performance classification (Senna Speed style!)
-    if (last_metrics_.execution_time_ms < 1.0) {
+    if (metrics_copy.execution_time_ms < 1.0) {
         ss << "\n   SENNA SPEED: Lightning Fast! (<1ms)";
-    } else if (last_metrics_.execution_time_ms < 10.0) {
+    } else if (metrics_copy.execution_time_ms < 10.0) {
         ss << "\n   🏁 FORMULA 1 Speed: Very Fast! (<10ms)";
-    } else if (last_metrics_.execution_time_ms < 100.0) {
+    } else if (metrics_copy.execution_time_ms < 100.0) {
         ss << "\n   🚗 Racing Speed: Fast! (<100ms)";
     } else {
-        ss << "\n   🐌 Needs Optimization (>" << last_metrics_.execution_time_ms << "ms)";
+        ss << "\n   🐌 Needs Optimization (>" << metrics_copy.execution_time_ms << "ms)";
     }
     
     return ss.str();
@@ -481,7 +489,7 @@ EigenEngine::Matrix EigenEngine::OptimizedMatMul(const Matrix& A, const Matrix& 
     // Use Eigen's optimized BLAS if available
     Matrix result = A * B;
     
-    // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
     last_metrics_.simd_used = simd_enabled_;
     
     return result;
@@ -490,7 +498,7 @@ EigenEngine::Matrix EigenEngine::OptimizedMatMul(const Matrix& A, const Matrix& 
 EigenEngine::Vector EigenEngine::OptimizedMatVecMul(const Matrix& A, const Vector& x) const {
     Vector result = A * x;
     
-    // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
     last_metrics_.simd_used = simd_enabled_;
     
     return result;
@@ -535,14 +543,13 @@ auto EigenEngine::MeasurePerformance(Func&& func, const std::string& operation) 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     
-    // THREAD-SAFETY FIX: No const_cast needed - UpdateMetrics uses mutable members
     UpdateMetrics(operation, duration.count() / 1000.0, sizeof(result));
     
     return result;
 }
 
 void EigenEngine::UpdateMetrics(const std::string& operation, double time_ms, size_t memory_bytes) const {
-    // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
     last_metrics_.operation_type = operation;
     last_metrics_.execution_time_ms = time_ms;
     last_metrics_.memory_used_bytes = memory_bytes;
