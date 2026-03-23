@@ -333,35 +333,23 @@ EigenEngine::Vector EigenEngine::Convolution(const Vector& signal1, const Vector
     const int out_size = n1 + n2 - 1;
     const int fft_size = NextPowerOfTwo(out_size);
 
-    std::vector<std::complex<double>> a(static_cast<std::size_t>(fft_size), std::complex<double>(0.0, 0.0));
-    std::vector<std::complex<double>> b(static_cast<std::size_t>(fft_size), std::complex<double>(0.0, 0.0));
+    Vector a = Vector::Zero(fft_size);
+    Vector b = Vector::Zero(fft_size);
 
-    for (int i = 0; i < n1; ++i) {
-        a[static_cast<std::size_t>(i)] = std::complex<double>(signal1(i), 0.0);
-    }
-    for (int i = 0; i < n2; ++i) {
-        b[static_cast<std::size_t>(i)] = std::complex<double>(signal2(i), 0.0);
-    }
+    a.head(n1) = signal1;
+    b.head(n2) = signal2;
 
     Eigen::FFT<double> fft;
-    std::vector<std::complex<double>> A;
-    std::vector<std::complex<double>> B;
+    Eigen::VectorXcd A, B;
     fft.fwd(A, a);
     fft.fwd(B, b);
 
-    for (int i = 0; i < fft_size; ++i) {
-        A[static_cast<std::size_t>(i)] *= B[static_cast<std::size_t>(i)];
-    }
+    A.array() *= B.array();
 
-    std::vector<std::complex<double>> convolved;
+    Vector convolved;
     fft.inv(convolved, A);
 
-    Vector out(out_size);
-    for (int i = 0; i < out_size; ++i) {
-        out(i) = convolved[static_cast<std::size_t>(i)].real();
-    }
-
-    return out;
+    return convolved.head(out_size);
 }
 
 EigenEngine::Vector EigenEngine::CrossCorrelation(const Vector& signal1, const Vector& signal2) const {
