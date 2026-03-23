@@ -228,7 +228,7 @@ if(AXIOM_ENABLE_NANOBIND)
     add_compile_definitions(ENABLE_NANOBIND)
 endif()
 
-add_library(axiom_engine SHARED ${AXIOM_CORE_SOURCES})
+add_library(axiom_engine STATIC ${AXIOM_CORE_SOURCES})
 target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
 target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
 target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit Threads::Threads)
