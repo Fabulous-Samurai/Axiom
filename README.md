@@ -12,7 +12,15 @@ GPU compute, formal verification, and hardware-enforced security.*
 [![C++](https://img.shields.io/badge/C++-23-00599C.svg?logo=cplusplus)]()
 [![TLA+](https://img.shields.io/badge/TLA+-Verified-brightgreen.svg)]()
 [![Vulkan](https://img.shields.io/badge/Vulkan-Compute-red.svg?logo=vulkan)]()
-[![SonarCloud](https://img.shields.io/badge/SonarCloud-Analyzed-orange.svg)]()
+
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Fabulous-Samurai_Axiom&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Fabulous-Samurai_Axiom)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Fabulous-Samurai_Axiom&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Fabulous-Samurai_Axiom)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=Fabulous-Samurai_Axiom&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=Fabulous-Samurai_Axiom)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Fabulous-Samurai_Axiom&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Fabulous-Samurai_Axiom)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Fabulous-Samurai_Axiom&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Fabulous-Samurai_Axiom)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Fabulous-Samurai_Axiom&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Fabulous-Samurai_Axiom)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Fabulous-Samurai_Axiom&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Fabulous-Samurai_Axiom)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=Fabulous-Samurai_Axiom&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=Fabulous-Samurai_Axiom)
 
 [Quick Start](#quick-start) •
 [Architecture](#architecture) •
