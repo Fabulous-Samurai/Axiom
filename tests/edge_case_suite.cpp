@@ -12,6 +12,8 @@
 #include "../include/symbolic_engine.h"
 #include "../include/unit_manager.h"
 
+using namespace AXIOM;
+
 class EdgeCaseRunner {
 public:
     EdgeCaseRunner() {}
@@ -68,7 +70,7 @@ private:
 void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("ALGEBRAIC PARSER EDGE CASES");
     
-    AlgebraicParser parser;
+    AXIOM::AlgebraicParser parser;
 
     // Empty input
     runner.RunTest("Empty string input", [&parser]() {
@@ -266,7 +268,7 @@ void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
 void TestLinearSystemParserEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("LINEAR SYSTEM PARSER EDGE CASES");
     
-    LinearSystemParser parser;
+    AXIOM::LinearSystemParser parser;
 
     // Singular matrix (no unique solution)
     runner.RunTest("Singular matrix (determinant = 0)", [&parser]() {

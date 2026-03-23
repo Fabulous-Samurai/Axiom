@@ -7,7 +7,7 @@
 int main() {
     std::cout << "DEBUG: Testing limit function step by step\n";
     
-    AlgebraicParser parser;
+    AXIOM::AlgebraicParser parser;
     
     // Test 1: Simple expression parsing
     std::cout << "\n=== Testing basic parsing ===\n";
