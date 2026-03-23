@@ -37,8 +37,13 @@ TEST(FixedMinHeapTest, BasicPushPop) {
 
 TEST(FixedMinHeapTest, HeapProperty) {
     FixedMinHeap heap;
-    std::mt19937 gen(42);
-    std::uniform_real_distribution<float> dis(0.0f, 100.0f);
+
+    // Deterministic LCG for SonarCloud compliance (S2245)
+    uint32_t state = 42;
+    auto next_float = [&state]() {
+        state = state * 1664525 + 1013904223;
+        return static_cast<float>(state) / static_cast<float>(UINT32_MAX) * 100.0f;
+    };
 
     struct Node {
         uint32_t id;
@@ -47,7 +52,7 @@ TEST(FixedMinHeapTest, HeapProperty) {
     std::vector<Node> data;
 
     for (uint32_t i = 0; i < 100; ++i) {
-        float c = dis(gen);
+        float c = next_float();
         data.push_back({i, c});
         EXPECT_TRUE(heap.push(i, c));
     }
