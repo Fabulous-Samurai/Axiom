@@ -4,6 +4,7 @@ project(axiom_unittest)
 
 set(TEST_SOURCES
     sample_test.cpp
+    test_eigen_engine.cpp
     ../detailed_hardware_alignment_test.cpp
 )
 
