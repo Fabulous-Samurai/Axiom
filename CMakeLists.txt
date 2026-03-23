@@ -77,8 +77,9 @@ FetchContent_Declare(
 # Nanobind (for Python FFI)
 FetchContent_Declare(
     nanobind
-    URL https://github.com/wjakob/nanobind/archive/refs/tags/v2.4.0.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    GIT_REPOSITORY https://github.com/wjakob/nanobind.git
+    GIT_TAG v2.4.0
+    GIT_SUBMODULES "ext/robin_map"
 )
 
 # Robin-map (Nanobind dependency)
@@ -232,6 +233,9 @@ add_library(axiom_engine SHARED ${AXIOM_CORE_SOURCES})
 target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
 target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
 target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit Threads::Threads)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(axiom_engine PUBLIC numa)
+endif()
 if(WIN32)
     target_link_libraries(axiom_engine PUBLIC bcrypt)
 endif()
