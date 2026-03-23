@@ -192,6 +192,34 @@ EngineResult StatisticsEngine::Percentile(const Vector& data, double p) {
     return CreateSuccessResult(result);
 }
 
+EngineResult StatisticsEngine::Quartiles(const Vector& data) {
+    if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
+
+    auto q1 = Percentile(data, 25.0);
+    auto q2 = Percentile(data, 50.0);
+    auto q3 = Percentile(data, 75.0);
+
+    if (!q1.HasResult() || !q2.HasResult() || !q3.HasResult()) {
+        return CreateErrorResult(CalcErr::DomainError);
+    }
+
+    Vector res = {*q1.GetDouble(), *q2.GetDouble(), *q3.GetDouble()};
+    return CreateSuccessResult(std::move(res));
+}
+
+EngineResult StatisticsEngine::InterquartileRange(const Vector& data) {
+    auto q = Quartiles(data);
+    if (!q.HasResult()) return q;
+
+    if (auto val = q.result.value(); std::holds_alternative<Vector>(val)) {
+        const auto& v = std::get<Vector>(val);
+        if (v.size() == 3) {
+            return CreateSuccessResult(v[2] - v[0]);
+        }
+    }
+    return CreateErrorResult(CalcErr::DomainError);
+}
+
 EngineResult StatisticsEngine::MovingAverage(const Vector& data, int window_size) {
     if (data.empty() || window_size <= 0 || window_size > static_cast<int>(data.size())) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
@@ -210,3 +238,16 @@ EngineResult StatisticsEngine::MovingAverage(const Vector& data, int window_size
     
     return CreateSuccessResult(result);
 }
+
+// Stubs for remaining public API to ensure compilation.
+EngineResult StatisticsEngine::Skewness(const Vector&) { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult StatisticsEngine::Kurtosis(const Vector&) { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult StatisticsEngine::RSquared(const Vector&, const Vector&) { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult StatisticsEngine::NormalPDF(double, double, double) { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult StatisticsEngine::NormalCDF(double, double, double) { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult StatisticsEngine::TDistributionPDF(double, double) { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult StatisticsEngine::ChiSquaredPDF(double, double) { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult StatisticsEngine::TTest(const Vector&, const Vector&) { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult StatisticsEngine::ChiSquaredTest(const Matrix&, const Matrix&) { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult StatisticsEngine::ANOVAOneWay(const std::vector<Vector>&) { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult StatisticsEngine::ExponentialSmoothing(const Vector&, double) { return CreateErrorResult(CalcErr::OperationNotFound); }
