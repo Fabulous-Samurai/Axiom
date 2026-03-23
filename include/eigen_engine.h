@@ -147,6 +147,7 @@ private:
     int num_threads_{static_cast<int>(std::thread::hardware_concurrency())};
 
     // THREAD-SAFETY FIX: mutable allows modification in const methods without const_cast
+    // metrics_mutex_ protects concurrent access to last_metrics_
     // A mutex is required to protect last_metrics_ from data races during concurrent const method calls.
     mutable std::mutex metrics_mutex_;
     mutable CPUPerformanceMetrics last_metrics_;

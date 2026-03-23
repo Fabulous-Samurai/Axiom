@@ -443,6 +443,13 @@ std::string EigenEngine::GetPerformanceReport() const {
 
     std::lock_guard<std::mutex> lock(metrics_mutex_);
     std::stringstream ss;
+    CPUPerformanceMetrics metrics_copy;
+
+    {
+        std::lock_guard<std::mutex> lock(metrics_mutex_);
+        metrics_copy = last_metrics_;
+    }
+
     ss << "Eigen Engine Performance Report:\n";
     ss << "   Last Operation: " << metrics_copy.operation_type << "\n";
     ss << "   Execution Time: " << metrics_copy.execution_time_ms << " ms\n";
@@ -477,6 +484,7 @@ EigenEngine::Matrix EigenEngine::OptimizedMatMul(const Matrix& A, const Matrix& 
     // Use Eigen's optimized BLAS if available
     Matrix result = A * B;
     
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
     // THREAD-SAFETY FIX: Protect mutable metrics with mutex
     std::lock_guard<std::mutex> lock(metrics_mutex_);
     std::lock_guard<std::mutex> lock(metrics_mutex_);
@@ -489,6 +497,7 @@ EigenEngine::Matrix EigenEngine::OptimizedMatMul(const Matrix& A, const Matrix& 
 EigenEngine::Vector EigenEngine::OptimizedMatVecMul(const Matrix& A, const Vector& x) const {
     Vector result = A * x;
     
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
     // THREAD-SAFETY FIX: Protect mutable metrics with mutex
     std::lock_guard<std::mutex> lock(metrics_mutex_);
     std::lock_guard<std::mutex> lock(metrics_mutex_);
@@ -537,13 +546,13 @@ auto EigenEngine::MeasurePerformance(Func&& func, const std::string& operation) 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     
-    // THREAD-SAFETY FIX: No const_cast needed - UpdateMetrics uses mutable members
     UpdateMetrics(operation, duration.count() / 1000.0, sizeof(result));
     
     return result;
 }
 
 void EigenEngine::UpdateMetrics(const std::string& operation, double time_ms, size_t memory_bytes) const {
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
     // THREAD-SAFETY FIX: Protect mutable metrics with mutex
     std::lock_guard<std::mutex> lock(metrics_mutex_);
     std::lock_guard<std::mutex> lock(metrics_mutex_);
