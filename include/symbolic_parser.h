@@ -14,4 +14,3 @@ private:
 };
 
 } // namespace AXIOM
-

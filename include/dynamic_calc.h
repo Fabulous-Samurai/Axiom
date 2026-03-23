@@ -25,7 +25,7 @@
 
 namespace AXIOM
 {
-    // Engine classes
+    // Forward declarations of engine classes within AXIOM namespace
     class SymbolicEngine;
     class StatisticsEngine;
     class UnitManager;
@@ -102,6 +102,3 @@ namespace AXIOM
     };
 
 } // namespace AXIOM
-
-
-

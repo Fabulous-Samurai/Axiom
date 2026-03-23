@@ -1,6 +1,5 @@
 #include "symbolic_engine.h"
 #include "string_helpers.h"
-
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -93,17 +92,15 @@ std::string ReplaceVariableTokens(const std::string& expr, const std::string& va
     return out;
 }
 
-EngineResult EvalScalar(const std::string& expr, const AXIOM::StringUnorderedMap<AXIOM::Number>& context = {}) {
-    AXIOM::AlgebraicParser parser;
+EngineResult EvalScalar(const std::string& expr, const StringUnorderedMap<Number>& context = {}) {
+    AlgebraicParser parser;
     if (context.empty()) {
         return parser.ParseAndExecute(expr);
     }
-    // If context is provided, we might need a way to pass it to ParseAndExecute if it's a special command.
-    // For now, the only special command using context is handled inside its own handler (numeric integration/limit).
     return parser.ParseAndExecuteWithContext(expr, context);
 }
 
-bool EvalDouble(const std::string& expr, double& out, const AXIOM::StringUnorderedMap<AXIOM::Number>& context = {}) {
+bool EvalDouble(const std::string& expr, double& out, const StringUnorderedMap<Number>& context = {}) {
     EngineResult res = EvalScalar(expr, context);
     auto value = res.GetDouble();
     if (!value.has_value() || !std::isfinite(*value)) {
@@ -118,9 +115,9 @@ bool BisectionRoot(const std::string& expr,
                   double left,
                   double right,
                   double& root) {
-    AXIOM::StringUnorderedMap<AXIOM::Number> ctx;
+    StringUnorderedMap<Number> ctx;
     auto eval = [&](double x, double& fx) -> bool {
-        ctx[var] = AXIOM::Number(x);
+        ctx[var] = Number(x);
         return EvalDouble(expr, fx, ctx);
     };
 
@@ -252,7 +249,6 @@ EngineResult SymbolicEngine::Factor(const std::string& expression) {
     size_t x2 = candidate.find("x^2");
     if (x2 != std::string::npos) {
         std::string tail = candidate.substr(x2 + 3);
-        // Expected format: [+|-]bx[+|-]c
         size_t x_pos = tail.find('x');
         if (x_pos != std::string::npos) {
             std::string b_str = tail.substr(0, x_pos);
@@ -269,9 +265,8 @@ EngineResult SymbolicEngine::Factor(const std::string& expression) {
                 const int bi = static_cast<int>(std::round(b));
                 const int ci = static_cast<int>(std::round(c));
                 for (int p = -64; p <= 64; ++p) {
-                    if (p == 0 || ci % p != 0) {
-                        continue;
-                    }
+                    if (p == 0) continue;
+                    if (ci % p != 0) continue;
                     const int q = ci / p;
                     if (p + q == bi) {
                         const std::string p_s = (p >= 0) ? (" + " + std::to_string(p)) : (" - " + std::to_string(-p));
@@ -368,7 +363,7 @@ EngineResult SymbolicEngine::PartialDerivative(const std::string& expr, const st
         derivative_target = ReplaceVariableTokens(source, variable, "x");
     }
 
-    AXIOM::AlgebraicParser parser;
+    AlgebraicParser parser;
     EngineResult res = parser.ParseAndExecute("derive " + derivative_target);
     if (!res.result.has_value()) {
         return CreateErrorResult(CalcErr::OperationNotFound);
@@ -392,7 +387,7 @@ EngineResult SymbolicEngine::TaylorSeries(const std::string& expr, const std::st
     }
 
     const std::string variable = Trim(var);
-    AXIOM::AlgebraicParser parser;
+    AlgebraicParser parser;
     auto current_ast = parser.ParseExpression(expr);
     if (!current_ast) return CreateErrorResult(CalcErr::ParseError);
 
@@ -400,8 +395,8 @@ EngineResult SymbolicEngine::TaylorSeries(const std::string& expr, const std::st
     std::ostringstream series;
     bool any_term = false;
 
-    AXIOM::StringUnorderedMap<AXIOM::Number> context;
-    context[variable] = AXIOM::Number(point);
+    StringUnorderedMap<Number> context;
+    context[variable] = Number(point);
 
     for (int k = 0; k <= order; ++k) {
         auto res = current_ast->Evaluate(context);
@@ -457,15 +452,14 @@ EngineResult SymbolicEngine::SolveEquation(const std::string& equation, const st
     }
 
     std::vector<double> roots;
-    // Increased range and resolution for better root discovery
     const double left = -2000.0;
     const double right = 2000.0;
     const int steps = 1000;
     const double step = (right - left) / static_cast<double>(steps);
 
-    AXIOM::StringUnorderedMap<AXIOM::Number> ctx;
+    StringUnorderedMap<Number> ctx;
     auto eval = [&](double x, double& fx) -> bool {
-        ctx[var] = AXIOM::Number(x);
+        ctx[var] = Number(x);
         return EvalDouble(expr, fx, ctx);
     };
 
@@ -477,7 +471,6 @@ EngineResult SymbolicEngine::SolveEquation(const std::string& equation, const st
         double fx = 0.0;
         bool ok = eval(x, fx);
         if (ok && prev_ok) {
-            // Sign change indicates a root in (prev_x, x)
             if (prev_f * fx <= 0.0) {
                 double root = 0.0;
                 if (BisectionRoot(expr, var, prev_x, x, root)) {
@@ -494,7 +487,7 @@ EngineResult SymbolicEngine::SolveEquation(const std::string& equation, const st
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
-    std::ranges::sort(roots);
+    std::sort(roots.begin(), roots.end());
     std::vector<double> unique_roots;
     for (double r : roots) {
         if (unique_roots.empty() || std::abs(unique_roots.back() - r) > 1e-5) {
@@ -513,8 +506,8 @@ EngineResult SymbolicEngine::SolveSystem(const std::vector<std::string>& equatio
             return CreateErrorResult(CalcErr::ArgumentMismatch);
         }
     }
-    for (const auto& variable : variables) {
-        if (IsBlank(variable)) {
+    for (const auto& var : variables) {
+        if (IsBlank(var)) {
             return CreateErrorResult(CalcErr::ArgumentMismatch);
         }
     }
@@ -536,7 +529,7 @@ EngineResult SymbolicEngine::SolveSystem(const std::vector<std::string>& equatio
     }
     command << "]";
 
-    AXIOM::AlgebraicParser parser;
+    AlgebraicParser parser;
     EngineResult res = parser.ParseAndExecute(command.str());
     if (res.HasResult()) {
         return res;
@@ -567,9 +560,9 @@ EngineResult SymbolicEngine::FindRoots(const std::string& expr, const std::strin
     const double step = (range_max - range_min) / static_cast<double>(samples);
     const std::string variable = Trim(var);
 
-    AXIOM::StringUnorderedMap<AXIOM::Number> ctx;
+    StringUnorderedMap<Number> ctx;
     auto eval = [&](double x, double& fx) -> bool {
-        ctx[variable] = AXIOM::Number(x);
+        ctx[variable] = Number(x);
         return EvalDouble(expr, fx, ctx);
     };
 
@@ -598,7 +591,7 @@ EngineResult SymbolicEngine::FindRoots(const std::string& expr, const std::strin
     if (roots.empty()) {
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
-    std::ranges::sort(roots);
+    std::sort(roots.begin(), roots.end());
     std::vector<double> unique_roots;
     for (double r : roots) {
         if (unique_roots.empty() || std::abs(unique_roots.back() - r) > 1e-5) {

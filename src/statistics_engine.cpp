@@ -13,7 +13,7 @@ EngineResult StatisticsEngine::Mean(const Vector& data) {
         if (!std::isfinite(val)) return CreateErrorResult(CalcErr::DomainError);
         sum += val;
     }
-    return CreateSuccessResult(sum / data.size());
+    return CreateSuccessResult(sum / static_cast<double>(data.size()));
 }
 
 EngineResult StatisticsEngine::Median(const Vector& data) {
@@ -61,7 +61,6 @@ EngineResult StatisticsEngine::Variance(const Vector& data) {
     auto mean_result = Mean(data);
     if (!mean_result.result.has_value()) return mean_result;
 
-    // Use the EngineResult helper to extract a double regardless of underlying variant
     auto mean_val_opt = mean_result.GetDouble();
     if (!mean_val_opt.has_value()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     double mean_val = *mean_val_opt;
@@ -73,7 +72,7 @@ EngineResult StatisticsEngine::Variance(const Vector& data) {
         sum_sq_diff += diff * diff;
     }
     
-    return CreateSuccessResult(sum_sq_diff / (data.size() - 1));
+    return CreateSuccessResult(sum_sq_diff / static_cast<double>(data.size() - 1));
 }
 
 EngineResult StatisticsEngine::StandardDeviation(const Vector& data) {
@@ -153,7 +152,6 @@ EngineResult StatisticsEngine::LinearRegression(const Vector& x, const Vector& y
     double slope = numerator / denominator;
     double intercept = y_mean - slope * x_mean;
     
-    // Return [slope, intercept]
     return CreateSuccessResult(Vector{slope, intercept});
 }
 
@@ -174,7 +172,7 @@ EngineResult StatisticsEngine::Percentile(const Vector& data, double p) {
         return CreateSuccessResult(*it);
     }
     
-    double index = (p / 100.0) * (n - 1);
+    double index = (p / 100.0) * (static_cast<double>(n) - 1.0);
     size_t lower = static_cast<size_t>(index);
     size_t upper = lower + 1;
     
@@ -188,7 +186,7 @@ EngineResult StatisticsEngine::Percentile(const Vector& data, double p) {
     std::nth_element(local_data.begin() + upper, local_data.begin() + upper, local_data.end());
     double val_upper = local_data[upper];
 
-    double weight = index - lower;
+    double weight = index - static_cast<double>(lower);
     double result = val_lower * (1.0 - weight) + val_upper * weight;
     
     return CreateSuccessResult(result);
@@ -228,20 +226,19 @@ EngineResult StatisticsEngine::MovingAverage(const Vector& data, int window_size
     }
     
     Vector result;
-    result.reserve(data.size() - window_size + 1);
+    result.reserve(data.size() - static_cast<size_t>(window_size) + 1);
     
-    for (size_t i = 0; i <= data.size() - window_size; ++i) {
+    for (size_t i = 0; i <= data.size() - static_cast<size_t>(window_size); ++i) {
         double sum = 0.0;
         for (int j = 0; j < window_size; ++j) {
-            sum += data[i + j];
+            sum += data[i + static_cast<size_t>(j)];
         }
-        result.push_back(sum / window_size);
+        result.push_back(sum / static_cast<double>(window_size));
     }
     
     return CreateSuccessResult(result);
 }
 
-// Stubs for remaining public API to ensure compilation.
 EngineResult StatisticsEngine::Skewness(const Vector&) { return CreateErrorResult(CalcErr::OperationNotFound); }
 EngineResult StatisticsEngine::Kurtosis(const Vector&) { return CreateErrorResult(CalcErr::OperationNotFound); }
 EngineResult StatisticsEngine::RSquared(const Vector&, const Vector&) { return CreateErrorResult(CalcErr::OperationNotFound); }

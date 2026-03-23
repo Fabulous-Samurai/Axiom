@@ -108,8 +108,6 @@ void EigenEngine::SetNumThreads(int num_threads) {
 }
 
 EigenEngine::Matrix EigenEngine::CreateMatrix(const std::vector<std::vector<double>>& data) const {
-    SENNA_SPEED_EIGEN("CreateMatrix");
-    
     if (data.empty()) return Matrix();
     
     size_t rows = data.size();
@@ -126,8 +124,6 @@ EigenEngine::Matrix EigenEngine::CreateMatrix(const std::vector<std::vector<doub
 }
 
 EigenEngine::Vector EigenEngine::CreateVector(const std::vector<double>& data) const {
-    SENNA_SPEED_EIGEN("CreateVector");
-    
     Vector vec(data.size());
     for (size_t i = 0; i < data.size(); ++i) {
         vec(i) = data[i];
@@ -137,8 +133,6 @@ EigenEngine::Vector EigenEngine::CreateVector(const std::vector<double>& data) c
 }
 
 EigenEngine::Matrix EigenEngine::MatrixMultiply(const Matrix& A, const Matrix& B) const {
-    SENNA_SPEED_EIGEN("MatrixMultiply");
-    
     if (optimization_level_ >= CPUOptimizationLevel::Vectorized) {
         return OptimizedMatMul(A, B);
     }
@@ -147,8 +141,6 @@ EigenEngine::Matrix EigenEngine::MatrixMultiply(const Matrix& A, const Matrix& B
 }
 
 EigenEngine::Vector EigenEngine::MatrixVectorMultiply(const Matrix& A, const Vector& x) const {
-    SENNA_SPEED_EIGEN("MatrixVectorMultiply");
-    
     if (optimization_level_ >= CPUOptimizationLevel::Vectorized) {
         return OptimizedMatVecMul(A, x);
     }
@@ -157,23 +149,18 @@ EigenEngine::Vector EigenEngine::MatrixVectorMultiply(const Matrix& A, const Vec
 }
 
 EigenEngine::Matrix EigenEngine::MatrixAdd(const Matrix& A, const Matrix& B) const {
-    SENNA_SPEED_EIGEN("MatrixAdd");
     return A + B;
 }
 
 EigenEngine::Matrix EigenEngine::MatrixSubtract(const Matrix& A, const Matrix& B) const {
-    SENNA_SPEED_EIGEN("MatrixSubtract");
     return A - B;
 }
 
 double EigenEngine::Determinant(const Matrix& A) const {
-    SENNA_SPEED_EIGEN("Determinant");
     return A.determinant();
 }
 
 std::optional<EigenEngine::Matrix> EigenEngine::Inverse(const Matrix& A) const noexcept {
-    SENNA_SPEED_EIGEN("Inverse");
-    
     // Use optimal solver based on matrix properties
     if (A.rows() == A.cols()) {
         // For square matrices, use LU decomposition
@@ -190,13 +177,10 @@ std::optional<EigenEngine::Matrix> EigenEngine::Inverse(const Matrix& A) const n
 }
 
 EigenEngine::Matrix EigenEngine::Transpose(const Matrix& A) const {
-    SENNA_SPEED_EIGEN("Transpose");
     return A.transpose();
 }
 
 EigenEngine::Matrix EigenEngine::PseudoInverse(const Matrix& A) const {
-    SENNA_SPEED_EIGEN("PseudoInverse");
-    
     // Use SVD for numerical stability
     Eigen::JacobiSVD<Matrix> svd(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
     
@@ -213,8 +197,6 @@ EigenEngine::Matrix EigenEngine::PseudoInverse(const Matrix& A) const {
 }
 
 std::optional<std::pair<EigenEngine::Vector, EigenEngine::Matrix>> EigenEngine::EigenDecomposition(const Matrix& A) const noexcept {
-    SENNA_SPEED_EIGEN("EigenDecomposition");
-    
     if (A.rows() != A.cols()) {
         return std::nullopt;
     }
@@ -236,15 +218,11 @@ std::optional<std::pair<EigenEngine::Vector, EigenEngine::Matrix>> EigenEngine::
 }
 
 std::tuple<EigenEngine::Matrix, EigenEngine::Vector, EigenEngine::Matrix> EigenEngine::SVD(const Matrix& A) const {
-    SENNA_SPEED_EIGEN("SVD");
-    
     Eigen::JacobiSVD<Matrix> svd(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
     return std::make_tuple(svd.matrixU(), svd.singularValues(), svd.matrixV());
 }
 
 EigenEngine::Vector EigenEngine::SolveLinearSystem(const Matrix& A, const Vector& b) const {
-    SENNA_SPEED_EIGEN("SolveLinearSystem");
-    
     // Choose optimal solver based on matrix properties
     if (A.rows() == A.cols()) {
         // Square system - check for special properties
@@ -266,8 +244,6 @@ EigenEngine::Vector EigenEngine::SolveLinearSystem(const Matrix& A, const Vector
 }
 
 EigenEngine::Matrix EigenEngine::SolveMultipleRHS(const Matrix& A, const Matrix& B) const {
-    SENNA_SPEED_EIGEN("SolveMultipleRHS");
-    
     if (A.rows() == A.cols()) {
         Eigen::FullPivLU<Matrix> lu(A);
         return lu.solve(B);
@@ -277,8 +253,6 @@ EigenEngine::Matrix EigenEngine::SolveMultipleRHS(const Matrix& A, const Matrix&
 }
 
 EigenEngine::Vector EigenEngine::FFT(const Vector& signal) const {
-    SENNA_SPEED_EIGEN("FFT");
-
     if (signal.size() == 0) {
         return Vector();
     }
@@ -298,8 +272,6 @@ EigenEngine::Vector EigenEngine::FFT(const Vector& signal) const {
 }
 
 EigenEngine::Vector EigenEngine::IFFT(const Vector& spectrum) const {
-    SENNA_SPEED_EIGEN("IFFT");
-
     if (spectrum.size() == 0) {
         return Vector();
     }
@@ -322,8 +294,6 @@ EigenEngine::Vector EigenEngine::IFFT(const Vector& spectrum) const {
 }
 
 EigenEngine::Vector EigenEngine::Convolution(const Vector& signal1, const Vector& signal2) const {
-    SENNA_SPEED_EIGEN("Convolution");
-
     if (signal1.size() == 0 || signal2.size() == 0) {
         return Vector();
     }
@@ -353,8 +323,6 @@ EigenEngine::Vector EigenEngine::Convolution(const Vector& signal1, const Vector
 }
 
 EigenEngine::Vector EigenEngine::CrossCorrelation(const Vector& signal1, const Vector& signal2) const {
-    SENNA_SPEED_EIGEN("CrossCorrelation");
-
     if (signal1.size() == 0 || signal2.size() == 0) {
         return Vector();
     }
@@ -368,25 +336,20 @@ EigenEngine::Vector EigenEngine::CrossCorrelation(const Vector& signal1, const V
 }
 
 double EigenEngine::Mean(const Vector& data) const {
-    SENNA_SPEED_EIGEN("Mean");
     return data.mean();
 }
 
 double EigenEngine::StandardDeviation(const Vector& data) const {
-    SENNA_SPEED_EIGEN("StandardDeviation");
     Vector centered = data.array() - data.mean();
     return std::sqrt(centered.array().square().mean());
 }
 
 double EigenEngine::Variance(const Vector& data) const {
-    SENNA_SPEED_EIGEN("Variance");
     Vector centered = data.array() - data.mean();
     return centered.array().square().mean();
 }
 
 EigenEngine::Vector EigenEngine::Normalize(const Vector& data) const {
-    SENNA_SPEED_EIGEN("Normalize");
-    
     double mean_val = data.mean();
     double std_val = StandardDeviation(data);
     
@@ -474,25 +437,11 @@ std::string EigenEngine::GetPerformanceReport() const {
 // Optimized implementations
 EigenEngine::Matrix EigenEngine::OptimizedMatMul(const Matrix& A, const Matrix& B) const {
     // Use Eigen's optimized BLAS if available
-    Matrix result = A * B;
-    
-    {
-        std::lock_guard<std::mutex> lock(metrics_mutex_);
-        last_metrics_.simd_used = simd_enabled_;
-    }
-    
-    return result;
+    return MeasurePerformance([&]() { return Matrix(A * B); }, "MatrixMultiply");
 }
 
 EigenEngine::Vector EigenEngine::OptimizedMatVecMul(const Matrix& A, const Vector& x) const {
-    Vector result = A * x;
-    
-    {
-        std::lock_guard<std::mutex> lock(metrics_mutex_);
-        last_metrics_.simd_used = simd_enabled_;
-    }
-    
-    return result;
+    return MeasurePerformance([&]() { return Vector(A * x); }, "MatrixVectorMultiply");
 }
 
 #ifdef __AVX2__
@@ -515,8 +464,9 @@ PerformanceTimer::PerformanceTimer(const std::string& operation_name)
 }
 
 PerformanceTimer::~PerformanceTimer() {
-    // Performance timing suppressed for maximum speed
-    // Timing data stored internally but not printed to avoid I/O overhead
+    // Performance timing suppressed for maximum speed.
+    // Timing data is stored internally within the object but not printed to avoid I/O overhead
+    // during performance-critical computation paths.
 }
 
 double PerformanceTimer::GetElapsedMs() const {
@@ -534,7 +484,17 @@ auto EigenEngine::MeasurePerformance(Func&& func, const std::string& operation) 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     
-    UpdateMetrics(operation, duration.count() / 1000.0, sizeof(result));
+    // Estimate memory usage based on Eigen result type
+    size_t memory_bytes = 0;
+    if constexpr (std::is_same_v<decltype(result), Matrix>) {
+        memory_bytes = static_cast<size_t>(result.size()) * sizeof(double);
+    } else if constexpr (std::is_same_v<decltype(result), Vector>) {
+        memory_bytes = static_cast<size_t>(result.size()) * sizeof(double);
+    } else {
+        memory_bytes = sizeof(result);
+    }
+
+    UpdateMetrics(operation, duration.count() / 1000.0, memory_bytes);
     
     return result;
 }

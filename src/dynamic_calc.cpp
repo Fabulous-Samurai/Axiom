@@ -53,7 +53,7 @@ EngineResult DynamicCalc::Evaluate(const std::string &input) {
     const std::size_t idx = ModeToIndex(current_mode_);
     if (idx == kInvalidModeIndex) return CreateErrorResult(CalcErr::OperationNotFound);
 
-    return std::visit([&input](auto& parser) -> EngineResult {
+    return std::visit([&](auto &&parser) -> EngineResult {
         using T = std::decay_t<decltype(parser)>;
         if constexpr (std::is_same_v<T, std::monostate>) {
             return CreateErrorResult(CalcErr::OperationNotFound);
@@ -65,11 +65,13 @@ EngineResult DynamicCalc::Evaluate(const std::string &input) {
 
 EngineResult DynamicCalc::EvaluateFast(double lhs, double rhs, FastArithmeticOp op) noexcept {
     double out = 0.0;
-    if (!TryEvaluateFast(lhs, rhs, op, out)) {
-        if (op == FastArithmeticOp::Divide && rhs == 0.0) return CreateErrorResult(CalcErr::DivideByZero);
-        return CreateErrorResult(CalcErr::OperationNotFound);
+    if (TryEvaluateFast(lhs, rhs, op, out)) {
+        return CreateSuccessResult(out);
     }
-    return CreateSuccessResult(out);
+    if (op == FastArithmeticOp::Divide && rhs == 0.0) {
+        return CreateErrorResult(CalcErr::DivideByZero);
+    }
+    return CreateErrorResult(CalcErr::OperationNotFound);
 }
 
 void DynamicCalc::SetMode(CalculationMode mode) noexcept {

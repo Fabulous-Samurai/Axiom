@@ -1,7 +1,6 @@
 #include "unit_manager.h"
 #include <unordered_map>
 #include <cmath>
-
 #include <numbers>
 
 namespace AXIOM {
@@ -47,19 +46,19 @@ void UnitManager::RegisterUnit(const std::string& symbol, UnitType type, double 
     units_[symbol] = {type, scale, symbol, name};
 }
 
-AXIOM::EngineResult UnitManager::ConvertUnit(double value, const std::string& from_unit, const std::string& to_unit) {
+EngineResult UnitManager::ConvertUnit(double value, const std::string& from_unit, const std::string& to_unit) {
     auto from_it = units_.find(from_unit);
     auto to_it = units_.find(to_unit);
 
     if (from_it == units_.end() || to_it == units_.end()) {
-        AXIOM::EngineResult res;
-        res.error = AXIOM::EngineErrorResult{CalcErr::OperationNotFound};
+        EngineResult res;
+        res.error = EngineErrorResult{CalcErr::OperationNotFound};
         return res;
     }
 
     if (from_it->second.type != to_it->second.type) {
-        AXIOM::EngineResult res;
-        res.error = AXIOM::EngineErrorResult{CalcErr::ArgumentMismatch};
+        EngineResult res;
+        res.error = EngineErrorResult{CalcErr::ArgumentMismatch};
         return res;
     }
 
@@ -75,7 +74,7 @@ AXIOM::EngineResult UnitManager::ConvertUnit(double value, const std::string& fr
     return CreateSuccessResult(result);
 }
 
-AXIOM::EngineResult UnitManager::ConvertTemperature(double value, const std::string& from_unit, const std::string& to_unit) {
+EngineResult UnitManager::ConvertTemperature(double value, const std::string& from_unit, const std::string& to_unit) {
     // Convert to Kelvin first
     double kelvin;
     if (from_unit == "C") {
@@ -85,8 +84,8 @@ AXIOM::EngineResult UnitManager::ConvertTemperature(double value, const std::str
     } else if (from_unit == "K") {
         kelvin = value;
     } else {
-        AXIOM::EngineResult res;
-        res.error = AXIOM::EngineErrorResult{CalcErr::OperationNotFound};
+        EngineResult res;
+        res.error = EngineErrorResult{CalcErr::OperationNotFound};
         return res;
     }
 
@@ -99,8 +98,8 @@ AXIOM::EngineResult UnitManager::ConvertTemperature(double value, const std::str
     } else if (to_unit == "F") {
         result = (kelvin - 273.15) * 9.0/5.0 + 32.0;
     } else {
-        AXIOM::EngineResult res;
-        res.error = AXIOM::EngineErrorResult{CalcErr::OperationNotFound};
+        EngineResult res;
+        res.error = EngineErrorResult{CalcErr::OperationNotFound};
         return res;
     }
 
