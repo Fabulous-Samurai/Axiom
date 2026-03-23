@@ -1,0 +1,30 @@
+--- include/eigen_engine.h
++++ include/eigen_engine.h
+@@ -21,6 +21,7 @@
+ #include <chrono>
+ #include <thread>
+ #include <optional>
++#include <mutex>
+
+ namespace AXIOM {
+
+@@ -123,7 +124,10 @@
+                            const std::string& method = "BFGS");
+
+     // Performance monitoring
+-    CPUPerformanceMetrics GetLastMetrics() const { return last_metrics_; }
++    CPUPerformanceMetrics GetLastMetrics() const {
++        std::lock_guard<std::mutex> lock(metrics_mutex_);
++        return last_metrics_;
++    }
+     void ResetMetrics();
+     std::string GetPerformanceReport() const;
+
+@@ -141,6 +145,7 @@
+     bool simd_enabled_{true};
+     int num_threads_{static_cast<int>(std::thread::hardware_concurrency())};
+     // THREAD-SAFETY FIX: mutable allows modification in const methods without const_cast
++    mutable std::mutex metrics_mutex_;
+     mutable CPUPerformanceMetrics last_metrics_;
+
+     // Internal cache for performance

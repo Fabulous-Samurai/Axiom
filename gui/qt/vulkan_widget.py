@@ -226,10 +226,10 @@ class _SurfaceGLRenderer(QOpenGLWidget):
         # Cache uniform locations as integers — PySide6 6.10 has a runtime bug
         # where setUniformValue(bytes_name, value) raises ValueError even when
         # the signature matches.  The integer-location overload is always safe.
-        self._u_mvp   = self._prog.uniformLocation(b"uMVP")
-        self._u_light = self._prog.uniformLocation(b"uLightDir")
-        self._u_vpos  = self._prog.uniformLocation(b"uViewPos")
-        self._u_amb   = self._prog.uniformLocation(b"uAmbient")
+        self._u_mvp   = int(self._prog.uniformLocation(b"uMVP"))
+        self._u_light = int(self._prog.uniformLocation(b"uLightDir"))
+        self._u_vpos  = int(self._prog.uniformLocation(b"uViewPos"))
+        self._u_amb   = int(self._prog.uniformLocation(b"uAmbient"))
 
         # VAO — records all vertex attribute bindings
         self._vao = QOpenGLVertexArrayObject()
