@@ -270,6 +270,9 @@ target_link_libraries(axiom_benchmark PRIVATE axiom_engine Threads::Threads asmj
 add_executable(giga_test_suite tests/giga_test_suite.cpp)
 target_link_libraries(giga_test_suite PRIVATE axiom_engine Threads::Threads asmjit::asmjit Python::Python GTest::gtest_main benchmark::benchmark_main)
 
+add_executable(edge_case_suite tests/edge_case_suite.cpp)
+target_link_libraries(edge_case_suite PRIVATE axiom_engine Threads::Threads asmjit::asmjit Python::Python)
+
 # Additional standalone tests
 add_executable(alignment_test tests/alignment_test.cpp)
 target_link_libraries(alignment_test PRIVATE GTest::gtest_main)
