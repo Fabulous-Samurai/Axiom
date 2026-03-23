@@ -6,6 +6,8 @@
 #include <iomanip>
 using AXIOM::AlgebraicParser;
 
+namespace AXIOM {
+
 std::string PlotEngine::PlotFunction(const std::string& expression, const PlotConfig& config) {
     AlgebraicParser parser;
     std::vector<std::string> lines(config.height, std::string(config.width, ' '));
@@ -186,3 +188,5 @@ std::pair<int, int> PlotEngine::MapToScreen(double x, double y, const PlotConfig
     int screen_y = static_cast<int>((config.y_max - y) / (config.y_max - config.y_min) * (config.height - 1));
     return {screen_x, screen_y};
 }
+
+} // namespace AXIOM

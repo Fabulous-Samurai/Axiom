@@ -3,6 +3,8 @@
 #include <cmath>
 #include <map>
 
+namespace AXIOM {
+
 EngineResult StatisticsEngine::Mean(const Vector& data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
@@ -251,3 +253,4 @@ EngineResult StatisticsEngine::TTest(const Vector&, const Vector&) { return Crea
 EngineResult StatisticsEngine::ChiSquaredTest(const Matrix&, const Matrix&) { return CreateErrorResult(CalcErr::OperationNotFound); }
 EngineResult StatisticsEngine::ANOVAOneWay(const std::vector<Vector>&) { return CreateErrorResult(CalcErr::OperationNotFound); }
 EngineResult StatisticsEngine::ExponentialSmoothing(const Vector&, double) { return CreateErrorResult(CalcErr::OperationNotFound); }
+} // namespace AXIOM

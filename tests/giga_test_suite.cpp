@@ -32,6 +32,8 @@
 #include <thread>
 #include <atomic>
 
+using namespace AXIOM;
+
 // Bring AXIOM parser types into scope for tests
 using AXIOM::AlgebraicParser;
 using AXIOM::LinearSystemParser;

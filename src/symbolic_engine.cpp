@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+namespace AXIOM {
+
 namespace {
 
 bool IsBlank(const std::string& value) {
@@ -605,3 +607,5 @@ EngineResult SymbolicEngine::FindRoots(const std::string& expr, const std::strin
     }
     return CreateSuccessResult(unique_roots);
 }
+
+} // namespace AXIOM

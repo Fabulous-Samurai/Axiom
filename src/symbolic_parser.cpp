@@ -1,5 +1,5 @@
-#include "symbolic_parser.h"
 #include "symbolic_engine.h"
+#include "symbolic_parser.h"
 #include <algorithm>
 #include <cctype>
 #include <vector>

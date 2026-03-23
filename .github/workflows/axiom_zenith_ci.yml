@@ -50,8 +50,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: \"Install System Dependencies\"
-        run: sudo apt-get update && sudo apt-get install -y ninja-build valgrind python3-dev libnuma-dev
+      - name: "Install System Dependencies"
+        run: |
+          sudo apt-get update && sudo apt-get install -y ninja-build valgrind python3-dev libnuma-dev
+          python -m pip install nanobind
 
       - name: "Direct CMake Build"
         run: |
@@ -117,8 +119,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: "Install Ninja"
-        run: choco install ninja
+      - name: "Install Ninja & Dependencies"
+        run: |
+          choco install ninja
+          python -m pip install nanobind
       - name: "Build"
         shell: bash
         run: |

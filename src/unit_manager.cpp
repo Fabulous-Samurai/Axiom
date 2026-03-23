@@ -4,6 +4,8 @@
 
 #include <numbers>
 
+namespace AXIOM {
+
 UnitManager::UnitManager() {
     // Length units
     RegisterUnit("m", UnitType::Length, 1.0, "meter");
@@ -45,19 +47,19 @@ void UnitManager::RegisterUnit(const std::string& symbol, UnitType type, double 
     units_[symbol] = {type, scale, symbol, name};
 }
 
-AXIOM::EngineResult UnitManager::ConvertUnit(double value, const std::string& from_unit, const std::string& to_unit) {
+EngineResult UnitManager::ConvertUnit(double value, const std::string& from_unit, const std::string& to_unit) {
     auto from_it = units_.find(from_unit);
     auto to_it = units_.find(to_unit);
 
     if (from_it == units_.end() || to_it == units_.end()) {
-        AXIOM::EngineResult res;
-        res.error = AXIOM::EngineErrorResult{CalcErr::OperationNotFound};
-        return res;
+    EngineResult res;
+    res.error = EngineErrorResult{CalcErr::OperationNotFound};
+    return res;
     }
 
     if (from_it->second.type != to_it->second.type) {
-        AXIOM::EngineResult res;
-        res.error = AXIOM::EngineErrorResult{CalcErr::ArgumentMismatch};
+        EngineResult res;
+        res.error = EngineErrorResult{CalcErr::ArgumentMismatch};
         return res;
     }
 
@@ -83,9 +85,9 @@ AXIOM::EngineResult UnitManager::ConvertTemperature(double value, const std::str
     } else if (from_unit == "K") {
         kelvin = value;
     } else {
-        AXIOM::EngineResult res;
-        res.error = AXIOM::EngineErrorResult{CalcErr::OperationNotFound};
-        return res;
+    EngineResult res;
+    res.error = EngineErrorResult{CalcErr::OperationNotFound};
+    return res;
     }
 
     // Convert from Kelvin to target
@@ -97,9 +99,9 @@ AXIOM::EngineResult UnitManager::ConvertTemperature(double value, const std::str
     } else if (to_unit == "F") {
         result = (kelvin - 273.15) * 9.0/5.0 + 32.0;
     } else {
-        AXIOM::EngineResult res;
-        res.error = AXIOM::EngineErrorResult{CalcErr::OperationNotFound};
-        return res;
+    EngineResult res;
+    res.error = EngineErrorResult{CalcErr::OperationNotFound};
+    return res;
     }
 
     return CreateSuccessResult(result);
@@ -131,4 +133,6 @@ std::vector<std::string> UnitManager::GetUnitsOfType(UnitType type) {
     }
     return result;
 }
+
+} // namespace AXIOM
 
