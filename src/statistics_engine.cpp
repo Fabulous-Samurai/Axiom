@@ -14,16 +14,22 @@ EngineResult StatisticsEngine::Mean(const Vector& data) {
     return CreateSuccessResult(sum / data.size());
 }
 
-EngineResult StatisticsEngine::Median(Vector data) {
+EngineResult StatisticsEngine::Median(const Vector& data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
 
-    std::ranges::sort(data);
-    auto n = data.size();
+    Vector local_data = data;
+    auto n = local_data.size();
+    auto mid = n / 2;
     
     if (n % 2 == 0) {
-        return CreateSuccessResult((data[n/2-1] + data[n/2]) / 2.0);
+        std::nth_element(local_data.begin(), local_data.begin() + mid, local_data.end());
+        double val1 = local_data[mid];
+        std::nth_element(local_data.begin(), local_data.begin() + mid - 1, local_data.begin() + mid);
+        double val2 = local_data[mid - 1];
+        return CreateSuccessResult((val1 + val2) / 2.0);
     } else {
-        return CreateSuccessResult(data[n/2]);
+        std::nth_element(local_data.begin(), local_data.begin() + mid, local_data.end());
+        return CreateSuccessResult(local_data[mid]);
     }
 }
 
@@ -149,26 +155,39 @@ EngineResult StatisticsEngine::LinearRegression(const Vector& x, const Vector& y
     return CreateSuccessResult(Vector{slope, intercept});
 }
 
-EngineResult StatisticsEngine::Percentile(Vector data, double p) {
+EngineResult StatisticsEngine::Percentile(const Vector& data, double p) {
     if (data.empty() || p < 0 || p > 100) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
     
-    std::ranges::sort(data);
+    Vector local_data = data;
+    auto n = local_data.size();
 
-    if (p == 0) return CreateSuccessResult(data[0]);
-    if (p == 100) return CreateSuccessResult(data.back());
+    if (p == 0) {
+        auto it = std::min_element(local_data.begin(), local_data.end());
+        return CreateSuccessResult(*it);
+    }
+    if (p == 100) {
+        auto it = std::max_element(local_data.begin(), local_data.end());
+        return CreateSuccessResult(*it);
+    }
     
-    double index = (p / 100.0) * (data.size() - 1);
+    double index = (p / 100.0) * (n - 1);
     size_t lower = static_cast<size_t>(index);
     size_t upper = lower + 1;
     
-    if (upper >= data.size()) {
-        return CreateSuccessResult(data.back());
+    if (upper >= n) {
+        auto it = std::max_element(local_data.begin(), local_data.end());
+        return CreateSuccessResult(*it);
     }
     
+    std::nth_element(local_data.begin(), local_data.begin() + lower, local_data.end());
+    double val_lower = local_data[lower];
+    std::nth_element(local_data.begin() + upper, local_data.begin() + upper, local_data.end());
+    double val_upper = local_data[upper];
+
     double weight = index - lower;
-    double result = data[lower] * (1.0 - weight) + data[upper] * weight;
+    double result = val_lower * (1.0 - weight) + val_upper * weight;
     
     return CreateSuccessResult(result);
 }

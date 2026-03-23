@@ -278,12 +278,18 @@ target_link_libraries(simd_matrix_test PRIVATE axiom_engine GTest::gtest_main)
 add_executable(ingress_bench tests/benchmarks/ingress_bench.cpp)
 target_link_libraries(ingress_bench PRIVATE axiom_engine benchmark::benchmark_main Threads::Threads)
 
+add_executable(stats_bench tests/benchmarks/stats_bench.cpp)
+target_link_libraries(stats_bench PRIVATE axiom_engine benchmark::benchmark_main Threads::Threads)
+
 # New Mantis/Pluto Tests
 add_executable(test_ida_star tests/unit/test_ida_star.cpp)
 target_link_libraries(test_ida_star PRIVATE axiom_engine GTest::gtest_main)
 
 add_executable(test_pluto_core tests/unit/test_pluto_core.cpp)
 target_link_libraries(test_pluto_core PRIVATE axiom_engine GTest::gtest_main)
+
+add_executable(test_statistics_optimized tests/unit/test_statistics_optimized.cpp)
+target_link_libraries(test_statistics_optimized PRIVATE axiom_engine GTest::gtest_main)
 
 # Register with CTest
 add_test(NAME run_tests COMMAND run_tests)
