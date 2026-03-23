@@ -38,6 +38,12 @@ if(AXIOM_ENABLE_NANOBIND)
     add_compile_definitions(ENABLE_NANOBIND)
 endif()
 
+# Explicitly ensure AXIOM_CORE_SOURCES is not empty before creating the library
+list(LENGTH AXIOM_CORE_SOURCES SOURCES_LEN)
+if(SOURCES_LEN EQUAL 0)
+    message(FATAL_ERROR "AXIOM_CORE_SOURCES is unexpectedly empty!")
+endif()
+
 add_library(axiom_engine SHARED ${AXIOM_CORE_SOURCES})
 
 target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
