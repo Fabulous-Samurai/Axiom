@@ -12,6 +12,59 @@ from matplotlib.widgets import Slider
 import tkinter as tk
 from tkinter import ttk, messagebox
 import time
+import ast
+import operator
+
+class SafeMathEvaluator:
+    """🛡️ Safe mathematical expression evaluator using AST 🛡️"""
+
+    # Allowed operators
+    _operators = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.Pow: operator.pow,
+        ast.USub: operator.neg,
+        ast.UAdd: operator.pos,
+    }
+
+    @staticmethod
+    def evaluate(expression, safe_dict):
+        """Safely evaluate a mathematical expression"""
+        try:
+            tree = ast.parse(expression, mode='eval')
+            return SafeMathEvaluator._eval(tree.body, safe_dict)
+        except Exception as e:
+            raise ValueError(f"Invalid expression: {expression}. Error: {str(e)}")
+
+    @staticmethod
+    def _eval(node, safe_dict):
+        if isinstance(node, ast.Num):  # < Python 3.8
+            return node.n
+        elif isinstance(node, ast.Constant):  # Python 3.8+
+            return node.value
+        elif isinstance(node, ast.BinOp):
+            left = SafeMathEvaluator._eval(node.left, safe_dict)
+            right = SafeMathEvaluator._eval(node.right, safe_dict)
+            return SafeMathEvaluator._operators[type(node.op)](left, right)
+        elif isinstance(node, ast.UnaryOp):
+            operand = SafeMathEvaluator._eval(node.operand, safe_dict)
+            return SafeMathEvaluator._operators[type(node.op)](operand)
+        elif isinstance(node, ast.Call):
+            func = SafeMathEvaluator._eval(node.func, safe_dict)
+            args = [SafeMathEvaluator._eval(arg, safe_dict) for arg in node.args]
+            return func(*args)
+        elif isinstance(node, ast.Name):
+            if node.id in safe_dict:
+                return safe_dict[node.id]
+            raise NameError(f"Name '{node.id}' is not allowed")
+        elif isinstance(node, ast.Tuple):
+            return tuple(SafeMathEvaluator._eval(elt, safe_dict) for elt in node.elts)
+        elif isinstance(node, ast.List):
+            return [SafeMathEvaluator._eval(elt, safe_dict) for elt in node.elts]
+        else:
+            raise TypeError(f"Unsupported expression node: {type(node)}")
 
 # Constants for default function strings
 DEFAULT_SURFACE_FUNC = "sin(sqrt(x**2 + y**2))"
@@ -45,7 +98,7 @@ class Advanced3DVisualization:
                 'x': X, 'y': Y, 'X': X, 'Y': Y
             }
             
-            Z = eval(func_str, {"__builtins__": {}}, safe_dict)
+            Z = SafeMathEvaluator.evaluate(func_str, safe_dict)
             
             # Create 3D plot
             fig = plt.figure(figsize=(14, 10))
@@ -111,9 +164,9 @@ class Advanced3DVisualization:
             }
             
             # Evaluate parametric equations
-            x = eval(x_func, {"__builtins__": {}}, safe_dict)
-            y = eval(y_func, {"__builtins__": {}}, safe_dict)
-            z = eval(z_func, {"__builtins__": {}}, safe_dict)
+            x = SafeMathEvaluator.evaluate(x_func, safe_dict)
+            y = SafeMathEvaluator.evaluate(y_func, safe_dict)
+            z = SafeMathEvaluator.evaluate(z_func, safe_dict)
             
             # Create 3D plot
             fig = plt.figure(figsize=(12, 8))
@@ -202,8 +255,8 @@ class Advanced3DVisualization:
                 'x': X, 'y': Y, 't': t
             }
             
-            z_base = eval(base_func, {"__builtins__": {}}, safe_dict)
-            time_mod = eval(time_modulation, {"__builtins__": {}}, safe_dict)
+            z_base = SafeMathEvaluator.evaluate(base_func, safe_dict)
+            time_mod = SafeMathEvaluator.evaluate(time_modulation, safe_dict)
             Z = z_base * time_mod
             
             _ = ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
@@ -219,8 +272,8 @@ class Advanced3DVisualization:
                 t = frame * 0.1
                 safe_dict['t'] = t
                 
-                z_base = eval(base_func, {"__builtins__": {}}, safe_dict)
-                time_mod = eval(time_modulation, {"__builtins__": {}}, safe_dict)
+                z_base = SafeMathEvaluator.evaluate(base_func, safe_dict)
+                time_mod = SafeMathEvaluator.evaluate(time_modulation, safe_dict)
                 Z = z_base * time_mod
                 
                 surface = ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
@@ -355,7 +408,7 @@ class Advanced3DVisualization:
                     'x': X * frequency, 'y': Y * frequency, 'A': amplitude
                 }
                 
-                Z = amplitude * eval(func_str, {"__builtins__": {}}, safe_dict)
+                Z = amplitude * SafeMathEvaluator.evaluate(func_str, safe_dict)
                 return Z
             
             # Initial surface
@@ -509,7 +562,7 @@ class Advanced3DVisualization:
                 t_range_str = t_range_var.get()
                 
                 # Parse t range
-                t_min, t_max = eval(f"({t_range_str})", {"pi": np.pi})
+                t_min, t_max = SafeMathEvaluator.evaluate(f"({t_range_str})", {"pi": np.pi})
                 t_range = (t_min, t_max)
                 
                 self.parametric_3d_plot(x_func, y_func, z_func, t_range)
