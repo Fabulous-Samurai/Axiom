@@ -19,10 +19,26 @@ NB_MODULE(axiom_core, m) {
     // 1. DynamicCalc Interface
     nb::class_<AXIOM::DynamicCalc>(m, "DynamicCalc")
         .def(nb::init<>())
-        .def("evaluate", &AXIOM::DynamicCalc::Evaluate, "input"_a, 
-             "Evaluates an expression with nanosecond precision.")
-        .def("evaluate_fast", &AXIOM::DynamicCalc::EvaluateFast, "lhs"_a, "rhs"_a, "op"_a,
-             "High-velocity arithmetic dispatch path.");
+        .def("evaluate", [](AXIOM::DynamicCalc& self, const std::string& input) {
+            auto result = self.Evaluate(input);
+            if (result.HasResult()) {
+                if (result.GetDouble().has_value()) {
+                    return nb::cast(result.GetDouble().value());
+                } else if (result.GetComplex().has_value()) {
+                    return nb::cast(result.GetComplex().value());
+                }
+            }
+            return nb::cast<nb::object>(nb::none());
+        }, "input"_a, "Evaluates an expression with nanosecond precision.")
+        .def("evaluate_fast", [](AXIOM::DynamicCalc& self, double lhs, double rhs, AXIOM::FastArithmeticOp op) {
+            auto result = self.EvaluateFast(lhs, rhs, op);
+            if (result.HasResult()) {
+                if (result.GetDouble().has_value()) {
+                    return nb::cast(result.GetDouble().value());
+                }
+            }
+            return nb::cast<nb::object>(nb::none());
+        }, "lhs"_a, "rhs"_a, "op"_a, "High-velocity arithmetic dispatch path.");
 
     // 2. Telemetry Control
     m.def("start_telemetry", []() {
