@@ -43,9 +43,11 @@ public:
 
         if (current->used + padding + sizeNeeded > current->size) {
             allocateBlock(std::max(current->size * 2, sizeNeeded + align));
-            current = &blocks.back(); currentPtr = (uintptr_t)(current->memory.get()); padding = 0;
+            current = &blocks.back(); padding = 0;
         }
-        current->used += padding; void* ptr = current->memory.get() + current->used; current->used += sizeNeeded;
+        current->used += padding;
+        void* ptr = current->memory.get() + current->used;
+        current->used += sizeNeeded;
         return new (ptr) T(std::forward<Args>(args)...);
     }
 
