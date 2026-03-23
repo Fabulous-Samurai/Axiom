@@ -2,10 +2,14 @@ import subprocess
 import json
 import os
 import time
+import shlex
+import sys
 
 def run_cmd(cmd):
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+        if isinstance(cmd, str):
+            cmd = shlex.split(cmd, posix=sys.platform != "win32")
+        result = subprocess.run(cmd, shell=False, capture_output=True, text=True, timeout=300)
         return {
             "cmd": cmd,
             "success": result.returncode == 0,
@@ -36,9 +40,9 @@ def main():
         # Pillars
         "python scripts/verify_zenith_pillars.py",
         
-        # C++ Tests
-        "build\\run_tests.exe",
-        
+        # C++ Tests (use / for cross-platform compatibility if possible, but keeping \ for Windows compatibility)
+        "build\\run_tests.exe" if sys.platform == "win32" else "./build/run_tests",
+
         # Python Packaging
         "python -m build --wheel"
     ]
