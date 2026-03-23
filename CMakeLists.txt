@@ -11,7 +11,7 @@ project(axiom_engine VERSION 3.1.1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # FORCE NINJA GENERATOR - MAXIMUM SPEED BUILD SYSTEM
-set(CMAKE_GENERATOR "Ninja" CACHE STRING "Generator" FORCE)
+# set(CMAKE_GENERATOR "Ninja" CACHE STRING "Generator" FORCE)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 # Global Third-Party Configuration (MUST BE BEFORE FetchContent)
@@ -20,6 +20,8 @@ set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
+set(EIGEN_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
 if(APPLE)
     set(HAVE_PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
@@ -52,6 +54,7 @@ FetchContent_Declare(
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 set(ASMJIT_STATIC ON CACHE BOOL "" FORCE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # GoogleTest
 FetchContent_Declare(
@@ -77,15 +80,9 @@ FetchContent_Declare(
 # Nanobind (for Python FFI)
 FetchContent_Declare(
     nanobind
-    URL https://github.com/wjakob/nanobind/archive/refs/tags/v2.4.0.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-)
-
-# Robin-map (Nanobind dependency)
-FetchContent_Declare(
-    robin-map
-    URL https://github.com/Tessil/robin-map/archive/refs/tags/v1.3.0.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    GIT_REPOSITORY https://github.com/wjakob/nanobind.git
+    GIT_TAG v2.4.0
+    GIT_SUBMODULES "ext/robin_map"
 )
 
 FetchContent_MakeAvailable(eigen asmjit googletest googlebenchmark mimalloc nanobind)
@@ -232,8 +229,16 @@ add_library(axiom_engine SHARED ${AXIOM_CORE_SOURCES})
 target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
 target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
 target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit Threads::Threads)
+if(AXIOM_ENABLE_NANOBIND)
+    nanobind_add_module(axiom_core src/python_bindings.cpp)
+    target_include_directories(axiom_core PUBLIC "${CMAKE_SOURCE_DIR}/include" "${asmjit_SOURCE_DIR}/src")
+    target_link_libraries(axiom_core PRIVATE axiom_engine nanobind-static asmjit::asmjit)
+    target_link_libraries(axiom_engine PUBLIC nanobind-static)
+endif()
 if(WIN32)
     target_link_libraries(axiom_engine PUBLIC bcrypt)
+else()
+    target_link_libraries(axiom_engine PUBLIC numa)
 endif()
 target_include_directories(axiom_engine PRIVATE ${Python_INCLUDE_DIRS})
 
@@ -243,6 +248,7 @@ target_include_directories(axiom PRIVATE ${Python_INCLUDE_DIRS})
 
 # Tests
 enable_testing()
+add_subdirectory(tests)
 
 add_executable(run_tests tests/tests.cpp)
 target_link_libraries(run_tests PRIVATE axiom_engine Threads::Threads asmjit::asmjit Python::Python GTest::gtest_main)
@@ -278,12 +284,18 @@ target_link_libraries(simd_matrix_test PRIVATE axiom_engine GTest::gtest_main)
 add_executable(ingress_bench tests/benchmarks/ingress_bench.cpp)
 target_link_libraries(ingress_bench PRIVATE axiom_engine benchmark::benchmark_main Threads::Threads)
 
+add_executable(stats_bench tests/benchmarks/stats_bench.cpp)
+target_link_libraries(stats_bench PRIVATE axiom_engine benchmark::benchmark_main Threads::Threads)
+
 # New Mantis/Pluto Tests
 add_executable(test_ida_star tests/unit/test_ida_star.cpp)
 target_link_libraries(test_ida_star PRIVATE axiom_engine GTest::gtest_main)
 
 add_executable(test_pluto_core tests/unit/test_pluto_core.cpp)
 target_link_libraries(test_pluto_core PRIVATE axiom_engine GTest::gtest_main)
+
+add_executable(test_statistics_optimized tests/unit/test_statistics_optimized.cpp)
+target_link_libraries(test_statistics_optimized PRIVATE axiom_engine GTest::gtest_main)
 
 # Register with CTest
 add_test(NAME run_tests COMMAND run_tests)

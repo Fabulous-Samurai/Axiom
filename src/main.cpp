@@ -634,6 +634,16 @@ bool trim_in_place(std::string& text) {
     return true;
 }
 
+bool trim_in_place_view(std::string_view& text) {
+    const auto first = text.find_first_not_of(" \t\r\n");
+    if (first == std::string_view::npos) {
+        return false;
+    }
+    const auto last = text.find_last_not_of(" \t\r\n");
+    text = text.substr(first, last - first + 1);
+    return true;
+}
+
 void emit_protocol_end() {
     std::cout << "__END__\n" << std::flush;
 }
@@ -644,14 +654,15 @@ int try_print_plot_from_string(const std::string& str_value, AXIOM::CalculationM
         return -1;
     }
 
-    const std::string payload = str_value.substr(std::string("PLOT_FUNCTION:").size());
+    std::string_view payload(str_value);
+    payload.remove_prefix(std::string_view("PLOT_FUNCTION:").size());
     std::vector<std::string> parts;
     size_t start = 0;
     for (size_t i = 0; i <= payload.size(); ++i) {
         if (i == payload.size() || payload[i] == ',') {
-            std::string token = payload.substr(start, i - start);
-            if (trim_in_place(token)) {
-                parts.emplace_back(std::move(token));
+            std::string_view token = payload.substr(start, i - start);
+            if (trim_in_place_view(token)) {
+                parts.emplace_back(std::string(token));
             } else {
                 parts.emplace_back("");
             }

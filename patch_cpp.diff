@@ -1,0 +1,40 @@
+--- src/eigen_engine.cpp
++++ src/eigen_engine.cpp
+@@ -441,11 +441,13 @@
+ }
+
+ void EigenEngine::ResetMetrics() {
++    std::lock_guard<std::mutex> lock(metrics_mutex_);
+     last_metrics_ = CPUPerformanceMetrics();
+     last_metrics_.operation_type = "None";
+ }
+
+ std::string EigenEngine::GetPerformanceReport() const {
++    std::lock_guard<std::mutex> lock(metrics_mutex_);
+     std::stringstream ss;
+     ss << "Eigen Engine Performance Report:\n";
+     ss << "   Last Operation: " << last_metrics_.operation_type << "\n";
+@@ -482,6 +484,7 @@
+     // Use Eigen's optimized BLAS if available
+     Matrix result = A * B;
+
++    std::lock_guard<std::mutex> lock(metrics_mutex_);
+     // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
+     last_metrics_.simd_used = simd_enabled_;
+
+@@ -491,6 +494,7 @@
+ EigenEngine::Vector EigenEngine::OptimizedMatVecMul(const Matrix& A, const Vector& x) const {
+     Vector result = A * x;
+
++    std::lock_guard<std::mutex> lock(metrics_mutex_);
+     // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
+     last_metrics_.simd_used = simd_enabled_;
+
+@@ -542,6 +546,7 @@
+ }
+
+ void EigenEngine::UpdateMetrics(const std::string& operation, double time_ms, size_t memory_bytes) const {
++    std::lock_guard<std::mutex> lock(metrics_mutex_);
+     // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
+     last_metrics_.operation_type = operation;
+     last_metrics_.execution_time_ms = time_ms;
