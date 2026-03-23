@@ -7,6 +7,8 @@
 #include <iostream>
 #include <cmath>
 
+using namespace AXIOM;
+
 class DifferentialTest : public ::testing::Test {
 protected:
     AXIOM::AlgebraicParser parser;

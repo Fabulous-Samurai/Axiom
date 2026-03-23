@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+namespace AXIOM {
+
 enum class UnitType {
     Length, Time, Mass, Temperature, Current, 
     Angle, Area, Volume, Velocity, Acceleration,
@@ -33,8 +35,8 @@ public:
     UnitManager();
     
     // Core functionality
-    AXIOM::EngineResult ConvertUnit(double value, const std::string& from_unit, const std::string& to_unit);
-    AXIOM::EngineResult ConvertTemperature(double value, const std::string& from_unit, const std::string& to_unit);
+    EngineResult ConvertUnit(double value, const std::string& from_unit, const std::string& to_unit);
+    EngineResult ConvertTemperature(double value, const std::string& from_unit, const std::string& to_unit);
     bool AreCompatible(const std::string& unit1, const std::string& unit2);
     std::string GetCanonicalUnit(UnitType type);
     
@@ -42,3 +44,5 @@ public:
     void RegisterUnit(const std::string& symbol, UnitType type, double scale, const std::string& name);
     std::vector<std::string> GetUnitsOfType(UnitType type);
 };
+
+} // namespace AXIOM

@@ -1,9 +1,9 @@
 #pragma once
 #include "IParser.h"
 
-class SymbolicEngine;
-
 namespace AXIOM {
+
+class SymbolicEngine;
 
 class SymbolicParser : public IParser {
 public:

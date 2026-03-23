@@ -3,6 +3,8 @@
 #include <cmath>
 #include <map>
 
+namespace AXIOM {
+
 EngineResult StatisticsEngine::Mean(const Vector& data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
@@ -191,3 +193,5 @@ EngineResult StatisticsEngine::MovingAverage(const Vector& data, int window_size
     
     return CreateSuccessResult(result);
 }
+
+} // namespace AXIOM

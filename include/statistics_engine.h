@@ -12,6 +12,8 @@
 
 #include "axiom_export.h"
 
+namespace AXIOM {
+
 class AXIOM_EXPORT StatisticsEngine {
 public:
     // Descriptive Statistics
@@ -48,3 +50,5 @@ public:
     EngineResult MovingAverage(const Vector& data, int window_size);
     EngineResult ExponentialSmoothing(const Vector& data, double alpha);
 };
+
+} // namespace AXIOM

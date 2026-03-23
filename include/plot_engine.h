@@ -8,6 +8,8 @@
 #include "dynamic_calc_types.h"
 #include <functional>
 
+namespace AXIOM {
+
 struct PlotConfig {
     int width = 80;
     int height = 20;
@@ -49,3 +51,5 @@ private:
     char GetCharForValue(double value, double min_val, double max_val);
     std::pair<int, int> MapToScreen(double x, double y, const PlotConfig& config);
 };
+
+} // namespace AXIOM

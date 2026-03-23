@@ -77,8 +77,9 @@ FetchContent_Declare(
 # Nanobind (for Python FFI)
 FetchContent_Declare(
     nanobind
-    URL https://github.com/wjakob/nanobind/archive/refs/tags/v2.4.0.zip
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    GIT_REPOSITORY https://github.com/wjakob/nanobind.git
+    GIT_TAG        v2.4.0
+    GIT_SUBMODULES_RECURSE YES
 )
 
 # Robin-map (Nanobind dependency)
@@ -148,9 +149,9 @@ endif()
 
 # NINJA-ONLY OPTIMIZATION FLAGS
 if(AXIOM_RUNNING_IN_CI)
-    set(CMAKE_CXX_FLAGS_RELEASE "-O0 -g -DNDEBUG -ffast-math" CACHE STRING "Release flags" FORCE)
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g -DNDEBUG -ffast-math" CACHE STRING "Release flags" FORCE)
 else()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O0 -g -march=native -mtune=native -DNDEBUG -ffast-math" CACHE STRING "Release flags" FORCE)
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g -march=native -mtune=native -DNDEBUG -ffast-math" CACHE STRING "Release flags" FORCE)
 endif()
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g" CACHE STRING "Debug flags" FORCE)
 
@@ -191,51 +192,20 @@ add_compile_definitions(
     BENCHMARK_HAS_EXCEPTIONS=0
 )
 
-# Core library sources
-set(AXIOM_CORE_SOURCES
-    src/dynamic_calc.cpp
-    src/algebraic_parser.cpp
-    src/linear_system_parser.cpp
-    src/statistics_parser.cpp
-    src/symbolic_parser.cpp
-    src/string_helpers.cpp
-    src/unit_manager.cpp
-    src/unit_parser.cpp
-    src/statistics_engine.cpp
-    src/symbolic_engine.cpp
-    src/plot_engine.cpp
-    src/plot_parser.cpp
-    src/kensui_bridge.cpp
-    src/zenith_jit.cpp
-    src/pmu_orchestrator.cpp
-    src/python_engine.cpp
-    src/python_parser.cpp
-    src/python_repl.cpp
-    src/arena_allocator.cpp
-    src/eigen_engine.cpp
-    src/cpu_optimization.cpp
-    src/mantis_heuristic.cpp
-    src/pluto_controller.cpp
-    src/telemetry.cpp
-    src/ingress.cpp
-    src/cognitive_ecu.cpp
-    src/secure_vault.cpp
-    src/crash_dump.cpp
-)
-
 if(AXIOM_ENABLE_NANOBIND)
-    list(APPEND AXIOM_CORE_SOURCES src/nanobind_interface.cpp src/python_bindings.cpp)
-    add_compile_definitions(ENABLE_NANOBIND)
+    set(AXIOM_EXTRA_LIBS nanobind)
+else()
+    set(AXIOM_EXTRA_LIBS "")
 endif()
 
-add_library(axiom_engine SHARED ${AXIOM_CORE_SOURCES})
-target_include_directories(axiom_engine PUBLIC "${CMAKE_SOURCE_DIR}/include")
-target_compile_definitions(axiom_engine PRIVATE AXIOM_ENGINE_EXPORTS)
-target_link_libraries(axiom_engine PUBLIC Python::Python PRIVATE asmjit::asmjit Threads::Threads)
-if(WIN32)
-    target_link_libraries(axiom_engine PUBLIC bcrypt)
-endif()
-target_include_directories(axiom_engine PRIVATE ${Python_INCLUDE_DIRS})
+# ---------------------------------------------------------------------------
+# Core Components
+# ---------------------------------------------------------------------------
+add_subdirectory(src)
+
+# ---------------------------------------------------------------------------
+# Testing
+# ---------------------------------------------------------------------------
 
 add_executable(axiom src/main.cpp)
 target_link_libraries(axiom PRIVATE axiom_engine Threads::Threads asmjit::asmjit Python::Python)
