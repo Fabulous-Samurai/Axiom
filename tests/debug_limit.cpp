@@ -4,6 +4,8 @@
 #include "algebraic_parser.h"
 #include "string_helpers.h"
 
+using AXIOM::AlgebraicParser;
+
 int main() {
     std::cout << "DEBUG: Testing limit function step by step\n";
     

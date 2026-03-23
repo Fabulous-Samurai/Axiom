@@ -12,6 +12,9 @@
 #include "../include/symbolic_engine.h"
 #include "../include/unit_manager.h"
 
+using AXIOM::AlgebraicParser;
+using AXIOM::LinearSystemParser;
+
 class EdgeCaseRunner {
 public:
     EdgeCaseRunner() {}

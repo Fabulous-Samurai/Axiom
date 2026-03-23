@@ -10,6 +10,7 @@
 // Proje dosyalarını dahil ediyoruz
 #include "dynamic_calc.h"
 #include "string_helpers.h"
+#include "algebraic_parser.h"
 
 using namespace AXIOM;
 

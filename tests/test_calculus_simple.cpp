@@ -6,6 +6,8 @@
 #include "algebraic_parser.h"
 #include "string_helpers.h"
 
+using AXIOM::AlgebraicParser;
+
 int main() {
     std::cout << "========================================\n";
     std::cout << "    CALCULUS FUNCTIONS TEST SUITE      \n";
