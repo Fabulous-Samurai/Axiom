@@ -20,6 +20,8 @@ set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
+set(EIGEN_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
 if(APPLE)
     set(HAVE_PTHREAD_AFFINITY OFF CACHE BOOL "" FORCE)
@@ -243,6 +245,7 @@ target_include_directories(axiom PRIVATE ${Python_INCLUDE_DIRS})
 
 # Tests
 enable_testing()
+add_subdirectory(tests)
 
 add_executable(run_tests tests/tests.cpp)
 target_link_libraries(run_tests PRIVATE axiom_engine Threads::Threads asmjit::asmjit Python::Python GTest::gtest_main)
