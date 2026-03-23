@@ -123,9 +123,12 @@ void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
 
     // Enormous complex expression (Sandbox check)
     runner.RunTest("Enormous complex expression (Stress Test)", [&parser]() {
-        std::string expr = "sin(cos(tan(log(sqrt(144)))))";
+        std::string expr;
+        expr.reserve(2048);
+        expr = "sin(cos(tan(log(sqrt(144)))))";
         for (int i = 0; i < 50; ++i) {
-            expr += " + " + std::to_string(i) + " * sin(" + std::to_string(i) + ")";
+            auto s = std::to_string(i);
+            expr.append(" + ").append(s).append(" * sin(").append(s).append(")");
         }
         auto result = parser.ParseAndExecute(expr);
         return result.HasResult();
