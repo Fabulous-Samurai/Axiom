@@ -68,16 +68,16 @@ private:
 void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("ALGEBRAIC PARSER EDGE CASES");
     
-    AlgebraicParser parser;
+    AXIOM::AlgebraicParser parser;
 
     // Empty input
-    runner.RunTest("Empty string input", [&parser]() {
+    runner.RunTest("Empty string input", [&]() {
         auto result = parser.ParseAndExecute("");
         return !result.HasResult(); // Should fail gracefully
     });
 
     // Very long expression
-    runner.RunTest("Very long expression chain", [&parser]() {
+    runner.RunTest("Very long expression chain", [&]() {
         std::string expr = "1";
         for (int i = 0; i < 100; ++i) {
             expr += "+1";
@@ -87,39 +87,39 @@ void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
     });
 
     // Division by zero
-    runner.RunTest("Division by zero", [&parser]() {
+    runner.RunTest("Division by zero", [&]() {
         auto result = parser.ParseAndExecute("10/0");
         // Should return infinity or error
         return !result.HasResult() || std::isinf(*result.GetDouble());
     });
 
     // Very small numbers
-    runner.RunTest("Very small number (1e-100)", [&parser]() {
+    runner.RunTest("Very small number (1e-100)", [&]() {
         auto result = parser.ParseAndExecute("1e-100");
         return result.HasResult();
     });
 
     // Very large numbers
-    runner.RunTest("Very large number (1e100)", [&parser]() {
+    runner.RunTest("Very large number (1e100)", [&]() {
         auto result = parser.ParseAndExecute("1e100");
         return result.HasResult();
     });
 
     // Negative zero
-    runner.RunTest("Negative zero arithmetic", [&parser]() {
+    runner.RunTest("Negative zero arithmetic", [&]() {
         auto result = parser.ParseAndExecute("-0 + 0");
         return result.HasResult() && std::abs(*result.GetDouble()) < 1e-10;
     });
 
     // Nested parentheses (deep)
-    runner.RunTest("Deeply nested parentheses (10 levels)", [&parser]() {
+    runner.RunTest("Deeply nested parentheses (10 levels)", [&]() {
         std::string expr = "((((((((((1+1))))))))))";
         auto result = parser.ParseAndExecute(expr);
         return result.HasResult() && std::abs(*result.GetDouble() - 2.0) < 0.01;
     });
 
     // Enormous complex expression (Sandbox check)
-    runner.RunTest("Enormous complex expression (Stress Test)", [&parser]() {
+    runner.RunTest("Enormous complex expression (Stress Test)", [&]() {
         std::string expr;
         expr.reserve(2048);
         expr = "sin(cos(tan(log(sqrt(144)))))";
@@ -132,31 +132,31 @@ void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
     });
 
     // Missing operand
-    runner.RunTest("Missing operand (5+)", [&parser]() {
+    runner.RunTest("Missing operand (5+)", [&]() {
         auto result = parser.ParseAndExecute("5+");
         return !result.HasResult(); // Should fail
     });
 
     // Unknown function
-    runner.RunTest("Unknown function (foo(5))", [&parser]() {
+    runner.RunTest("Unknown function (foo(5))", [&]() {
         auto result = parser.ParseAndExecute("foo(5)");
         return !result.HasResult(); // Should fail
     });
 
     // Undefined variable
-    runner.RunTest("Undefined variable (x+5)", [&parser]() {
+    runner.RunTest("Undefined variable (x+5)", [&]() {
         auto result = parser.ParseAndExecute("x+5");
         return !result.HasResult(); // Should fail without context
     });
 
     // Special characters
-    runner.RunTest("Special characters (!@#$%)", [&parser]() {
+    runner.RunTest("Special characters (!@#$%)", [&]() {
         auto result = parser.ParseAndExecute("5!@#$%3");
         return !result.HasResult(); // Should fail
     });
 
     // NaN operations
-    runner.RunTest("sqrt of negative number", [&parser]() {
+    runner.RunTest("sqrt of negative number", [&]() {
         auto result = parser.ParseAndExecute("sqrt(-1)");
         // Should handle complex numbers or return NaN
         return result.HasResult();
@@ -269,53 +269,53 @@ void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
 void TestLinearSystemParserEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("LINEAR SYSTEM PARSER EDGE CASES");
     
-    LinearSystemParser parser;
+    AXIOM::LinearSystemParser parser;
 
     // Singular matrix (no unique solution)
-    runner.RunTest("Singular matrix (determinant = 0)", [&parser]() {
+    runner.RunTest("Singular matrix (determinant = 0)", [&]() {
         auto result = parser.ParseAndExecute("solve [[1,2],[2,4]] [3,6]");
         // Should fail or return infinite solutions
         return !result.HasResult();
     });
 
     // 1x1 system
-    runner.RunTest("1x1 system (trivial)", [&parser]() {
+    runner.RunTest("1x1 system (trivial)", [&]() {
         auto result = parser.ParseAndExecute("solve [[5]] [10]");
         return result.HasResult(); // Solution: x = 2
     });
 
     // Overdetermined system
-    runner.RunTest("Empty matrix", [&parser]() {
+    runner.RunTest("Empty matrix", [&]() {
         auto result = parser.ParseAndExecute("solve [[]] []");
         return !result.HasResult(); // Should fail
     });
 
     // Mismatched dimensions
-    runner.RunTest("Matrix-vector dimension mismatch", [&parser]() {
+    runner.RunTest("Matrix-vector dimension mismatch", [&]() {
         auto result = parser.ParseAndExecute("solve [[1,2],[3,4]] [5]");
         return !result.HasResult(); // Should fail
     });
 
     // Non-square matrix
-    runner.RunTest("Non-square matrix (3x2)", [&parser]() {
+    runner.RunTest("Non-square matrix (3x2)", [&]() {
         auto result = parser.ParseAndExecute("solve [[1,2],[3,4],[5,6]] [7,8,9]");
         return !result.HasResult(); // Should fail for square system solver
     });
 
     // Very large coefficients
-    runner.RunTest("Large coefficients", [&parser]() {
+    runner.RunTest("Large coefficients", [&]() {
         auto result = parser.ParseAndExecute("solve [[1000000,2000000],[3000000,4000000]] [5000000,11000000]");
         return result.HasResult(); // Should handle scaling
     });
 
     // Very small coefficients
-    runner.RunTest("Small coefficients (near zero)", [&parser]() {
+    runner.RunTest("Small coefficients (near zero)", [&]() {
         auto result = parser.ParseAndExecute("solve [[0.0001,0.0002],[0.0003,0.0004]] [0.0005,0.0011]");
         return result.HasResult(); // Numerical stability test
     });
 
     // Malformed input
-    runner.RunTest("Malformed matrix notation", [&parser]() {
+    runner.RunTest("Malformed matrix notation", [&]() {
         auto result = parser.ParseAndExecute("solve [1,2],[3,4 [5,6]");
         return !result.HasResult(); // Should fail parsing
     });
