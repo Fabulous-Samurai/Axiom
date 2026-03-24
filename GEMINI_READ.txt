@@ -1,0 +1,611 @@
+Harika.  
+O zaman sana birlikte çalışan iki şey çıkarıyorum:
+
+1. **Önerilen CMake target mimarisi**
+2. **Phase 7 öncesi zorunlu klasör/refactor planı**
+
+Bunu şöyle düşün:
+- refactor planı = fiziksel düzen
+- CMake target planı = mantıksal düzen
+
+İkisi birlikte oturursa Studio çok daha temiz ilerler.
+
+---
+
+# 1) Önerilen CMake Target Mimarisi
+
+Amaç:
+
+- Engine, AXUI, Expressway ve ürünleri net ayırmak
+- HPC/HFT hot path ile UI path’i target seviyesinde de ayrıştırmak
+- Build graph’i okunur hale getirmek
+
+---
+
+## 🎯 Hedef Mantık
+
+```text
+                ┌───────────────┐
+                │  axiom_engine │
+                └───────┬───────┘
+                        │
+              ┌─────────┴─────────┐
+              │                   │
+      ┌───────▼────────┐  ┌──────▼─────────┐
+      │ axiom_expressway│  │  axui_runtime  │
+      └───────┬────────┘  └──────┬─────────┘
+              │                  │
+              └────────┬─────────┘
+                       │
+                ┌──────▼──────┐
+                │ axiom_studio │
+                └──────────────┘
+
+Dashboard:
+axui_runtime + axiom_engine + telemetry bridge
+
+Lens:
+axui_runtime + axiom_engine(or service API) + doc-analysis bridge
+```
+
+---
+
+## ✅ A. Core Engine Target’ları
+
+### 1. `axiom_engine_core`
+Engine’in saf hesaplama / runtime çekirdeği.
+
+İçeriği:
+- scheduler
+- dispatch
+- runtime
+- memory arenas
+- command execution
+- state model
+
+**Bağımlılıkları minimum tut.**
+Qt bağımlılığı YOK.
+
+```cmake
+add_library(axiom_engine_core STATIC
+    engine/core/*.cpp
+    engine/dispatch/*.cpp
+    engine/runtime/*.cpp
+    engine/memory/*.cpp
+)
+
+target_include_directories(axiom_engine_core PUBLIC
+    ${CMAKE_SOURCE_DIR}/engine/include
+)
+
+target_link_libraries(axiom_engine_core PUBLIC
+    mimalloc
+    robin_map
+)
+```
+
+---
+
+### 2. `axiom_engine_compute`
+Numerical / HPC / SIMD / Eigen / asmjit / advanced compute burada.
+
+```cmake
+add_library(axiom_engine_compute STATIC
+    engine/compute/*.cpp
+    engine/math/*.cpp
+    engine/simd/*.cpp
+)
+
+target_link_libraries(axiom_engine_compute PUBLIC
+    axiom_engine_core
+    Eigen3::Eigen
+    asmjit
+)
+```
+
+---
+
+### 3. `axiom_engine_ipc`
+Zero-copy IPC ve shared memory burada.
+
+```cmake
+add_library(axiom_engine_ipc STATIC
+    engine/ipc/*.cpp
+    engine/ringbuffer/*.cpp
+    engine/shared_memory/*.cpp
+)
+
+target_link_libraries(axiom_engine_ipc PUBLIC
+    axiom_engine_core
+)
+```
+
+Burada Qt YOK.  
+Hot path burada yaşar.
+
+---
+
+### 4. `axiom_engine_api`
+CLI ve ürünlerin kullandığı public façade.
+
+```cmake
+add_library(axiom_engine_api STATIC
+    engine/api/*.cpp
+)
+
+target_link_libraries(axiom_engine_api PUBLIC
+    axiom_engine_core
+    axiom_engine_compute
+    axiom_engine_ipc
+)
+```
+
+---
+
+## ✅ B. Vulkan Expressway Target’ları
+
+Bu çok kritik: Expressway bağımsız target olmalı.
+
+### 5. `axiom_expressway_core`
+- instance
+- device
+- swapchain
+- command pool
+- sync
+
+```cmake
+add_library(axiom_expressway_core STATIC
+    expressway/core/*.cpp
+    expressway/device/*.cpp
+    expressway/frame/*.cpp
+)
+
+target_link_libraries(axiom_expressway_core PUBLIC
+    Vulkan::Vulkan
+)
+```
+
+---
+
+### 6. `axiom_expressway_rendergraph`
+- render graph
+- pipeline cache
+- descriptors
+- render passes
+
+```cmake
+add_library(axiom_expressway_rendergraph STATIC
+    expressway/render_graph/*.cpp
+    expressway/pipeline/*.cpp
+    expressway/descriptors/*.cpp
+)
+
+target_link_libraries(axiom_expressway_rendergraph PUBLIC
+    axiom_expressway_core
+)
+```
+
+---
+
+### 7. `axiom_expressway_scene`
+- camera
+- mesh
+- material
+- scene graph
+- upload orchestration
+
+```cmake
+add_library(axiom_expressway_scene STATIC
+    expressway/scene/*.cpp
+    expressway/mesh/*.cpp
+    expressway/camera/*.cpp
+)
+
+target_link_libraries(axiom_expressway_scene PUBLIC
+    axiom_expressway_rendergraph
+)
+```
+
+---
+
+## ✅ C. AXUI Target’ları
+
+Burada AXUI’yi üç parçaya ayırman uzun vadede çok faydalı olur.
+
+### 8. `axui_compiler`
+Zaten var gibi.
+
+- parser
+- resolver
+- node tree
+- token/theme resolution
+
+---
+
+### 9. `axui_runtime`
+- binding engine
+- runtime bridge
+- property mapping
+
+---
+
+### 10. `axui_qml`
+- qml loader
+- component registry
+- qml resources
+
+Qt bağımlılığı burada yoğunlaşmalı.
+
+---
+
+### 11. `axui_ui`
+İstersen façade target:
+
+```cmake
+add_library(axui_ui INTERFACE)
+target_link_libraries(axui_ui INTERFACE
+    axui_compiler
+    axui_runtime
+    axui_qml
+)
+```
+
+Bu ürünler için çok temiz olur.
+
+---
+
+## ✅ D. Product Target’ları
+
+### 12. `axiom_dashboard_app`
+
+```cmake
+add_executable(axiom_dashboard
+    products/dashboard/src/main.cpp
+    products/dashboard/src/dashboard_bridge.cpp
+)
+
+target_link_libraries(axiom_dashboard PRIVATE
+    axui_ui
+    axiom_engine_api
+)
+```
+
+Dashboard Expressway’e direkt bağlı olmak zorunda değil.
+
+---
+
+### 13. `axiom_studio_app`
+
+```cmake
+add_executable(axiom_studio
+    products/studio/src/main.cpp
+    products/studio/src/studio_runtime.cpp
+    products/studio/src/engine_bridge.cpp
+)
+
+target_link_libraries(axiom_studio PRIVATE
+    axui_ui
+    axiom_engine_api
+    axiom_expressway_scene
+)
+```
+
+Bu en kritik ürün target’ı.
+
+---
+
+### 14. `axiom_lens_app`
+
+```cmake
+add_executable(axiom_lens
+    products/lens/src/main.cpp
+)
+
+target_link_libraries(axiom_lens PRIVATE
+    axui_ui
+    axiom_engine_api
+)
+```
+
+Lens belki ayrı document-analysis core’a da bağlanır.
+
+---
+
+## ✅ E. Test Target Mimarisi
+
+Target bazlı test çok önemli.
+
+### Engine Tests
+- `axiom_engine_unit_tests`
+- `axiom_engine_concurrency_tests`
+- `axiom_engine_hardware_tests`
+- `axiom_engine_benchmarks`
+
+### Expressway Tests
+- `axiom_expressway_unit_tests`
+- `axiom_expressway_frame_tests`
+
+### AXUI Tests
+- `axui_compiler_tests`
+- `axui_runtime_tests`
+- `axui_qml_tests`
+
+### Product Tests
+- `axiom_dashboard_tests`
+- `axiom_studio_tests`
+- `axiom_lens_tests`
+
+---
+
+## 🎯 Target Level Rules
+
+Bu kuralları çok net koymanı öneririm:
+
+### Rule 1
+`axiom_engine_*` target’ları **Qt bilmez**
+
+### Rule 2
+`axui_*` target’ları Vulkan bilmez
+
+### Rule 3
+`axiom_expressway_*` target’ları QML bilmez
+
+### Rule 4
+Ürün target’ları bu üç dünyayı birleştirir
+
+Bu mimari seni gelecekte kurtarır.
+
+---
+
+# 2) Phase 7 Öncesi Zorunlu Klasör / Refactor Planı
+
+Şimdi fiziksel repo düzeni.
+
+---
+
+## 🎯 Bugünkü sorun
+
+Şu an repo’da kaynak ve build zihinsel olarak birbirine karışmış görünüyor.
+
+Ayrıca:
+
+- gui birden fazla yerde
+- studio var
+- src/gui var
+- gui/qt var
+- axui ayrı
+- core ayrı
+- ürünler ayrı değil
+
+Bu okunabilirliği düşürüyor.
+
+---
+
+## ✅ Hedef Klasör Yapısı
+
+Ben şu yapıyı öneriyorum:
+
+```text
+Axiom/
+├── CMakeLists.txt
+├── cmake/
+├── docs/
+├── scripts/
+├── tests/
+├── third_party/          # opsiyonel, eğer submodules/use vendoring
+│
+├── axui/
+│   ├── compiler/
+│   ├── runtime/
+│   ├── qml/
+│   └── themes/
+│
+├── engine/
+│   ├── include/
+│   ├── api/
+│   ├── core/
+│   ├── compute/
+│   ├── ipc/
+│   ├── dispatch/
+│   ├── memory/
+│   ├── profiling/
+│   └── shaders/
+│
+├── expressway/
+│   ├── include/
+│   ├── core/
+│   ├── device/
+│   ├── frame/
+│   ├── render_graph/
+│   ├── descriptors/
+│   ├── pipeline/
+│   ├── scene/
+│   └── shaders/
+│
+├── products/
+│   ├── dashboard/
+│   │   ├── src/
+│   │   ├── ui/
+│   │   └── tests/
+│   │
+│   ├── studio/
+│   │   ├── src/
+│   │   ├── backend/
+│   │   ├── frontend/
+│   │   ├── ui/
+│   │   └── tests/
+│   │
+│   └── lens/
+│       ├── src/
+│       ├── ui/
+│       └── tests/
+│
+├── tools/
+│   ├── analysis/
+│   └── visualization/
+│
+└── output/              # gitignored
+```
+
+---
+
+## ✅ Ne Nereye Taşınmalı?
+
+### Şu anki `core/dispatch`
+→ `engine/dispatch/`
+
+### Şu anki `shaders`
+→ ikiye ayrılmalı:
+- engine compute shader ise `engine/shaders/`
+- expressway render shader ise `expressway/shaders/`
+
+### Şu anki `studio/axiom_studio/backend`
+→ `products/studio/backend`
+
+### Şu anki `studio/axiom_studio/frontend`
+→ `products/studio/frontend`
+
+### Şu anki `src/gui`
+→ ya `products/studio/src` ya da tamamen kaldırılmalı  
+(tek GUI entrypoint seç)
+
+### Şu anki `gui/qt`, `gui/python`
+→ bunlar legacy/tooling ise `tools/gui/` gibi yere taşınmalı  
+ürün runtime ile karışmamalı.
+
+---
+
+## ✅ Kırmızı Çizgi
+
+### 1. build klasörleri repo kökünde source ile yarışmamalı
+Şunlar source review’de gürültü:
+- `build/`
+- `build-ci/`
+- `ninja-build/`
+- `axui/build/`
+
+Bunların hepsi `.gitignore` dışında kalsa bile zihinsel olarak ayırılmalı.
+
+---
+
+### 2. Studio ürün klasörü “tek gerçek UI ürün entrypoint” olmalı
+Şu an birden fazla GUI izi var.
+
+Bunu tekleştir:
+
+```text
+products/studio
+products/dashboard
+products/lens
+```
+
+---
+
+### 3. AXUI ile product-specific UI ayrı tutulmalı
+AXUI generic component library.
+
+Dashboard/Studio/Lens kendi ekranlarını orada tanımlar.
+
+Yani:
+
+- `axui/qml/resources/components/*` → generic
+- `products/dashboard/ui/*` → product-specific
+- `products/studio/ui/*` → product-specific
+
+Bu çok önemli.
+
+---
+
+# 3) Önerilen Root CMake Yapısı
+
+Kök CMake aşağı yukarı şöyle olmalı:
+
+```cmake
+cmake_minimum_required(VERSION 3.20)
+project(Axiom LANGUAGES C CXX)
+
+option(AXIOM_BUILD_TESTS "Build tests" ON)
+option(AXIOM_BUILD_STUDIO "Build Studio" ON)
+option(AXIOM_BUILD_DASHBOARD "Build Dashboard" ON)
+option(AXIOM_BUILD_LENS "Build Lens" ON)
+
+add_subdirectory(axui)
+add_subdirectory(engine)
+add_subdirectory(expressway)
+
+if(AXIOM_BUILD_DASHBOARD)
+    add_subdirectory(products/dashboard)
+endif()
+
+if(AXIOM_BUILD_STUDIO)
+    add_subdirectory(products/studio)
+endif()
+
+if(AXIOM_BUILD_LENS)
+    add_subdirectory(products/lens)
+endif()
+
+if(AXIOM_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+```
+
+---
+
+# 4) Refactor Sıralaması
+
+Hepsini aynı anda yapma.
+
+## Phase 7 Öncesi Refactor Sprint
+
+### Sprint 1 — Boundary Temizliği
+- `engine/` klasörünü oluştur
+- `expressway/` klasörünü oluştur
+- `products/` klasörünü oluştur
+- GUI dağınıklığını listele
+
+### Sprint 2 — CMake Graph
+- `axiom_engine_core`
+- `axiom_engine_api`
+- `axui_ui`
+- `axiom_dashboard`
+- `axiom_studio`
+
+target’larını net ayır
+
+### Sprint 3 — Product Isolation
+- Dashboard’u `products/dashboard`
+- Studio’yu `products/studio`
+- Lens’i `products/lens`
+
+altına taşı
+
+### Sprint 4 — Legacy Cleanup
+- `src/gui`, `gui/qt`, `gui/python` gereksiz kopyaları temizle
+- source/build ayrımını sertleştir
+
+---
+
+# 5) Bunun Sana Somut Kazancı Ne?
+
+## Kazanç 1 — Phase 7 daha az acı verir
+Studio + Expressway entegre ederken kimin ne olduğu belli olur.
+
+## Kazanç 2 — HPC/HFT doğrulaması kolaylaşır
+Hot path target’larını izole incelemek mümkün olur.
+
+## Kazanç 3 — Agent’lar daha iyi çalışır
+Senin başta sevdiğin şey buydu:
+lokal agent’lar süreci net görsün.
+
+Bu yapı agent-friendly olur.
+
+## Kazanç 4 — Ürün ailesi profesyonel görünür
+AXIOM artık “tek büyük repo” değil,
+organize bir suite olur.
+
+## Kazanç 5 — Dashboard / Studio / Lens çatışmaz
+Ürünler birbirinin klasör yapısını bozmaz.
+
+---
+

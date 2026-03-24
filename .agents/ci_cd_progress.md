@@ -61,6 +61,13 @@ This document tracks the journey of integrating and stabilizing the AXIOM Engine
 - **Phase 2 (Test Windows):** **Optimized** (Expected success with 600s timeout).
 - **Phase 2 (Test Linux):** **Stabilized** (Includes casing and include fixes).
 
+## 🚀 AXUI Phase 1 Integration Note
+- **Compiler Requirements:** AXUI mandates **C++23** and **simdjson v3.10.1+**. Simdjson v3.6.3 fails on GCC 15 due to template body resolution issues.
+- **Build Targets:** New targets `axui_compiler` (lib), `axui_tests`, and `axui_bench` are available in `axui/compiler`.
+- **Test Mandate:** `axui_tests` must pass in Phase 2. Expected output includes 8/8 successful parser tests.
+- **Performance:** `axui_bench` target parse time is < 500µs (Current: ~1.5µs). CI should alert if it exceeds 100µs.
+- **Memory Safety:** Uses `simdjson::padded_string` for all parses to prevent `INSUFFICIENT_PADDING` errors in `ondemand` API.
+
 ## ❌ Reverted / Attempted
 - **mimalloc Integration:** Attempted to link `axiom_engine` explicitly to `mimalloc` with `MI_OVERRIDE`. Reverted due to widespread build failures across all platforms. Likely requires more careful configuration or platform-specific guards.
 

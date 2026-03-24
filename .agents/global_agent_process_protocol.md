@@ -22,6 +22,7 @@ This document defines the strict operational standards for autonomous agents, pe
 
 ### Basic Principles
 
+- **Agent Coordination (MANDATORY)**: All agents MUST consult `.agents/MANDATORY_AGENT_PROTOCOL.md` and update `.agents/AGENT_ACTIVITY_LOG.md` before starting any task. This ensures real-time synchronization and prevents conflicting work.
 - **Security**: Hardware enclaves (Phase H) protect the Mantis state machine. Agents must never log or leak raw state memory from secured regions.
 - **Repeatability**: Benchmarks must be run with fixed CPU frequency and isolated cores to ensure RDTSC consistency.
 - **Zero-Observer Telemetry**: Use only the `TelemetryScribe` (lock-free SPSC) for logging during performance critical sections. `std::cout` or `printf` are strictly forbidden in hot-paths.
@@ -31,7 +32,7 @@ This document defines the strict operational standards for autonomous agents, pe
 ### Zenith Rules
 
 1. **Kernel-Bypass (Phase E)**: Standard POSIX `recv`/`send` are deprecated for high-velocity feeds. Agents must utilize `AF_XDP` or `IngressChannel` DMA paths.
-2. **Cognitive ECU (Phase F)**: Model weights must be pinned using `PinnedMemoryPool` (`VirtualLock`/`mlock`). Inference must occur in pre-allocated tensor buffers.
+2. **Cognitive Commander (Phase F)**: Model weights must be pinned using `PinnedMemoryPool` (`VirtualLock`/`mlock`). Inference must occur in pre-allocated tensor buffers.
 3. **Heisenberg-Defying Telemetry (Phase G)**: All latency measurements must use the internal `TelemetryScribe`. External profilers that introduce >10ns overhead are disallowed for micro-benchmarking.
 4. **Hardware Security (Phase H)**: State machine transitions must be modeled as Enclave ECALLs. Secure memory must be cleared immediately after unsealing.
 5. **C++23 Zenith Standard**: Leverage `std::from_chars`, `std::format`, and `std::expected` to maintain zero-exception and high-performance parsing.

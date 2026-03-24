@@ -1,0 +1,3 @@
+add_library(axiom_expressway_core STATIC core/vulkan_init.cpp)
+add_library(axiom_expressway INTERFACE)
+target_link_libraries(axiom_expressway INTERFACE axiom_expressway_core)

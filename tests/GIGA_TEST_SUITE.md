@@ -1,4 +1,4 @@
-﻿# Giga Test Suite
+# Giga Test Suite
 
 ## Overview
 
@@ -89,7 +89,7 @@ The **Giga Test Suite** is a monolithic, production-grade test suite for AXIOM E
 - Plot data points
 - Generate histograms
 
-#### 7. Eigen Engine (7 tests) - *Conditional*
+#### 7. Eigen Engine (11 tests) - *Conditional*
 
 Only runs if ENABLE_EIGEN is defined:
 
@@ -100,12 +100,24 @@ Only runs if ENABLE_EIGEN is defined:
 - Determinant calculation
 - Matrix addition
 - Solve linear systems (Ax=b)
+- FFT magnitude response
+- IFFT restoration
+- Convolution correctness
+- Cross-correlation correctness
 
 #### 8. Dynamic Calc Integration (3 tests)
 
 - Algebraic mode evaluation
 - Mode switching
 - Complex expressions
+
+#### 9. Harmonic Arena (1 test)
+- Concurrent lock-free allocations stress test
+
+#### 10. Adversarial Suite (3 tests)
+- The Stack Crusher (AST Depth Attack)
+- HarmonicArena Exhaustion (Memory Starvation)
+- FPU Poison (NaN & Infinity Propagation)
 
 ## Building & Running
 

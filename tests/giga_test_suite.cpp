@@ -429,12 +429,11 @@ void TestUnitManager(TestRunner& runner) {
 
 void TestPlotEngine(TestRunner& runner) {
     runner.StartSection("PLOT ENGINE TESTS");
-    
-    PlotEngine plot;
-    PlotConfig config;
+
+    AXIOM::PlotEngine plot;
+    AXIOM::PlotConfig config;
     config.width = 40;
-    config.height = 10;
-    
+    config.height = 10;    
     // Test 1: Plot simple function
     runner.RunTest("Plot sin(x)", [&plot, &config]() {
         std::string result = plot.PlotFunction("sin(x)", config);

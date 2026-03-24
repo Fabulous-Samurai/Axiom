@@ -1,0 +1,47 @@
+{
+    "$schema": "axui/1.0",
+    "theme": "shadow_soft",
+    "root": {
+        "component": "Column",
+        "layout": { "fill": true, "padding": 24, "gap": 16 },
+        "background": "@colors.backdrop",
+        "children": [
+            {
+                "component": "Text",
+                "props": {
+                    "text": "AXUI Minimal Example",
+                    "color": "@colors.textPrimary",
+                    "fontSize": "@typography.h2",
+                    "fontWeight": "@typography.weightBold"
+                }
+            },
+            {
+                "component": "GlassPanel",
+                "layout": { "width": 300, "height": 150, "padding": 20 },
+                "glass": { "blur": 32, "opacity": 0.1, "borderOpacity": 0.2 },
+                "hover": { "scale": 1.02, "glowRadius": 12, "glowColor": "#7DD3FC" },
+                "children": [
+                    {
+                        "component": "Text",
+                        "props": { "text": "Hello, AXUI!", "color": "#E2E8F0", "fontSize": 20 }
+                    },
+                    {
+                        "component": "Text",
+                        "props": { "text": "GPU-accelerated, zero-overhead UI", "color": "#94A3B8", "fontSize": 13 }
+                    }
+                ]
+            },
+            {
+                "component": "KPICard",
+                "glass": true,
+                "hover": true,
+                "props": {
+                    "title": "Compile Time",
+                    "bind": "@axui.compileTimeMs",
+                    "format": "number:2:ms",
+                    "color": "#6EE7B7"
+                }
+            }
+        ]
+    }
+}

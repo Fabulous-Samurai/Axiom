@@ -1,101 +1,70 @@
-cmake_minimum_required(VERSION 3.12)
+# 🏎️ AXIOM AGENT MUST OBEY: PERFORMANCE & INTEGRITY MANDATES
 
-# FORCE NINJA GENERATOR - MAXIMUM SPEED BUILD SYSTEM
+Bu dosya, Project AXIOM üzerinde çalışan tüm AI Agent'lar için **KESİN VE DEĞİŞTİRİLEMEZ** kuralları içerir. Bu kurallara uymayan her türlü kod değişikliği "Zenith Pillar" ihlali sayılır ve CI/CD tarafından reddedilir.
 
-set(CMAKE_GENERATOR "Ninja" CACHE STRING "Generator" FORCE)
+---
 
-# Project and Version
+## 🛡️ ZENITH PILLAR 1: ZERO-ALLOCATION (SIFIR TAHSİS)
+**Amac:** Bellek parçalanmasını (Fragmentation) önlemek ve deterministic gecikme (latency) sağlamak.
 
-project(axiom_engine VERSION 3.1.1)
+### ❌ YASAKLANANLAR (FORBIDDEN)
+Core modüllerde (`src/`, `include/`, `core/`) şunların kullanımı kesinlikle yasaktır:
+- `new`, `delete`, `malloc`, `free`
+- `std::vector` (Kullanılması gerekiyorsa `AXIOM::FixedVector` kullanın)
+- `std::map`, `std::unordered_map` (Kullanılması gerekiyorsa `robin-map` veya `Arena` tabanlı yapılar kullanın)
+- `std::string` (Sadece `main`, `tests` veya `config` aşamalarında serbesttir. Core'da `std::string_view` veya `const char*` kullanın)
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+### ✅ İZİN VERİLENLER (MANDATED)
+- `AXIOM::FixedVector`
+- `AXIOM::ArenaAllocator` / `HarmonicArena`
+- `std::span` (C++20/23)
+- `std::array` (Static storage)
 
-# ============================================================================
+---
 
-# AXIOM ZENITH RECOVERY: PILLAR 1 & PILLAR 5 ENFORCEMENT
+## 🛡️ ZENITH PILLAR 5: ZERO-EXCEPTION & NO RTTI
+**Amac:** Binary boyutunu küçültmek, stack unwinding maliyetinden kaçınmak ve cache locality'yi korumak.
 
-# ============================================================================
+### ❌ YASAKLANANLAR (FORBIDDEN)
+- `throw`, `try`, `catch`
+- `dynamic_cast` (RTTI kapalıdır, derleme hatası verir)
+- `typeid`
 
-# Neden (The Why): C++ exceptions (hata fırlatma), "Stack Unwinding" adı verilen ve
+### ✅ İZİN VERİLENLER (MANDATED)
+- `std::expected` (C++23) veya `std::optional`
+- Error codes (enum veya int)
+- `static_cast` veya `reinterpret_cast`
 
-# işletim sisteminin bellek yöneticisini tetikleyen devasa bir dinamik tahsis sürecine neden olur
+---
 
-# RTTI (dynamic_cast vs.), çalışma zamanı tip bilgisi ekleyerek nesneleri şişirir ve L1 önbellek
+## 🚀 ZERO-COPY PRINCIPLES (SIFIR KOPYALAMA)
+**Amac:** CPU döngülerini veri kopyalamak yerine işlem yapmak için kullanmak.
 
-# yerelliğini (Cache Locality) bozar. Bu nedenle derleyici seviyesinde kesin olarak yasaklanmıştır
+### ❌ YASAKLANANLAR (BAD PRACTICE)
+- Fonksiyonlara büyük nesneleri (struct, vector, string) değer ile (by-value) geçmek.
+- Gereksiz veri dönüşümleri (string -> c_str -> string).
 
-add_compile_options(-fno-exceptions -fno-rtti)
+### ✅ İZİN VERİLENLER (BEST PRACTICE)
+- **Move Semantics:** `std::move()` ve rvalue references (`&&`).
+- **Views:** `std::string_view`, `std::span`.
+- **In-place:** `emplace_back` (FixedVector için), `placement new` (sadece Arena içinde).
+- **Eigen Integration:** Matris verileri için `Eigen::Map` kullanarak belleği kopyalamadan map'lemek.
 
-# Neden (The Why): Modüller Arası Optimizasyon (LTO), sadece belirli bayraklara bağlı kalmamalıdır
+---
 
-# Tüm projenin tek bir devasa derleme ünitesi gibi birleştirilmesi, derleyicinin SPSC kuyrukları
+## ⚡ PERFORMANCE TIPS & INLINING
+- **Hot-Path:** Saniyede milyonlarca kez çağrılan fonksiyonları `inline` veya `[[msvc::forceinline]]` (MSVC) / `__attribute__((always_inline))` (GCC) ile işaretleyin.
+- **Cache Alignment:** Sık kullanılan struct'ları `alignas(64)` ile L1 Cache satırına hizalayın.
+- **SIMD:** Vektörize edilebilecek döngülerde derleyiciye ipucu verin veya `Eigen`'in SIMD optimize edilmiş fonksiyonlarını kullanın.
 
-# ve SoA mimarilerindeki fonksiyonları sınır tanımadan inline etmesini (satır içine almasını) sağlar
+---
 
-cmake_policy(SET CMP0069 NEW)
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+## 📜 MUAFİYETLER (EXEMPTIONS)
+Şu dizinlerde/dosyalarda yukarıdaki kurallar esnetilebilir (ancak yine de kaçınılmalıdır):
+- `tests/` (Test senaryoları)
+- `main.cpp` (Başlangıç konfigürasyonu)
+- `scripts/` (Python yardımcı araçları)
+- `nanobind/` (Python entegrasyon katmanı)
 
-# SIMD / AVX configuration
-
-option(AXIOM_ENABLE_SIMD_AVX2 "Enable AVX2 SIMD instructions" ON)
-option(AXIOM_ENABLE_SIMD_FMA "Enable FMA instructions" ON)
-option(AXIOM_ENABLE_SIMD_AVX512 "Enable AVX-512 SIMD instructions" OFF)
-option(AXIOM_ENABLE_SIMD_AVX_VNNI "Enable AVX-VNNI integer dot-product instructions (Alder Lake+/Zen4+)" OFF)
-
-# ... (Mevcut opsiyonlar korunur)
-
-option(AXIOM_AUTO_INSTALL_PYTHON_DEPS "Install optional Python GUI dependencies via pip" ON)
-option(AXIOM_ENABLE_EMBEDDED_PYTHON_ENGINE "Build embedded PythonEngine/PythonParser/PythonREPL sources" OFF)
-option(AXIOM_ENABLE_CXX20_MODULES "Enable incremental C++20 modules migration (experimental)" OFF)
-option(AXIOM_ENABLE_NANOBIND "Enable nanobind FFI integration" ON)
-option(AXIOM_ENABLE_DOXYGEN "Enable Doxygen API documentation target" OFF)
-option(AXIOM_ENABLE_HARMONIC_ARENA "Enable HarmonicArena lock-free fast-path backend" OFF)
-option(AXIOM_ENABLE_MOLD_LINKER "Try to use mold linker for faster incremental links" OFF)
-option(AXIOM_ENABLE_SIZE_GUARDS "Enable section GC and symbol stripping in Release" ON)
-option(AXIOM_AUTO_SIGN_WINDOWS "Automatically Authenticode-sign Windows binaries after build" ON)
-set(AXIOM_WINDOWS_SIGNING_SUBJECT "CN=AXIOM Local Dev Code Signing" CACHE STRING "Subject for local Windows code-signing certificate")
-set(AXIOM_PY_REQUIREMENTS "${CMAKE_SOURCE_DIR}/requirements-optional.txt")
-
-# Detect common CI environments and adjust unsafe, machine-specific defaults
-
-set(AXIOM_RUNNING_IN_CI OFF)
-if(DEFINED ENV{GITHUB_ACTIONS} OR DEFINED ENV{CI})
-    set(AXIOM_RUNNING_IN_CI ON)
-    message(STATUS "CI detected: Adjusting build defaults for reproducibility and portability")
-    set(AXIOM_AUTO_INSTALL_PYTHON_DEPS OFF CACHE BOOL "Install optional Python GUI dependencies via pip" FORCE)
-    set(AXIOM_AUTO_SIGN_WINDOWS OFF CACHE BOOL "Automatically Authenticode-sign Windows binaries after build" FORCE)
-endif()
-
-# Enable position independent code for nanobind
-
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-# NINJA PARALLEL BUILD OPTIMIZATION - ALWAYS ENABLED
-
-include(ProcessorCount)
-ProcessorCount(CPU_COUNT)
-if(NOT CPU_COUNT EQUAL 0)
-    set(CMAKE_BUILD_PARALLEL_LEVEL ${CPU_COUNT})
-else()
-    set(CMAKE_BUILD_PARALLEL_LEVEL 8)  # Fallback
-endif()
-
-# NINJA-ONLY OPTIMIZATION FLAGS - SENNA SPEED
-
-# Neden (The Why): LTO artık CMAKE_INTERPROCEDURAL_OPTIMIZATION ile global olarak sağlandığından
-
-# buradaki manuel -flto bayrakları temizlendi. Donanım ön-getiricisini (prefetcher) maksimize
-
-# etmek için native mimari hedefleri korundu
-
-if(AXIOM_RUNNING_IN_CI)
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -ffast-math" CACHE STRING "Release flags" FORCE)
-else()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -mtune=native -DNDEBUG -ffast-math" CACHE STRING "Release flags" FORCE)
-endif()
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g" CACHE STRING "Debug flags" FORCE)
-
-message(STATUS "🏎️ NINJA OPTIMIZATION: Release mode with native CPU optimizations, No-Exceptions, No-RTTI, Global LTO")
-
-# ... (Dosyanın geri kalanı nanobind, Eigen3, test ve SIMD hedefleriyle aynı şekilde devam eder)
+---
+**Agent Warning:** "Senna Speed" seviyesinde performans için bu kurallar projenin anayasasıdır. Herhangi bir değişiklik yapmadan önce `verify_zenith_pillars.py` aracını çalıştırarak uyumluluğu kontrol edin.

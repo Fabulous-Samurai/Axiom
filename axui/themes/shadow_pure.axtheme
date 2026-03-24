@@ -1,0 +1,80 @@
+{
+    "$schema": "axtheme/1.0",
+    "name": "shadow_pure",
+    "displayName": "Gece",
+
+    "colors": {
+        "surface": "#0F172A",
+        "canvas": "#1E293B",
+        "backdrop": "#0A0F1E",
+        "primary": "#38BDF8",
+        "secondary": "#A78BFA",
+        "accent": "#22D3EE",
+        "success": "#34D399",
+        "warning": "#FBBF24",
+        "error": "#F87171",
+        "info": "#60A5FA",
+        "textPrimary": "#F1F5F9",
+        "textSecondary": "#CBD5E1",
+        "textTertiary": "#64748B",
+        "textInverse": "#0F172A",
+        "border": "#334155",
+        "borderFocus": "#38BDF8",
+        "hover": "#1E293B",
+        "active": "#0C4A6E",
+        "disabled": "#1E293B",
+        "modeAlgebraic": "#8B5CF6",
+        "modeLinear": "#3B82F6",
+        "modeStatistics": "#14B8A6",
+        "modeSymbolic": "#F59E0B",
+        "modeUnits": "#EC4899",
+        "modePlot": "#10B981",
+        "perfFast": "#10B981",
+        "perfOk": "#3B82F6",
+        "perfSlow": "#F59E0B",
+        "perfCritical": "#EF4444",
+        "verified": "#10B981",
+        "unverified": "#F59E0B",
+        "violation": "#EF4444"
+    },
+
+    "typography": {
+        "headingFamily": "JetBrains Mono",
+        "bodyFamily": "Inter",
+        "codeFamily": "JetBrains Mono",
+        "h1": 32, "h2": 25, "h3": 20, "h4": 16,
+        "bodyLarge": 15, "body": 13, "small": 12, "xsmall": 11,
+        "metric": 28, "metricLarge": 32,
+        "weightLight": 300, "weightRegular": 400,
+        "weightMedium": 500, "weightSemibold": 600, "weightBold": 700
+    },
+
+    "spacing": {
+        "micro": 4, "small": 8, "mediumSmall": 12,
+        "medium": 16, "mediumLarge": 20, "large": 24,
+        "xlarge": 32, "xxlarge": 48
+    },
+
+    "radius": {
+        "small": 4, "medium": 8, "large": 12, "xl": 16, "pill": 9999
+    },
+
+    "elevation": {
+        "level0": { "offset": 0, "blur": 0, "opacity": 0 },
+        "level1": { "offset": 2, "blur": 4, "opacity": 0.12 },
+        "level2": { "offset": 4, "blur": 8, "opacity": 0.15 },
+        "level3": { "offset": 8, "blur": 16, "opacity": 0.20 },
+        "level4": { "offset": 16, "blur": 32, "opacity": 0.25 }
+    },
+
+    "glass": {
+        "defaultBlur": 32,
+        "defaultOpacity": 0.1,
+        "defaultBorderOpacity": 0.2,
+        "defaultNoiseStrength": 0.015
+    },
+
+    "animation": {
+        "fast": 150, "normal": 300, "slow": 500
+    }
+}

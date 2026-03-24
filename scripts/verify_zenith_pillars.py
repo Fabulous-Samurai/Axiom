@@ -24,6 +24,13 @@ FORBIDDEN_KEYWORDS = {
     "catch (": "Pillar 5: Exception handling (catch) detected.",
 }
 
+SUGGESTIONS = {
+    "malloc(": "Replace with AXIOM::Arena::allocate().",
+    "std::vector": "Replace with AXIOM::FixedVector<T, N> or Arena-allocated buffer.",
+    "throw ": "Replace with 'return std::unexpected(err);' (Zero-Exception policy).",
+    "try {": "Remove try/catch. Use EngineResult for error propagation.",
+}
+
 # Exempt files (main, setup, etc.)
 EXEMPT_FILES = ["main.cpp", "setup", "test", "nanobind"]
 
@@ -68,7 +75,19 @@ def main():
                         
     if total_violations > 0:
         print(f"\n[CRITICAL] Found {total_violations} Zenith Pillar violations.")
-        # sys.exit(1) # Un-comment to fail CI on violations
+        print("\n--- COGNITIVE COMMANDER AUDIT SUGGESTIONS ---")
+        seen_suggestions = set()
+        for root, _, files in os.walk("src"):
+            for file in files:
+                if file.endswith((".cpp", ".h")):
+                    path = os.path.join(root, file)
+                    with open(path, 'r') as f:
+                        content = f.read()
+                        for keyword, suggestion in SUGGESTIONS.items():
+                            if keyword in content and suggestion not in seen_suggestions:
+                                print(f"💡 [FOR {keyword}]: {suggestion}")
+                                seen_suggestions.add(suggestion)
+        # sys.exit(1)
     else:
         print("\n[SUCCESS] All core modules comply with Zenith Pillars.")
         

@@ -1,0 +1,16 @@
+{
+  "overall_status": "FAIL",
+  "total_duration_seconds": 56.36492586135864,
+  "stages": [
+    {
+      "name": "BUILD",
+      "status": "FAIL",
+      "message": "Build failed",
+      "duration_seconds": 0.0,
+      "details": {},
+      "errors": [
+        ""
+      ]
+    }
+  ]
+}

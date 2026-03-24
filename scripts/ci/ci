@@ -1,0 +1,5 @@
+#!/bin/bash
+# AXIOM Local CI — Quick launcher
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PYTHONPATH="${SCRIPT_DIR}/scripts" python3 "${SCRIPT_DIR}/scripts/ci/ci.py" "$@"

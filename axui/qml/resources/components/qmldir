@@ -1,0 +1,22 @@
+module AXUI.Components
+ 
+# Layout
+AXColumn 1.0 layout/AXColumn.qml
+AXRow 1.0 layout/AXRow.qml
+AXGrid 1.0 layout/AXGrid.qml
+AXStack 1.0 layout/AXStack.qml
+
+# Data Display
+AXKPICard 1.0 AXKPICard.qml
+AXDataGrid 1.0 AXDataGrid.qml
+AXChart 1.0 AXChart.qml
+AXGauge 1.0 AXGauge.qml
+
+# Controls
+AXButton 1.0 controls/AXButton.qml
+AXTextField 1.0 controls/AXTextField.qml
+AXSelect 1.0 controls/AXSelect.qml
+
+# Feedback
+AXToast 1.0 feedback/AXToast.qml
+AXSkeleton 1.0 feedback/AXSkeleton.qml

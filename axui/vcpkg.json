@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "axui",
+  "version": "0.4.0",
+  "description": "AXUI Compiler - JSON to Native UI with QML Rendering",
+  "homepage": "https://github.com/Fabulous-Samurai/Axiom",
+  "license": "GPL-3.0",
+  
+  "dependencies": [
+    {
+      "name": "simdjson",
+      "version>=": "3.6.0"
+    },
+    {
+      "name": "qt",
+      "version>=": "6.5.0",
+      "default-features": false,
+      "features": [
+        "qtbase",
+        "qtdeclarative",
+        "qtshadertools",
+        "qtquickcontrols2"
+      ]
+    }
+  ],
+  
+  "builtin-baseline": "latest"
+}

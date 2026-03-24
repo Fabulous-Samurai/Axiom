@@ -1,5 +1,5 @@
 // Advanced Mathematical Functions Test (Eigen-Independent)
-#include "include/dynamic_calc_types.h"
+#include "dynamic_calc_types.h"
 #include <iostream>
 #include <iomanip>
 #include <vector>

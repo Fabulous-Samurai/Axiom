@@ -1,0 +1,30 @@
+FROM fedora:39
+
+RUN dnf install -y \
+    gcc-c++ \
+    cmake \
+    ninja-build \
+    git \
+    curl \
+    zip \
+    unzip \
+    tar \
+    lcov \
+    clang \
+    python3 \
+    python3-pip \
+    && dnf clean all
+
+# Clang da mevcut (alternatif compiler testi)
+RUN clang++ --version && g++ --version
+
+# vcpkg
+RUN git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg \
+    && /opt/vcpkg/bootstrap-vcpkg.sh
+
+ENV VCPKG_ROOT=/opt/vcpkg
+ENV PATH="${VCPKG_ROOT}:${PATH}"
+
+WORKDIR /workspace
+
+CMD ["bash"]
