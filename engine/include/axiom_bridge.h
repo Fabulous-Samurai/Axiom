@@ -1,10 +1,7 @@
 // [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
 /**
  * @file axiom_bridge.h
- * @brief Zero-Allocation C-ABI for Project AXIOM GUI.
- * 
- * [MANDATORY PATH]: NO std::string or heap allocations across this boundary.
- * GUI must provide pre-allocated buffers for all data transfers.
+ * @brief Zero-Allocation C-ABI for Project AXIOM GUI (Operation BRIDGE ALIGN)
  */
 
 #pragma once
@@ -27,16 +24,20 @@ extern "C" {
 #endif
 
 /**
- * @brief Point structure for 3D Nav-Console (Mantis A*)
+ * @brief Calculation Result Schema for UI Integration
  */
+typedef struct AXIOM_C_ALIGN(64) {
+    double value;
+    int32_t status_code;
+    uint64_t latency_rdtsc;
+    char error_msg[128];
+} Axiom_CalculationResult;
+
 typedef struct AXIOM_C_ALIGN(64) {
     float x, y, z;
     uint32_t color; // Packed RGBA
 } Axiom_Point3D;
 
-/**
- * @brief Decision Tree Node for Pluto (Mantis A*)
- */
 typedef struct AXIOM_C_ALIGN(64) {
     Axiom_Point3D position;
     uint32_t node_id;
@@ -44,6 +45,11 @@ typedef struct AXIOM_C_ALIGN(64) {
     float cost_f;
     float cost_g;
 } Axiom_MantisNode;
+
+/**
+ * @brief Execute a calculation via the AXIOM Engine.
+ */
+AXIOM_EXPORT Axiom_CalculationResult Axiom_Execute(const char* expression, const char* mode);
 
 /**
  * @brief Fetches disassembly for a JIT-compiled expression.

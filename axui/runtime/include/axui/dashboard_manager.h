@@ -154,19 +154,19 @@ public:
     QVariantList stagesModel() const;
     QVariantList linksModel() const;
     QVariantMap telemetryModel() const;
-    double totalThroughput() const;
-    double totalLatency() const;
-    int activeStageCount() const;
+    double totalThroughput() const noexcept;
+    double totalLatency() const noexcept;
+    int activeStageCount() const noexcept;
     bool isRecording() const { return recording_; }
-    int sentryStatus() const;
-    double scalingMultiplier() const;
+    int sentryStatus() const noexcept;
+    double scalingMultiplier() const noexcept;
 
     // ─── QML'den çağrılabilir metodlar ───────────────────────────
-    
-    void startMockData();
-    Q_INVOKABLE void startRecording();
-    Q_INVOKABLE void stopRecording();
-    Q_INVOKABLE void resetCounters();
+
+    void startMockData() noexcept;
+    Q_INVOKABLE void startRecording() noexcept;
+    Q_INVOKABLE void stopRecording() noexcept;
+    Q_INVOKABLE void resetCounters() noexcept;
     Q_INVOKABLE QVariantList getThroughputHistory(
         const QString& stage_id, int seconds = 60) const;
     Q_INVOKABLE QVariantList getLatencyHistory(
