@@ -1,15 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
-# ─── Qt6 Dependencies ─────────────────────────────────────────────
-find_package(Qt6 REQUIRED COMPONENTS
-    Core
-    Gui
-    Qml
-    Quick
-    QuickControls2
-    Test
-    OpenGL
-)
+# Qt6 is found at root CMakeLists.txt — no need to find_package again
+
 
 # Qt MOC/RCC/UIC automation
 set(CMAKE_AUTOMOC ON)
@@ -40,7 +32,7 @@ target_link_libraries(axui_qml PUBLIC
     Qt6::OpenGL
 )
 
-set_property(TARGET axui_qml PROPERTY CXX_STANDARD 20)
+set_property(TARGET axui_qml PROPERTY CXX_STANDARD 23)
 
 # ─── AXUI Viewer Application ──────────────────────────────────────
 add_executable(axui_viewer

@@ -7,49 +7,69 @@
 #include <cmath>
 #include <limits>
 #include <map>
-#include <sstream>
+#include <charconv>
 #include <utility>
-#include <vector>
+#include "fixed_vector.h"
 
 namespace AXIOM {
 
 namespace {
 
-bool IsBlank(const std::string& value) {
-    return value.find_first_not_of(" \t\n\r") == std::string::npos;
+bool IsBlank(std::string_view value) noexcept {
+    return value.find_first_not_of(" \t\n\r") == std::string_view::npos;
 }
 
-std::string Trim(const std::string& value) {
-    return Utils::Trim(value);
+std::string_view TrimSV(std::string_view value) noexcept {
+    auto start = value.find_first_not_of(" \t\n\r");
+    if (start == std::string_view::npos) return {};
+    auto end = value.find_last_not_of(" \t\n\r");
+    return value.substr(start, end - start + 1);
 }
 
-bool IsIdentifierChar(char c) {
+bool IsIdentifierChar(char c) noexcept {
     return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
 }
 
-std::string NumberToString(double value) {
-    std::ostringstream out;
-    out.setf(std::ios::fixed);
-    out.precision(12);
-    out << value;
-    std::string s = out.str();
-    while (s.size() > 1 && s.back() == '0') {
-        s.pop_back();
+template<size_t N>
+void AppendToBuffer(AXIOM::FixedVector<char, N>& buffer, std::string_view sv) noexcept {
+    for (char c : sv) {
+        buffer.push_back(c);
     }
-    if (!s.empty() && s.back() == '.') {
-        s.pop_back();
-    }
-    if (s.empty()) {
-        return "0";
-    }
-    return s;
 }
 
-bool IsIntegerValue(double x) {
+template<size_t N>
+void NumberToBuffer(double value, AXIOM::FixedVector<char, N>& buffer) noexcept {
+    char temp[64];
+    auto [ptr, ec] = std::to_chars(temp, temp + sizeof(temp), value, std::chars_format::fixed, 12);
+    if (ec == std::errc{}) {
+        std::string_view s(temp, ptr - temp);
+        while (s.size() > 1 && s.back() == '0') {
+            s.remove_suffix(1);
+        }
+        if (!s.empty() && s.back() == '.') {
+            s.remove_suffix(1);
+        }
+        if (s.empty()) {
+            buffer.push_back('0');
+        } else {
+            AppendToBuffer(buffer, s);
+        }
+    } else {
+        buffer.push_back('0');
+    }
+}
+
+std::string_view NumberToString(Arena& arena, double value) noexcept {
+    AXIOM::FixedVector<char, 64> buf;
+    NumberToBuffer(value, buf);
+    return arena.allocString(std::string_view(buf.data(), buf.size()));
+}
+
+bool IsIntegerValue(double x) noexcept {
     return std::abs(x - std::round(x)) < 1e-9;
 }
 
-double BinomialCoeff(int n, int k) {
+double BinomialCoeff(int n, int k) noexcept {
     if (k < 0 || k > n) {
         return 0.0;
     }
@@ -64,47 +84,41 @@ double BinomialCoeff(int n, int k) {
     return coeff;
 }
 
-bool ParseDoubleStrict(const std::string& token, double& out) {
-    try {
-        size_t parsed = 0;
-        out = std::stod(token, &parsed);
-        return parsed == token.size();
-    } catch (const std::exception&) {
-        return false;
-    }
+bool ParseDoubleStrict(std::string_view token, double& out) noexcept {
+    auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), out);
+    return ec == std::errc{} && ptr == token.data() + token.size();
 }
 
-std::string ReplaceVariableTokens(const std::string& expr, const std::string& var, const std::string& replacement) {
-    std::string out;
-    out.reserve(expr.size() + 16);
+std::string_view ReplaceVariableTokens(Arena& arena, std::string_view expr, std::string_view var, std::string_view replacement) noexcept {
+    AXIOM::FixedVector<char, 4096> out;
     for (size_t i = 0; i < expr.size();) {
         bool starts_token = (i == 0 || !IsIdentifierChar(expr[i - 1]));
-        if (starts_token && i + var.size() <= expr.size() && expr.compare(i, var.size(), var) == 0) {
+        if (starts_token && i + var.size() <= expr.size() && expr.substr(i, var.size()) == var) {
             const size_t right = i + var.size();
             const bool ends_token = (right == expr.size() || !IsIdentifierChar(expr[right]));
             if (ends_token) {
-                out += replacement;
+                AppendToBuffer(out, replacement);
                 i += var.size();
                 continue;
             }
         }
-        out.push_back(expr[i]);
+        if (out.size() < out.capacity()) {
+            out.push_back(expr[i]);
+        }
         ++i;
     }
-    return out;
+    return arena.allocString(std::string_view(out.data(), out.size()));
 }
 
-EngineResult EvalScalar(const std::string& expr, const AXIOM::StringUnorderedMap<AXIOM::Number>& context = {}) {
+EngineResult EvalScalar(std::string_view expr, const AXIOM::SymbolTable& context = {}) noexcept {
     AXIOM::AlgebraicParser parser;
     if (context.empty()) {
         return parser.ParseAndExecute(expr);
     }
-    // If context is provided, we might need a way to pass it to ParseAndExecute if it's a special command.
-    // For now, the only special command using context is handled inside its own handler (numeric integration/limit).
     return parser.ParseAndExecuteWithContext(expr, context);
 }
 
-bool EvalDouble(const std::string& expr, double& out, const AXIOM::StringUnorderedMap<AXIOM::Number>& context = {}) {
+bool EvalDouble(std::string_view expr, double& out, const AXIOM::SymbolTable& context = {}) noexcept {
     EngineResult res = EvalScalar(expr, context);
     auto value = res.GetDouble();
     if (!value.has_value() || !std::isfinite(*value)) {
@@ -114,14 +128,15 @@ bool EvalDouble(const std::string& expr, double& out, const AXIOM::StringUnorder
     return true;
 }
 
-bool BisectionRoot(const std::string& expr,
-                  const std::string& var,
+bool BisectionRoot(std::string_view expr,
+                  std::string_view var,
                   double left,
                   double right,
-                  double& root) {
-    AXIOM::StringUnorderedMap<AXIOM::Number> ctx;
+                  double& root) noexcept {
+    AXIOM::SymbolTable ctx;
     auto eval = [&](double x, double& fx) -> bool {
-        ctx[var] = AXIOM::Number(x);
+        ctx.clear();
+        ctx.push_back({var, AXIOM::Number(x)});
         return EvalDouble(expr, fx, ctx);
     };
 
@@ -169,36 +184,48 @@ bool BisectionRoot(const std::string& expr,
 
 } // namespace
 
-EngineResult SymbolicEngine::Expand(const std::string& expression) {
+EngineResult SymbolicEngine::Expand(std::string_view expression) noexcept {
+    arena_.reset();
     if (IsBlank(expression)) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    const std::string expr = Trim(expression);
-    if (expr.size() >= 6 && expr.front() == '(' && expr.find(')') != std::string::npos && expr.back() >= '0' && expr.back() <= '9') {
+    const std::string_view expr = TrimSV(expression);
+    if (expr.size() >= 6 && expr.front() == '(' && expr.find(')') != std::string_view::npos && expr.back() >= '0' && expr.back() <= '9') {
         const size_t close = expr.find(')');
         if (close + 2 < expr.size() && expr[close + 1] == '^') {
-            const std::string inside = expr.substr(1, close - 1);
-            const std::string power_s = expr.substr(close + 2);
+            const std::string_view inside = expr.substr(1, close - 1);
+            const std::string_view power_s = expr.substr(close + 2);
             double power_d = 0.0;
             if (ParseDoubleStrict(power_s, power_d) && IsIntegerValue(power_d)) {
                 const int n = static_cast<int>(std::round(power_d));
                 if (n >= 0 && n <= 16) {
                     size_t split = inside.find('+');
                     char op = '+';
-                    if (split == std::string::npos) {
+                    if (split == std::string_view::npos) {
                         split = inside.find('-', 1);
                         op = '-';
                     }
-                    if (split != std::string::npos) {
-                        const std::string a = Trim(inside.substr(0, split));
-                        const std::string b_raw = Trim(inside.substr(split + 1));
-                        const std::string b = (op == '-') ? ("-" + b_raw) : b_raw;
+                    if (split != std::string_view::npos) {
+                        const std::string_view a = TrimSV(inside.substr(0, split));
+                        const std::string_view b_raw = TrimSV(inside.substr(split + 1));
+                        
+                        double b_num = 0.0;
+                        bool b_parsed = false;
+                        if (op == '-') {
+                            if (ParseDoubleStrict(b_raw, b_num)) {
+                                b_num = -b_num;
+                                b_parsed = true;
+                            }
+                        } else {
+                            if (ParseDoubleStrict(b_raw, b_num)) {
+                                b_parsed = true;
+                            }
+                        }
 
                         bool a_is_var = !a.empty() && std::isalpha(static_cast<unsigned char>(a[0]));
-                        double b_num = 0.0;
-                        if (a_is_var && ParseDoubleStrict(b, b_num)) {
-                            std::ostringstream out;
+                        if (a_is_var && b_parsed) {
+                            AXIOM::FixedVector<char, 2048> out;
                             bool first = true;
                             for (int k = 0; k <= n; ++k) {
                                 const double coeff = BinomialCoeff(n, k) * std::pow(b_num, k);
@@ -208,29 +235,30 @@ EngineResult SymbolicEngine::Expand(const std::string& expression) {
                                 }
 
                                 if (!first) {
-                                    out << (coeff >= 0.0 ? " + " : " - ");
+                                    AppendToBuffer(out, coeff >= 0.0 ? " + " : " - ");
                                 } else if (coeff < 0.0) {
-                                    out << "-";
+                                    out.push_back('-');
                                 }
 
                                 const double abs_coeff = std::abs(coeff);
                                 const bool emit_coeff = (var_pow == 0) || std::abs(abs_coeff - 1.0) > 1e-12;
                                 if (emit_coeff) {
-                                    out << NumberToString(abs_coeff);
+                                    NumberToBuffer(abs_coeff, out);
                                     if (var_pow > 0) {
-                                        out << "*";
+                                        out.push_back('*');
                                     }
                                 }
                                 if (var_pow > 0) {
-                                    out << a;
+                                    AppendToBuffer(out, a);
                                     if (var_pow > 1) {
-                                        out << "^" << var_pow;
+                                        AppendToBuffer(out, "^");
+                                        NumberToBuffer(static_cast<double>(var_pow), out);
                                     }
                                 }
 
                                 first = false;
                             }
-                            return CreateSuccessResult(out.str());
+                            return CreateSuccessResult(arena_.allocString(std::string_view(out.data(), out.size())));
                         }
                     }
                 }
@@ -238,26 +266,33 @@ EngineResult SymbolicEngine::Expand(const std::string& expression) {
         }
     }
 
-    return CreateSuccessResult(expr);
+    return CreateSuccessResult(arena_.allocString(expr));
 }
 
-EngineResult SymbolicEngine::Factor(const std::string& expression) {
+EngineResult SymbolicEngine::Factor(std::string_view expression) noexcept {
+    arena_.reset();
     if (IsBlank(expression)) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    std::string candidate = Trim(expression);
-    std::erase_if(candidate, [](unsigned char ch) { return std::isspace(ch) != 0; });
+    const std::string_view trimmed = TrimSV(expression);
+    AXIOM::FixedVector<char, 1024> candidate_buf;
+    for (char ch : trimmed) {
+        if (std::isspace(static_cast<unsigned char>(ch)) == 0) {
+            candidate_buf.push_back(ch);
+        }
+    }
+    std::string_view candidate(candidate_buf.data(), candidate_buf.size());
 
     // Minimal integer-root factorization for x^2+bx+c.
     size_t x2 = candidate.find("x^2");
-    if (x2 != std::string::npos) {
-        std::string tail = candidate.substr(x2 + 3);
+    if (x2 != std::string_view::npos) {
+        std::string_view tail = candidate.substr(x2 + 3);
         // Expected format: [+|-]bx[+|-]c
         size_t x_pos = tail.find('x');
-        if (x_pos != std::string::npos) {
-            std::string b_str = tail.substr(0, x_pos);
-            std::string c_str = tail.substr(x_pos + 1);
+        if (x_pos != std::string_view::npos) {
+            std::string_view b_str = tail.substr(0, x_pos);
+            std::string_view c_str = tail.substr(x_pos + 1);
             if (b_str.empty() || b_str == "+") {
                 b_str = "1";
             } else if (b_str == "-") {
@@ -275,155 +310,219 @@ EngineResult SymbolicEngine::Factor(const std::string& expression) {
                     }
                     const int q = ci / p;
                     if (p + q == bi) {
-                        const std::string p_s = (p >= 0) ? (" + " + std::to_string(p)) : (" - " + std::to_string(-p));
-                        const std::string q_s = (q >= 0) ? (" + " + std::to_string(q)) : (" - " + std::to_string(-q));
-                        return CreateSuccessResult("(x" + p_s + ")*(x" + q_s + ")");
+                        AXIOM::FixedVector<char, 256> out;
+                        AppendToBuffer(out, "(x");
+                        if (p >= 0) AppendToBuffer(out, " + "); else AppendToBuffer(out, " - ");
+                        NumberToBuffer(std::abs(static_cast<double>(p)), out);
+                        AppendToBuffer(out, ")*(x");
+                        if (q >= 0) AppendToBuffer(out, " + "); else AppendToBuffer(out, " - ");
+                        NumberToBuffer(std::abs(static_cast<double>(q)), out);
+                        AppendToBuffer(out, ")");
+                        return CreateSuccessResult(arena_.allocString(std::string_view(out.data(), out.size())));
                     }
                 }
             }
         }
     }
 
-    return CreateSuccessResult(Trim(expression));
+    return CreateSuccessResult(arena_.allocString(trimmed));
 }
 
-EngineResult SymbolicEngine::Simplify(const std::string& expression) {
+EngineResult SymbolicEngine::Simplify(std::string_view expression) noexcept {
+    arena_.reset();
     if (IsBlank(expression)) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
     double value = 0.0;
     if (EvalDouble(expression, value)) {
-        return CreateSuccessResult(NumberToString(value));
+        return CreateSuccessResult(NumberToString(arena_, value));
     }
-    return CreateSuccessResult(Trim(expression));
+    return CreateSuccessResult(arena_.allocString(TrimSV(expression)));
 }
 
-EngineResult SymbolicEngine::Substitute(const std::string& expr, const std::string& var, const std::string& value) {
+EngineResult SymbolicEngine::Substitute(std::string_view expr, std::string_view var, std::string_view value) noexcept {
+    arena_.reset();
     if (IsBlank(expr) || IsBlank(var) || IsBlank(value)) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    const std::string replaced = ReplaceVariableTokens(expr, Trim(var), "(" + Trim(value) + ")");
+    const std::string_view trimmed_var = TrimSV(var);
+    const std::string_view trimmed_val = TrimSV(value);
+    
+    AXIOM::FixedVector<char, 256> replacement;
+    replacement.push_back('(');
+    AppendToBuffer(replacement, trimmed_val);
+    replacement.push_back(')');
+    
+    const std::string_view replaced = ReplaceVariableTokens(arena_, expr, trimmed_var, std::string_view(replacement.data(), replacement.size()));
     return CreateSuccessResult(replaced);
 }
 
-EngineResult SymbolicEngine::Integrate(const std::string& expression, const std::string& variable) {
+EngineResult SymbolicEngine::Integrate(std::string_view expression, std::string_view variable) noexcept {
+    arena_.reset();
     if (IsBlank(expression) || IsBlank(variable)) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    const std::string expr = Trim(expression);
-    const std::string var = Trim(variable);
+    const std::string_view expr = TrimSV(expression);
+    const std::string_view var = TrimSV(variable);
 
     double c = 0.0;
     if (ParseDoubleStrict(expr, c)) {
-        return CreateSuccessResult(NumberToString(c) + "*" + var);
+        AXIOM::FixedVector<char, 128> res_buf;
+        NumberToBuffer(c, res_buf);
+        res_buf.push_back('*');
+        AppendToBuffer(res_buf, var);
+        return CreateSuccessResult(arena_.allocString(std::string_view(res_buf.data(), res_buf.size())));
     }
 
     if (expr == var) {
-        return CreateSuccessResult("0.5*" + var + "^2");
+        AXIOM::FixedVector<char, 128> res_buf;
+        AppendToBuffer(res_buf, "0.5*");
+        AppendToBuffer(res_buf, var);
+        AppendToBuffer(res_buf, "^2");
+        return CreateSuccessResult(arena_.allocString(std::string_view(res_buf.data(), res_buf.size())));
     }
 
-    if (expr == "sin(" + var + ")") {
-        return CreateSuccessResult("-cos(" + var + ")");
+    if (expr.size() == var.size() + 5 && expr.starts_with("sin(") && expr.ends_with(")") && expr.substr(4, var.size()) == var) {
+        AXIOM::FixedVector<char, 128> res_buf;
+        AppendToBuffer(res_buf, "-cos(");
+        AppendToBuffer(res_buf, var);
+        AppendToBuffer(res_buf, ")");
+        return CreateSuccessResult(arena_.allocString(std::string_view(res_buf.data(), res_buf.size())));
     }
-    if (expr == "cos(" + var + ")") {
-        return CreateSuccessResult("sin(" + var + ")");
+    if (expr.size() == var.size() + 5 && expr.starts_with("cos(") && expr.ends_with(")") && expr.substr(4, var.size()) == var) {
+        AXIOM::FixedVector<char, 128> res_buf;
+        AppendToBuffer(res_buf, "sin(");
+        AppendToBuffer(res_buf, var);
+        AppendToBuffer(res_buf, ")");
+        return CreateSuccessResult(arena_.allocString(std::string_view(res_buf.data(), res_buf.size())));
     }
 
-    if (expr.rfind(var + "^", 0) == 0) {
+    if (expr.starts_with(var) && expr.size() > var.size() && expr[var.size()] == '^') {
         double n = 0.0;
         if (ParseDoubleStrict(expr.substr(var.size() + 1), n) && std::abs(n + 1.0) > 1e-12) {
             const double p = n + 1.0;
-            return CreateSuccessResult("(" + NumberToString(1.0 / p) + ")*" + var + "^" + NumberToString(p));
+            AXIOM::FixedVector<char, 256> res_buf;
+            res_buf.push_back('(');
+            NumberToBuffer(1.0 / p, res_buf);
+            AppendToBuffer(res_buf, ")*");
+            AppendToBuffer(res_buf, var);
+            AppendToBuffer(res_buf, "^");
+            NumberToBuffer(p, res_buf);
+            return CreateSuccessResult(arena_.allocString(std::string_view(res_buf.data(), res_buf.size())));
         }
     }
 
     return CreateErrorResult(CalcErr::OperationNotFound);
 }
 
-EngineResult SymbolicEngine::DefiniteIntegral(const std::string& expr, const std::string& var, double a, double b) {
+EngineResult SymbolicEngine::DefiniteIntegral(std::string_view expr, std::string_view var, double a, double b) noexcept {
+    arena_.reset();
     if (IsBlank(expr) || IsBlank(var)) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    const std::string command = "integrate(" + Trim(expr) + ", " + Trim(var) + ", " + NumberToString(a) + ", " + NumberToString(b) + ")";
-    EngineResult res = EvalScalar(command);
+    AXIOM::FixedVector<char, 512> command;
+    AppendToBuffer(command, "integrate(");
+    AppendToBuffer(command, TrimSV(expr));
+    AppendToBuffer(command, ", ");
+    AppendToBuffer(command, TrimSV(var));
+    AppendToBuffer(command, ", ");
+    NumberToBuffer(a, command);
+    AppendToBuffer(command, ", ");
+    NumberToBuffer(b, command);
+    AppendToBuffer(command, ")");
+    
+    EngineResult res = EvalScalar(std::string_view(command.data(), command.size()));
     if (res.HasResult()) {
         return res;
     }
     return CreateErrorResult(CalcErr::DomainError);
 }
 
-EngineResult SymbolicEngine::PartialDerivative(const std::string& expr, const std::string& var) {
+EngineResult SymbolicEngine::PartialDerivative(std::string_view expr, std::string_view var) noexcept {
+    arena_.reset();
     if (IsBlank(expr) || IsBlank(var)) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    const std::string variable = Trim(var);
-    const std::string source = Trim(expr);
-    std::string derivative_target = source;
-
+    const std::string_view variable = TrimSV(var);
+    const std::string_view source = TrimSV(expr);
+    
+    std::string_view derivative_target;
     if (variable != "x") {
-        derivative_target = ReplaceVariableTokens(source, variable, "x");
+        derivative_target = ReplaceVariableTokens(arena_, source, variable, "x");
+    } else {
+        derivative_target = source;
     }
 
     AXIOM::AlgebraicParser parser;
-    EngineResult res = parser.ParseAndExecute("derive " + derivative_target);
+    AXIOM::FixedVector<char, 2048> cmd_buf;
+    AppendToBuffer(cmd_buf, "derive ");
+    AppendToBuffer(cmd_buf, derivative_target);
+    
+    EngineResult res = parser.ParseAndExecute(std::string_view(cmd_buf.data(), cmd_buf.size()));
     if (!res.result.has_value()) {
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
-    const std::string* deriv_str = std::get_if<std::string>(&*res.result);
-    if (deriv_str == nullptr) {
+    const std::string_view* deriv_sv = std::get_if<std::string_view>(&*res.result);
+    if (deriv_sv == nullptr) {
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
-    std::string mapped_back = *deriv_str;
     if (variable != "x") {
-        mapped_back = ReplaceVariableTokens(mapped_back, "x", variable);
+        return CreateSuccessResult(ReplaceVariableTokens(arena_, *deriv_sv, "x", variable));
     }
-    return CreateSuccessResult(mapped_back);
+    return CreateSuccessResult(*deriv_sv);
 }
 
-EngineResult SymbolicEngine::TaylorSeries(const std::string& expr, const std::string& var, double point, int order) {
+EngineResult SymbolicEngine::TaylorSeries(std::string_view expr, std::string_view var, double point, int order) noexcept {
+    arena_.reset();
     if (IsBlank(expr) || IsBlank(var) || order < 0) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    const std::string variable = Trim(var);
+    const std::string_view variable = TrimSV(var);
     AXIOM::AlgebraicParser parser;
     auto current_ast = parser.ParseExpression(expr);
     if (!current_ast) return CreateErrorResult(CalcErr::ParseError);
 
     double fact = 1.0;
-    std::ostringstream series;
+    AXIOM::FixedVector<char, 2048> series;
     bool any_term = false;
 
     for (int k = 0; k <= order; ++k) {
-        AXIOM::StringUnorderedMap<AXIOM::Number> context;
-        context[variable] = AXIOM::Number(point);
+        AXIOM::SymbolTable context;
+        context.push_back({variable, AXIOM::Number(point)});
         
         auto res = current_ast->Evaluate(context);
         if (res.HasValue()) {
             const double coeff = GetReal(*res.value) / fact;
             if (std::abs(coeff) > 1e-12) {
                 if (any_term) {
-                    series << (coeff >= 0.0 ? " + " : " - ");
+                    AppendToBuffer(series, coeff >= 0.0 ? " + " : " - ");
                 } else if (coeff < 0.0) {
-                    series << "-";
+                    series.push_back('-');
                 }
                 const double abs_coeff = std::abs(coeff);
                 if (k == 0) {
-                    series << NumberToString(abs_coeff);
+                    NumberToBuffer(abs_coeff, series);
                 } else {
                     if (std::abs(abs_coeff - 1.0) > 1e-12) {
-                        series << NumberToString(abs_coeff) << "*";
+                        NumberToBuffer(abs_coeff, series);
+                        series.push_back('*');
                     }
-                    series << "(" << variable << " - " << NumberToString(point) << ")";
+                    series.push_back('(');
+                    AppendToBuffer(series, variable);
+                    AppendToBuffer(series, " - ");
+                    NumberToBuffer(point, series);
+                    series.push_back(')');
                     if (k > 1) {
-                        series << "^" << k;
+                        series.push_back('^');
+                        NumberToBuffer(static_cast<double>(k), series);
                     }
                 }
                 any_term = true;
@@ -441,32 +540,41 @@ EngineResult SymbolicEngine::TaylorSeries(const std::string& expr, const std::st
     if (!any_term) {
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
-    return CreateSuccessResult(series.str());
+    return CreateSuccessResult(arena_.allocString(std::string_view(series.data(), series.size())));
 }
 
-EngineResult SymbolicEngine::SolveEquation(const std::string& equation, const std::string& variable) {
+EngineResult SymbolicEngine::SolveEquation(std::string_view equation, std::string_view variable) noexcept {
+    arena_.reset();
     if (IsBlank(equation) || IsBlank(variable)) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    const std::string var = Trim(variable);
-    const std::string eq = Trim(equation);
+    const std::string_view var = TrimSV(variable);
+    const std::string_view eq = TrimSV(equation);
     const size_t equal_pos = eq.find('=');
-    std::string expr = eq;
-    if (equal_pos != std::string::npos) {
-        expr = "(" + Trim(eq.substr(0, equal_pos)) + ")-(" + Trim(eq.substr(equal_pos + 1)) + ")";
+    
+    AXIOM::FixedVector<char, 2048> expr_buf;
+    if (equal_pos != std::string_view::npos) {
+        expr_buf.push_back('(');
+        AppendToBuffer(expr_buf, eq.substr(0, equal_pos));
+        AppendToBuffer(expr_buf, ")-(");
+        AppendToBuffer(expr_buf, eq.substr(equal_pos + 1));
+        expr_buf.push_back(')');
+    } else {
+        AppendToBuffer(expr_buf, eq);
     }
+    std::string_view expr(expr_buf.data(), expr_buf.size());
 
-    std::vector<double> roots;
-    // Increased range and resolution for better root discovery
+    AXIOM::FixedVector<double, 256> roots;
     const double left = -2000.0;
     const double right = 2000.0;
     const int steps = 1000;
     const double step = (right - left) / static_cast<double>(steps);
 
-    AXIOM::StringUnorderedMap<AXIOM::Number> ctx;
+    AXIOM::SymbolTable ctx;
     auto eval = [&](double x, double& fx) -> bool {
-        ctx[var] = AXIOM::Number(x);
+        ctx.clear();
+        ctx.push_back({var, AXIOM::Number(x)});
         return EvalDouble(expr, fx, ctx);
     };
 
@@ -478,7 +586,6 @@ EngineResult SymbolicEngine::SolveEquation(const std::string& equation, const st
         double fx = 0.0;
         bool ok = eval(x, fx);
         if (ok && prev_ok) {
-            // Sign change indicates a root in (prev_x, x)
             if (prev_f * fx <= 0.0) {
                 double root = 0.0;
                 if (BisectionRoot(expr, var, prev_x, x, root)) {
@@ -495,17 +602,18 @@ EngineResult SymbolicEngine::SolveEquation(const std::string& equation, const st
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
-    std::ranges::sort(roots);
-    std::vector<double> unique_roots;
+    std::sort(roots.begin(), roots.end());
+    AXIOM::FixedVector<double, 256> unique_roots;
     for (double r : roots) {
         if (unique_roots.empty() || std::abs(unique_roots.back() - r) > 1e-5) {
             unique_roots.push_back(r);
         }
     }
-    return CreateSuccessResult(unique_roots);
+    return CreateSuccessResult(std::move(unique_roots));
 }
 
-EngineResult SymbolicEngine::SolveSystem(const std::vector<std::string>& equations, const std::vector<std::string>& variables) {
+EngineResult SymbolicEngine::SolveSystem(const AXIOM::FixedVector<std::string_view, 256>& equations, const AXIOM::FixedVector<std::string_view, 256>& variables) noexcept {
+    arena_.reset();
     if (equations.empty() || variables.empty()) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
@@ -520,57 +628,68 @@ EngineResult SymbolicEngine::SolveSystem(const std::vector<std::string>& equatio
         }
     }
 
-    std::ostringstream command;
-    command << "solve_nl {";
+    AXIOM::FixedVector<char, 4096> command;
+    AppendToBuffer(command, "solve_nl {");
     for (size_t i = 0; i < equations.size(); ++i) {
         if (i > 0) {
-            command << ";";
+            command.push_back(';');
         }
-        command << equations[i];
+        AppendToBuffer(command, equations[i]);
     }
-    command << "} [";
+    AppendToBuffer(command, "} [");
     for (size_t i = 0; i < variables.size(); ++i) {
         if (i > 0) {
-            command << ",";
+            command.push_back(',');
         }
-        command << "1";
+        command.push_back('1');
     }
-    command << "]";
+    command.push_back(']');
 
     AXIOM::AlgebraicParser parser;
-    EngineResult res = parser.ParseAndExecute(command.str());
+    EngineResult res = parser.ParseAndExecute(std::string_view(command.data(), command.size()));
     if (res.HasResult()) {
         return res;
     }
     return CreateErrorResult(CalcErr::OperationNotFound);
 }
 
-EngineResult SymbolicEngine::FindLimits(const std::string& expr, const std::string& var, double approach_point) {
+EngineResult SymbolicEngine::FindLimits(std::string_view expr, std::string_view var, double approach_point) noexcept {
+    arena_.reset();
     if (IsBlank(expr) || IsBlank(var)) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    const std::string cmd = "limit(" + Trim(expr) + ", " + Trim(var) + ", " + NumberToString(approach_point) + ")";
-    EngineResult res = EvalScalar(cmd);
+    AXIOM::FixedVector<char, 2048> cmd;
+    AppendToBuffer(cmd, "limit(");
+    AppendToBuffer(cmd, TrimSV(expr));
+    AppendToBuffer(cmd, ", ");
+    AppendToBuffer(cmd, TrimSV(var));
+    AppendToBuffer(cmd, ", ");
+    NumberToBuffer(approach_point, cmd);
+    AppendToBuffer(cmd, ")");
+
+    EngineResult res = EvalScalar(std::string_view(cmd.data(), cmd.size()));
     if (res.HasResult()) {
         return res;
     }
     return CreateErrorResult(CalcErr::DomainError);
 }
 
-EngineResult SymbolicEngine::FindRoots(const std::string& expr, const std::string& var, double range_min, double range_max) {
+EngineResult SymbolicEngine::FindRoots(std::string_view expr, std::string_view var, double range_min, double range_max) noexcept {
+    arena_.reset();
     if (IsBlank(expr) || IsBlank(var) || range_min > range_max) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    std::vector<double> roots;
+    AXIOM::FixedVector<double, 256> roots;
     const int samples = 256;
     const double step = (range_max - range_min) / static_cast<double>(samples);
-    const std::string variable = Trim(var);
+    const std::string_view variable = TrimSV(var);
 
-    AXIOM::StringUnorderedMap<AXIOM::Number> ctx;
+    AXIOM::SymbolTable ctx;
     auto eval = [&](double x, double& fx) -> bool {
-        ctx[variable] = AXIOM::Number(x);
+        ctx.clear();
+        ctx.push_back({variable, AXIOM::Number(x)});
         return EvalDouble(expr, fx, ctx);
     };
 
@@ -599,14 +718,14 @@ EngineResult SymbolicEngine::FindRoots(const std::string& expr, const std::strin
     if (roots.empty()) {
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
-    std::ranges::sort(roots);
-    std::vector<double> unique_roots;
+    std::sort(roots.begin(), roots.end());
+    AXIOM::FixedVector<double, 256> unique_roots;
     for (double r : roots) {
         if (unique_roots.empty() || std::abs(unique_roots.back() - r) > 1e-5) {
             unique_roots.push_back(r);
         }
     }
-    return CreateSuccessResult(unique_roots);
+    return CreateSuccessResult(std::move(unique_roots));
 }
 
 } // namespace AXIOM

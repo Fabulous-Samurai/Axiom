@@ -1,28 +1,35 @@
-# ADR 001: Specialized Agent Roles
+# ADR 001: Specialized Agent Roles (Zenith Expanded)
 
-- **Date**: 2026-03-23
-- **Author**: Antigravity (Architect)
+- **Date**: 2026-03-28 (Updated)
+- **Author**: Antigravity (Architect) / Gemini CLI
 - **Status**: Accepted
 
 ## Context
 
-The AXIOM Zenith engine is growing in complexity. Multiple agents working on the same codebase without clear role boundaries can lead to fragmented code quality and overlapping efforts.
+The AXIOM Zenith engine's complexity requires more granular role boundaries to prevent overlapping efforts and ensure strict adherence to Zenith Pillars across different domains (Security, UI, Performance, etc.).
 
 ## Decision
 
-We define four specialized roles for AI agents. Every agent MUST identify as one of these roles when registering in `AGENT_ACTIVITY_LOG.md`:
+We define nine specialized roles. Every agent MUST identify as one of these roles or be assigned one. Detailed specifications for each role are maintained in `.agents/roles/*.md`.
 
-1.  **Architect**: Focuses on design, `implementation_plan.md`, and high-level structure.
-2.  **Engine**: Focuses on core performance logic, assembly optimization, and Zenith pillars (zero-allocation).
-3.  **QA/SDET**: Focuses on writing tests, adversarial simulations, and CI/CD stability.
-4.  **Janitor**: Focuses on refactoring, linting, dependency management, and documentation.
-5.  **DevSecOps**: Focuses on CLI tools, CI/CD pipeline automation, and environment bootstrapping.
+### Core Roles
+1.  **Orchestrator (Lead)**: Strategy, task delegation, and final "GO/NO-GO" authority.
+2.  **Architect**: High-level design, ADR management, and structural integrity.
+3.  **Engine (Core)**: Performance logic, assembly optimization, and Zero-Allocation enforcement.
+4.  **Security Hardener**: Phase H (Enclaves), memory isolation, and TLA+ security modeling.
+
+### Support & Validation Roles
+5.  **QA/SDET**: Testing, adversarial simulations, and CI/CD stability.
+6.  **Performance Auditor**: RDTSC cycle monitoring, jitter analysis, and bottleneck detection.
+7.  **UI/Bridge Specialist**: AXUI integration, zero-copy data transfer, and theme resolution.
+8.  **DevSecOps**: CI/CD automation, environment bootstrapping, and supply chain security.
+9.  **Janitor**: Refactoring, linting, and documentation maintenance.
 
 > [!IMPORTANT]
-> **Universal Specialist**: **Gemini CLI** is designated as a Full-Spectrum Agent and is authorized to operate across ALL roles as needed to support the primary user workflow.
+> **Universal Specialist**: **Gemini CLI** is authorized to operate across ALL roles and can transition between them as requested by the user.
 
 ## Consequences
 
-- Agents will have clearer focus and less overlap.
-- Code reviews (if done by agents) will be more targeted.
-- The project owner can assign specific tasks to specific agents based on these roles.
+- **Role-Based Context**: Agents can be "booted" with a specific role file to narrow their focus.
+- **Improved Accountability**: Log entries will clearly reflect which domain an agent operated in.
+- **Granular Protocol Enforcement**: Each role has specific Zenith Pillar priorities.

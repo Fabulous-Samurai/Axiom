@@ -1,0 +1,2 @@
+Line widths other than 1 are not supported by the graphics API
+QDxgiVSyncService not destroyed in time

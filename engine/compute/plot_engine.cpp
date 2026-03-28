@@ -11,7 +11,7 @@ namespace AXIOM {
 
 std::string PlotEngine::PlotFunction(const std::string& expression, const PlotConfig& config) {
     AlgebraicParser parser;
-    std::vector<std::string> lines(config.height, std::string(config.width, ' '));
+    AXIOM::FixedVector<std::string, 256> lines(config.height, std::string(config.width, ' '));
     
     // Calculate step size
     double x_step = (config.x_max - config.x_min) / (config.width - 1);
@@ -109,7 +109,7 @@ std::string PlotEngine::PlotData(const Vector& x_data, const Vector& y_data, con
         return "Error: Data vectors must be same size and non-empty\n";
     }
     
-    std::vector<std::string> lines(config.height, std::string(config.width, ' '));
+    AXIOM::FixedVector<std::string, 256> lines(config.height, std::string(config.width, ' '));
     
     for (size_t i = 0; i < x_data.size(); ++i) {
         double x = x_data[i];
@@ -150,7 +150,7 @@ std::string PlotEngine::Histogram(const Vector& data, int bins, const PlotConfig
     }
     
     // Create histogram bins
-    std::vector<int> hist(bins, 0);
+    AXIOM::FixedVector<int, 256> hist(bins, 0);
     double bin_width = (data_max - data_min) / bins;
     
     for (double val : data) {

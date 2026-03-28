@@ -11,11 +11,14 @@
       "displayName": "Default Ninja",
       "description": "Default configure preset using Ninja generator",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
+      "binaryDir": "${sourceDir}/out/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "AXIOM_ENABLE_CXX20_MODULES": "OFF"
+        "AXIOM_ENABLE_CXX20_MODULES": "OFF",
+        "AXIOM_BUILD_STUDIO": "ON",
+        "AXIOM_BUILD_DASHBOARD": "ON"
       }
+
     },
     {
       "name": "modules-ninja",

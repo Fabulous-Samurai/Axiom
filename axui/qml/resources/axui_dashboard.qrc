@@ -1,13 +1,11 @@
-<RCC>
+<!DOCTYPE RCC>
+<RCC version="1.0">
     <qresource prefix="/">
         <file>AxiomDashboard.qml</file>
         <file>components/FlowNode.qml</file>
         <file>components/FlowLink.qml</file>
         <file>components/TelemetryGauge.qml</file>
-        <file>components/AXChart.qml</file>
-        <file>components/AXDataGrid.qml</file>
-        <file>components/AXGauge.qml</file>
-        <file>components/AXKPICard.qml</file>
         <file>components/DetailPanel.qml</file>
+        <file>components/AXChart.qml</file>
     </qresource>
 </RCC>

@@ -1,9 +1,8 @@
 // [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
 #include "unit_manager.h"
-#include <unordered_map>
 #include <cmath>
-
 #include <numbers>
+#include <algorithm>
 
 namespace AXIOM {
 
@@ -42,41 +41,48 @@ UnitManager::UnitManager() {
     RegisterUnit("rad", UnitType::Angle, 1.0, "radian");
     RegisterUnit("deg", UnitType::Angle, std::numbers::pi/180.0, "degree");
     RegisterUnit("grad", UnitType::Angle, std::numbers::pi/200.0, "gradian");
+
+    // Sort for binary search
+    std::sort(units_.begin(), units_.end(), [](const Unit& a, const Unit& b) {
+        return a.symbol < b.symbol;
+    });
 }
 
-void UnitManager::RegisterUnit(const std::string& symbol, UnitType type, double scale, const std::string& name) {
-    units_[symbol] = {type, scale, symbol, name};
+void UnitManager::RegisterUnit(std::string_view symbol, UnitType type, double scale, std::string_view name) noexcept {
+    units_.emplace_back(type, scale, symbol, name);
 }
 
-EngineResult UnitManager::ConvertUnit(double value, const std::string& from_unit, const std::string& to_unit) {
-    auto from_it = units_.find(from_unit);
-    auto to_it = units_.find(to_unit);
+EngineResult UnitManager::ConvertUnit(double value, std::string_view from_unit, std::string_view to_unit) noexcept {
+    auto from_it = std::lower_bound(units_.begin(), units_.end(), from_unit, [](const Unit& u, std::string_view s) {
+        return u.symbol < s;
+    });
+    
+    auto to_it = std::lower_bound(units_.begin(), units_.end(), to_unit, [](const Unit& u, std::string_view s) {
+        return u.symbol < s;
+    });
 
-    if (from_it == units_.end() || to_it == units_.end()) {
-    EngineResult res;
-    res.error = EngineErrorResult{CalcErr::OperationNotFound};
-    return res;
+    if (from_it == units_.end() || from_it->symbol != from_unit || 
+        to_it == units_.end() || to_it->symbol != to_unit) {
+        return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
-    if (from_it->second.type != to_it->second.type) {
-        EngineResult res;
-        res.error = EngineErrorResult{CalcErr::ArgumentMismatch};
-        return res;
+    if (from_it->type != to_it->type) {
+        return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
     // Special handling for temperature
-    if (from_it->second.type == UnitType::Temperature) {
+    if (from_it->type == UnitType::Temperature) {
         return ConvertTemperature(value, from_unit, to_unit);
     }
 
     // Standard linear conversion: convert to base unit, then to target unit
-    double base_value = value * from_it->second.scale_factor;
-    double result = base_value / to_it->second.scale_factor;
+    double base_value = value * from_it->scale_factor;
+    double result = base_value / to_it->scale_factor;
 
     return CreateSuccessResult(result);
 }
 
-AXIOM::EngineResult UnitManager::ConvertTemperature(double value, const std::string& from_unit, const std::string& to_unit) {
+AXIOM::EngineResult UnitManager::ConvertTemperature(double value, std::string_view from_unit, std::string_view to_unit) noexcept {
     // Convert to Kelvin first
     double kelvin;
     if (from_unit == "C") {
@@ -86,9 +92,7 @@ AXIOM::EngineResult UnitManager::ConvertTemperature(double value, const std::str
     } else if (from_unit == "K") {
         kelvin = value;
     } else {
-    EngineResult res;
-    res.error = EngineErrorResult{CalcErr::OperationNotFound};
-    return res;
+        return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
     // Convert from Kelvin to target
@@ -100,21 +104,27 @@ AXIOM::EngineResult UnitManager::ConvertTemperature(double value, const std::str
     } else if (to_unit == "F") {
         result = (kelvin - 273.15) * 9.0/5.0 + 32.0;
     } else {
-    EngineResult res;
-    res.error = EngineErrorResult{CalcErr::OperationNotFound};
-    return res;
+        return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
     return CreateSuccessResult(result);
 }
 
-bool UnitManager::AreCompatible(const std::string& unit1, const std::string& unit2) {
-    auto u1 = units_.find(unit1);
-    auto u2 = units_.find(unit2);
-    return (u1 != units_.end() && u2 != units_.end() && u1->second.type == u2->second.type);
+bool UnitManager::AreCompatible(std::string_view unit1, std::string_view unit2) noexcept {
+    auto u1_it = std::lower_bound(units_.begin(), units_.end(), unit1, [](const Unit& u, std::string_view s) {
+        return u.symbol < s;
+    });
+    
+    auto u2_it = std::lower_bound(units_.begin(), units_.end(), unit2, [](const Unit& u, std::string_view s) {
+        return u.symbol < s;
+    });
+
+    return (u1_it != units_.end() && u1_it->symbol == unit1 && 
+            u2_it != units_.end() && u2_it->symbol == unit2 && 
+            u1_it->type == u2_it->type);
 }
 
-std::string UnitManager::GetCanonicalUnit(UnitType type) {
+std::string_view UnitManager::GetCanonicalUnit(UnitType type) noexcept {
     switch (type) {
         case UnitType::Length: return "m";
         case UnitType::Mass: return "kg";
@@ -125,15 +135,14 @@ std::string UnitManager::GetCanonicalUnit(UnitType type) {
     }
 }
 
-std::vector<std::string> UnitManager::GetUnitsOfType(UnitType type) {
-    std::vector<std::string> result;
-    for (const auto& [symbol, unit] : units_) {
+AXIOM::FixedVector<std::string_view, 256> UnitManager::GetUnitsOfType(UnitType type) noexcept {
+    AXIOM::FixedVector<std::string_view, 256> result;
+    for (const auto& unit : units_) {
         if (unit.type == type) {
-            result.push_back(symbol);
+            result.push_back(unit.symbol);
         }
     }
     return result;
 }
 
 } // namespace AXIOM
-

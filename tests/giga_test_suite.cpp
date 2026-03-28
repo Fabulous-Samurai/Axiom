@@ -648,11 +648,11 @@ void TestAdversarialSuite(TestRunner& runner) {
     // Test 1: The Stack Crusher (AST Depth Attack)
     runner.RunTest("The Stack Crusher (AST Depth Attack)", []() {
         AXIOM::AlgebraicParser parser;
-        bool in_ci = std::getenv("GITHUB_ACTIONS") != nullptr || std::getenv("CI") != nullptr;
-        int iterations = in_ci ? 500 : 5000;
+        // Increase depth to 5000 regardless of CI to catch recursive failures
+        int iterations = 5000; 
         
         std::string payload = "x";
-        payload.reserve(50000);
+        payload.reserve(60000);
         for (int i = 0; i < iterations; ++i) {
             payload = "sin(" + payload + ")";
         }
@@ -665,8 +665,8 @@ void TestAdversarialSuite(TestRunner& runner) {
     // Test 2: HarmonicArena Exhaustion (Memory Starvation)
     runner.RunTest("HarmonicArena Exhaustion (Memory Starvation)", []() {
         AXIOM::AlgebraicParser parser;
-        bool in_ci = std::getenv("GITHUB_ACTIONS") != nullptr || std::getenv("CI") != nullptr;
-        int nodes = in_ci ? 50000 : 500000;
+        // Force heavy memory pressure with 500,000 nodes
+        int nodes = 500000;
 
         std::string payload = "max(1";
         payload.reserve(nodes * 5);
@@ -679,12 +679,42 @@ void TestAdversarialSuite(TestRunner& runner) {
         return true; 
     });
 
-    // Test 3: FPU Poison (NaN & Infinity Propagation)
+    // Test 3: HarmonicArena Fragmentation Stress
+    runner.RunTest("HarmonicArena Fragmentation Stress", []() {
+        // Test lock-free allocator stability under erratic allocation/free-like reuse patterns
+        AXIOM::HarmonicArena arena(10 * 1024 * 1024); // 10MB
+        std::atomic<bool> stop{false};
+        
+        auto worker = [&arena, &stop]() {
+            while(!stop.load()) {
+                // Random sized allocations from 8 bytes to 2KB
+                size_t size = (rand() % 2048) + 8;
+                void* p = arena.allocate(size);
+                if (!p) break;
+                // Note: HarmonicArena is grow-only per lifecycle, 
+                // so we test for structural integrity and alignment
+                if (reinterpret_cast<std::uintptr_t>(p) % 64 != 0) {
+                    throw std::runtime_error("Alignment violation in HarmonicArena");
+                }
+            }
+        };
+
+        std::vector<std::thread> threads;
+        for(int i = 0; i < 8; ++i) threads.emplace_back(worker);
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        stop.store(true);
+        for(auto& t : threads) t.join();
+        
+        return true;
+    });
+
+    // Test 4: FPU Poison (NaN & Infinity Propagation)
     runner.RunTest("FPU Poison (NaN & Infinity Propagation)", []() {
         AXIOM::AlgebraicParser parser;
         // 1.0 / (0.0 * 0.0) -> Infinity or NaN
         auto result = parser.ParseAndExecute("1.0 / (sin(0.0) * log(1.0))");
-        // Must safely trap evaluating NaN/Infinity as an error node.
+        // Must safely trap evaluating NaN/Infinity as an error node or return no result.
         return !result.HasResult(); 
     });
 

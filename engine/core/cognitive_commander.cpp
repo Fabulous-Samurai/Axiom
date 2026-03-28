@@ -82,7 +82,7 @@ bool CognitiveCommander::load_weights(const std::string& model_path) {
     return true;
 }
 
-void CognitiveCommander::run_inference(const std::vector<float>& input, std::vector<float>& output) {
+void CognitiveCommander::run_inference(const FixedVector<float, 1024>& input, FixedVector<float, 1024>& output) {
     // Inference happens here using the activation_pool_ for intermediate tensors
     // This ensures ZERO heap allocations during decision cycles.
 }

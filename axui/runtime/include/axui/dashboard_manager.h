@@ -1,17 +1,15 @@
 #pragma once
 
-#include <string>
-#include <vector>
 #include <chrono>
 #include <atomic>
 #include <mutex>
 #include <functional>
-#include <unordered_map>
 #include <optional>
 #include <QObject>
 #include <QVariantMap>
 #include <QTimer>
 #include "arena_allocator.h"
+#include "fixed_vector.h"
 
 namespace axui {
 
@@ -29,13 +27,13 @@ enum class StageState : uint8_t {
 
 struct StageMetrics {
     // Kimlik
-    std::string stage_id;           // "ingress", "named_pipe", "spsc_queue", etc.
-    std::string display_name;       // "Input Source", "Named Pipe", etc.
+    std::string_view stage_id;           // "ingress", "named_pipe", "spsc_queue", etc.
+    std::string_view display_name;       // "Input Source", "Named Pipe", etc.
     int order = 0;                  // Pipeline sırası (0 = ilk)
 
     // Durum
     StageState state = StageState::Offline;
-    std::string error_message;
+    std::string_view error_message;
 
     // Throughput
     std::atomic<uint64_t> total_messages{0};
@@ -61,8 +59,8 @@ struct StageMetrics {
 };
 
 struct LinkMetrics {
-    std::string source_id;
-    std::string target_id;
+    std::string_view source_id;
+    std::string_view target_id;
     double throughput_ratio = 0.0;  // 0.0 - 1.0 (animasyon hızı için)
     double drop_rate = 0.0;         // Kayıp oranı
     bool active = false;
@@ -72,7 +70,7 @@ struct SystemTelemetry {
     // CPU
     double cpu_usage_percent = 0.0;
     int cpu_cores = 0;
-    std::vector<double> per_core_usage;
+    AXIOM::FixedVector<double, 64> per_core_usage;
 
     // Memory
     uint64_t ram_total_bytes = 0;
@@ -110,6 +108,8 @@ class DashboardManager : public QObject {
     Q_PROPERTY(double totalLatency READ totalLatency NOTIFY stagesUpdated)
     Q_PROPERTY(int activeStageCount READ activeStageCount NOTIFY stagesUpdated)
     Q_PROPERTY(bool recording READ isRecording NOTIFY recordingChanged)
+    Q_PROPERTY(int sentryStatus READ sentryStatus NOTIFY telemetryUpdated)
+    Q_PROPERTY(double scalingMultiplier READ scalingMultiplier NOTIFY telemetryUpdated)
 
 public:
     explicit DashboardManager(QObject* parent = nullptr);
@@ -118,36 +118,36 @@ public:
     // ─── Stage Kayıt ─────────────────────────────────────────────
     
     // Pipeline stage'i kaydet
-    void registerStage(const std::string& stage_id,
-                       const std::string& display_name,
+    void registerStage(std::string_view stage_id,
+                       std::string_view display_name,
                        int order);
 
     // Stage'ler arası bağlantı tanımla
-    void registerLink(const std::string& source_id,
-                      const std::string& target_id);
+    void registerLink(std::string_view source_id,
+                      std::string_view target_id);
 
     // ─── Runtime Güncelleme (Backend tarafından çağrılır) ────────
 
     // Mesaj işlendiğinde çağır
-    void recordMessage(const std::string& stage_id, 
+    void recordMessage(std::string_view stage_id, 
                        uint64_t byte_count = 0);
 
     // Latency ölçümü
-    void recordLatency(const std::string& stage_id, 
+    void recordLatency(std::string_view stage_id, 
                        double latency_us);
 
     // Stage durumu güncelle
-    void updateStageState(const std::string& stage_id, 
+    void updateStageState(std::string_view stage_id, 
                           StageState state);
 
     // Queue doluluk güncelle
-    void updateQueueStatus(const std::string& stage_id,
+    void updateQueueStatus(std::string_view stage_id,
                            uint64_t current, 
                            uint64_t capacity);
 
     // Hata bildir
-    void reportError(const std::string& stage_id, 
-                     const std::string& error_msg);
+    void reportError(std::string_view stage_id, 
+                     std::string_view error_msg);
 
     // ─── QML Model Erişimi ───────────────────────────────────────
     
@@ -158,6 +158,8 @@ public:
     double totalLatency() const;
     int activeStageCount() const;
     bool isRecording() const { return recording_; }
+    int sentryStatus() const;
+    double scalingMultiplier() const;
 
     // ─── QML'den çağrılabilir metodlar ───────────────────────────
     
@@ -198,19 +200,19 @@ private:
         double latency_us;
     };
 
-    using ThroughputVec = std::vector<ThroughputSample, AXIOM::ArenaAllocator<ThroughputSample>>;
-    using LatencyVec = std::vector<LatencySample, AXIOM::ArenaAllocator<LatencySample>>;
+    using ThroughputVec = AXIOM::FixedVector<ThroughputSample, 1024>;
+    using LatencyVec = AXIOM::FixedVector<LatencySample, 1024>;
 
     // Stage verileri
     mutable std::mutex stages_mutex_;
-    std::unordered_map<std::string, StageMetrics> stages_;
-    std::vector<LinkMetrics> links_;
+    AXIOM::FixedVector<std::pair<std::string_view, StageMetrics>, 32> stages_;
+    AXIOM::FixedVector<LinkMetrics, 64> links_;
 
     // Throughput hesaplama (sliding window)
-    std::unordered_map<std::string, ThroughputVec> throughput_history_;
+    AXIOM::FixedVector<std::pair<std::string_view, ThroughputVec>, 32> throughput_history_;
 
     // Latency histogram (sliding window)
-    std::unordered_map<std::string, LatencyVec> latency_history_;
+    AXIOM::FixedVector<std::pair<std::string_view, LatencyVec>, 32> latency_history_;
 
     // System telemetry
     SystemTelemetry system_telemetry_;

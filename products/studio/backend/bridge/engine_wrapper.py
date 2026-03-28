@@ -82,12 +82,24 @@ class EngineWrapper(QObject):
 
         threading.Thread(target=worker, daemon=True).start()
 
-    @Slot(str, int)
-    def evaluateGraphics(self, expression: str, resolution: int):
+    @Slot(str, int, float, float, float)
+    def evaluateGraphics(self, expression: str, resolution: int, zoom: float = 1.0, panX: float = 0.0, panY: float = 0.0):
         def worker():
             try:
                 with self._lock:
-                    result = self._engine.evaluate(expression, "plot")
+                    # Motorun 'plot' modunda koordinat sınırlarını (view_bounds) kullanmasını sağlıyoruz
+                    # Koordinatları zoom ve pan değerlerine göre hesapla (default range: -10 to 10)
+                    view_range = 10.0 / zoom
+                    x_min = -view_range - panX
+                    x_max = view_range - panX
+                    y_min = -view_range - panY
+                    y_max = view_range - panY
+                    
+                    # Motor API'sine bu sınırları iletiyoruz
+                    result = self._engine.evaluate(expression, "plot", {
+                        "res": resolution,
+                        "bounds": [x_min, x_max, y_min, y_max]
+                    })
                 self.graphicsRendered.emit(result.image_path)
             except Exception as e:
                 self.errorOccurred.emit(str(e))

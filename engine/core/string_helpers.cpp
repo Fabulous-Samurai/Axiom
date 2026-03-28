@@ -11,8 +11,8 @@ std::string Trim(std::string_view str) {
     return std::string(str.substr(first, last - first + 1));
 }
 
-std::vector<std::string> Split(std::string_view s, char delimiter) {
-    std::vector<std::string> tokens;
+AXIOM::FixedVector<std::string, 256> Split(std::string_view s, char delimiter) {
+    AXIOM::FixedVector<std::string, 256> tokens;
     size_t start = 0;
     while (start <= s.size()) {
         const auto pos = s.find(delimiter, start);

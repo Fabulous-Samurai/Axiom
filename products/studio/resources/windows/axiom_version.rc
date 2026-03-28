@@ -1,8 +1,8 @@
 #include <windows.h>
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 3,1,1,0
- PRODUCTVERSION 3,1,1,0
+ FILEVERSION 3,1,2,0
+ PRODUCTVERSION 3,1,2,0
  FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
  FILEFLAGS 0x0L
  FILEOS VOS__WINDOWS32
@@ -15,12 +15,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName",      "AXIOM Engine"
             VALUE "FileDescription",  "AXIOM Scientific Computation Engine"
-            VALUE "FileVersion",      "3.1.1.0"
+            VALUE "FileVersion",      "3.1.2.0"
             VALUE "InternalName",     "axiom"
             VALUE "LegalCopyright",   ""
             VALUE "OriginalFilename", "axiom.dll"
             VALUE "ProductName",      "AXIOM Engine"
-            VALUE "ProductVersion",   "3.1.1.0"
+            VALUE "ProductVersion",   "3.1.2.0"
         END
     END
     BLOCK "VarFileInfo"

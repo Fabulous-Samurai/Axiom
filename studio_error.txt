@@ -1,0 +1,4 @@
+QQmlApplicationEngine failed to load component
+qrc:/ui/main.qml:78:21: Type TelemetryBadge unavailable
+qrc:/ui/components/TelemetryBadge.qml:11:5: Property value set multiple times
+[Studio] Error: No root objects loaded!

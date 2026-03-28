@@ -53,7 +53,8 @@ $ConfigArgs = @(
     "-DENABLE_PARALLEL_BUILD=ON", 
     "-DENABLE_ADVANCED_FEATURES=ON",
     "-DENABLE_LTO=ON",
-    "-DCMAKE_BUILD_PARALLEL_LEVEL=$CPU_COUNT"
+    "-DCMAKE_BUILD_PARALLEL_LEVEL=$CPU_COUNT",
+    "-DCMAKE_PREFIX_PATH=C:/msys64/ucrt64"
 )
 
 if ($UseNinja) {
@@ -106,7 +107,7 @@ Write-Host "📊 BUILD SUMMARY" -ForegroundColor Cyan
 Write-Host "=================" -ForegroundColor Cyan
 Write-Host "Configuration: $($ConfigTime.TotalSeconds) seconds" -ForegroundColor White
 Write-Host "Compilation:   $($BuildTime.TotalSeconds) seconds" -ForegroundColor White
-Write-Host "Total Time:    $($TotalTime.TotalSeconds) seconds" -ForegroundColor Green
+Write-Host "Total Time:    $TotalTime.TotalSeconds seconds" -ForegroundColor Green
 Write-Host "CPU Cores:     $CPU_COUNT" -ForegroundColor White
 Write-Host "Generator:     $(if ($UseNinja) { 'Ninja (Fast)' } else { 'Default' })" -ForegroundColor White
 Write-Host "Build Type:    $BuildType" -ForegroundColor White
@@ -136,4 +137,4 @@ if ($Benchmark) {
 
 Write-Host ""
 Write-Host "Target AXIOM Engine is ready for enterprise computing!" -ForegroundColor Green
-Write-Host "Run: $BUILD_DIR/axiom.exe" -ForegroundColor Cyan
+Write-Host "Build complete." -ForegroundColor Cyan

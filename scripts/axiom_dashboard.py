@@ -29,7 +29,8 @@ def main():
             "cmake",
             "-S", str(root_dir / "axui"),
             "-B", str(build_dir),
-            "-DCMAKE_BUILD_TYPE=Release"
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-DCMAKE_PREFIX_PATH=C:/msys64/ucrt64"
         ]
         
         try:
@@ -47,8 +48,9 @@ def main():
     
     # CRITICAL: Add Qt/MinGW bin to PATH so DLLs are found
     qt_bin = "C:\\msys64\\ucrt64\\bin"
+    qt_lib_bin = "C:\\msys64\\ucrt64\\lib\\qt6\\bin"
     if qt_bin not in env.get("PATH", ""):
-        env["PATH"] = f"{qt_bin};{env.get('PATH', '')}"
+        env["PATH"] = f"{qt_bin};{qt_lib_bin};{env.get('PATH', '')}"
     
     # CRITICAL: Set Qt Plugin Path for MSYS2
     env["QT_QPA_PLATFORM_PLUGIN_PATH"] = "C:\\msys64\\ucrt64\\share\\qt6\\plugins\\platforms"

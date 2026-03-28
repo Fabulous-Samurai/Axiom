@@ -30,7 +30,7 @@ namespace Mantis {
 // ============================================================================
 // A* Node — compact, cache-friendly layout
 // ============================================================================
-inline constexpr size_t kMaxNodes = 4096;  // Fixed-capacity for zero-allocation
+inline constexpr size_t kMaxNodes = 16384;  // Fixed-capacity for zero-allocation
 
 struct alignas(64) AStarNode {
     uint32_t id         = 0;
@@ -142,6 +142,11 @@ public:
     void set_binary_scaling(int32_t exponent) noexcept {
         scaling_factor_ = std::pow(2.0f, static_cast<float>(exponent));
     }
+
+    /**
+     * @brief Get the current scaling factor.
+     */
+    float get_scaling_factor() const noexcept { return scaling_factor_; }
 
     /**
      * @brief Evaluate the heuristic with binary scaling.

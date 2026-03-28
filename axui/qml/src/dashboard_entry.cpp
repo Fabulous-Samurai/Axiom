@@ -22,7 +22,6 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 int main(int argc, char *argv[]) {
     qInstallMessageHandler(myMessageOutput);
     
-    // Manual resource initialization (Dashboard-specific)
     Q_INIT_RESOURCE(axui_dashboard);
     Q_INIT_RESOURCE(axui_components);
 

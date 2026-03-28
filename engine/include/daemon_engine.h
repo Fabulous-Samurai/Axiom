@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include "fixed_vector.h"
 #include <string>
 #include <memory>
 #include <atomic>
@@ -20,8 +21,13 @@
 #include <vector>
 #include <chrono>
 #include <array>
+#include <expected>
+#include <system_error>
 
-#ifdef _WIN32
+namespace AXIOM {
+// ... (LockFreeRingBuffer remains the same)
+// I will only show the changed parts for the replacement tool to be precise.
+
     #include <windows.h>
 #endif
 
@@ -117,13 +123,11 @@ private:
             }
 
             const size_t idx = current_head & (Capacity - 1);
-            try {
-                session_ids_[idx] = item.session_id;
-                commands_[idx] = item.command;
-                modes_[idx] = item.mode;
-            } catch (...) {
-                return false;
-            }
+            // [ZENITH PILLAR 5]: No try/catch in hot-path. 
+            session_ids_[idx] = item.session_id;
+            commands_[idx] = item.command;
+            modes_[idx] = item.mode;
+            
             timestamps_[idx] = item.timestamp;
             request_ids_[idx] = item.request_id;
             head_.store(current_head + 1, std::memory_order_release);
@@ -186,7 +190,7 @@ public:
     DaemonEngine(const DaemonEngine&) = delete;
     DaemonEngine& operator=(const DaemonEngine&) = delete;
 
-    [[nodiscard]] bool start();
+    [[nodiscard]] std::expected<void, DaemonStatus> start();
     void stop() noexcept;
     [[nodiscard]] bool is_running() const noexcept { return running_.load(std::memory_order_acquire); }
     [[nodiscard]] DaemonStatus get_status() const noexcept { return status_.load(std::memory_order_acquire); }
@@ -194,9 +198,9 @@ public:
     [[nodiscard]] Response process_request(const Request& request);
     [[nodiscard]] bool send_command(const std::string& session_id, const std::string& command, const std::string& mode = "algebraic");
 
-    [[nodiscard]] std::string create_session();
+    [[nodiscard]] std::expected<std::string, std::error_code> create_session();
     [[nodiscard]] bool destroy_session(const std::string& session_id);
-    [[nodiscard]] std::vector<std::string> get_active_sessions();
+    void get_active_sessions(FixedVector<std::string, 128>& out_sessions);
 
     [[nodiscard]] uint64_t get_total_requests() const noexcept { return total_requests_.load(std::memory_order_relaxed); }
     [[nodiscard]] uint64_t get_rejected_requests() const noexcept { return rejected_requests_.load(std::memory_order_relaxed); }
@@ -208,7 +212,7 @@ private:
     void process_windows_pipe();
     void process_posix_pipe();
     void request_processor_loop();
-    [[nodiscard]] PipeError setup_pipe();
+    [[nodiscard]] std::expected<void, PipeError> setup_pipe();
     void cleanup_pipe();
     static const char* pipe_error_to_string(PipeError error) noexcept;
     [[nodiscard]] Response execute_command(const Request& request);

@@ -132,43 +132,43 @@ Custom lock-free concurrent memory allocator optimized for HPC workloads.
 
 ```bash
 # Requirements: C++23 compiler (GCC 12+, MSVC 19.38+), CMake 3.12+, Ninja
-cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build
+cmake --preset default-ninja
+cmake --build out/default-ninja
 ```
 
 ### Run
 
 ```bash
 # Interactive mode
-./build/axiom
+./out/default-ninja/axiom
 
 # Direct evaluation
-./build/axiom "2 + 3 * 4"
+./out/default-ninja/axiom "2 + 3 * 4"
 
 # Symbolic differentiation
-./build/axiom "derive x^2 + sin(x)"
+./out/default-ninja/axiom "derive x^2 + sin(x)"
 
 # Numeric integration
-./build/axiom "integrate(x^2, x, 0, 10)"
+./out/default-ninja/axiom "integrate(x^2, x, 0, 10)"
 ```
 
 ### Verify
 
 ```bash
 # Core tests
-./build/run_tests
+./out/default-ninja/run_tests
 
 # Production validation
-./build/giga_test_suite
+./out/default-ninja/giga_test_suite
 
 # Cross-backend consistency (Interpreted vs JIT vs Symbolic)
-./build/differential_suite
+./out/default-ninja/differential_suite
 
 # Lock-free allocator stress test
-./build/arena_stress
+./out/default-ninja/arena_stress
 
 # Security vault integrity
-./build/enclave_test
+./out/default-ninja/enclave_test
 ```
 
 ---

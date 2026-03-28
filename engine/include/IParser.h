@@ -14,7 +14,7 @@ namespace AXIOM {
 class AXIOM_EXPORT IParser {
 public:
     virtual ~IParser() = default;
-    virtual EngineResult ParseAndExecute(const std::string& input) = 0;
+    virtual EngineResult ParseAndExecute(std::string_view input) = 0;
 };
 
 } // namespace AXIOM

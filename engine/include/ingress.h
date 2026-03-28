@@ -1,68 +1,92 @@
 // [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
 /**
  * @file ingress.h
- * @brief Phase E: Kernel-Bypass Networking (AF_XDP / DMA Ingress)
+ * @brief Phase E: Kernel-Bypass Networking (Operation VARIANT SHIFT)
  * 
- * Defines the zero-copy ingress path for market-data and sensor inputs.
+ * Replaces dynamic polymorphism with static-variant dispatch for sub-nanosecond ingress.
  */
 
 #pragma once
 
 #include <string>
-#include <vector>
-#include <memory>
+#include <variant>
 #include <functional>
 #include "arena_allocator.h"
 #include "axiom_export.h"
 
 namespace AXIOM {
 
-/**
- * @brief Raw packet or data frame received via zero-copy path
- */
 struct IngressFrame {
     void* data;
     size_t length;
     uint64_t timestamp_rdtsc;
 };
 
-/**
- * @brief Abstract interface for high-performance data ingress
- */
-class AXIOM_EXPORT IngressChannel {
+// --- Concrete Ingress Providers ---
+
+class AF_XDPChannel {
 public:
-    virtual ~IngressChannel() = default;
+    bool start(HarmonicArena* target_arena) noexcept;
+    void stop() noexcept;
+    size_t poll(std::function<void(const IngressFrame&)> callback) noexcept;
+};
 
-    /**
-     * @brief Start receiving data into the provided arena
-     */
-    virtual bool start(HarmonicArena* target_arena) = 0;
-    
-    /**
-     * @brief Stop ingress
-     */
-    virtual void stop() = 0;
+class PosixUDPChannel {
+public:
+    bool start(HarmonicArena* target_arena) noexcept;
+    void stop() noexcept;
+    size_t poll(std::function<void(const IngressFrame&)> callback) noexcept;
+};
 
-    /**
-     * @brief Poll for new data frames (0.25ns latency target)
-     */
-    virtual size_t poll(std::function<void(const IngressFrame&)> callback) = 0;
+class MockHFTChannel {
+public:
+    bool start(HarmonicArena* target_arena) noexcept;
+    void stop() noexcept;
+    size_t poll(std::function<void(const IngressFrame&)> callback) noexcept;
 };
 
 /**
- * @brief Factory and Registry for Ingress Providers (AF_XDP, DPDK, Mock)
+ * @brief AnyIngressChannel: The master variant for Ingress VARIANT SHIFT.
  */
+using AnyIngressChannel = std::variant<
+    AF_XDPChannel,
+    PosixUDPChannel,
+    MockHFTChannel
+>;
+
+/**
+ * @brief High-performance dispatcher for Ingress polling.
+ * Eliminates VTable lookup in the critical data path.
+ */
+struct IngressDispatcher {
+    static size_t poll(AnyIngressChannel& channel, std::function<void(const IngressFrame&)> callback) noexcept {
+        return std::visit([&](auto& concrete_channel) {
+            return concrete_channel.poll(callback);
+        }, channel);
+    }
+
+    static bool start(AnyIngressChannel& channel, HarmonicArena* target_arena) noexcept {
+        return std::visit([&](auto& concrete_channel) {
+            return concrete_channel.start(target_arena);
+        }, channel);
+    }
+
+    static void stop(AnyIngressChannel& channel) noexcept {
+        std::visit([&](auto& concrete_channel) {
+            concrete_channel.stop();
+        }, channel);
+    }
+};
+
 class AXIOM_EXPORT IngressFactory {
 public:
     enum class ProviderType {
-        PROV_AUTO,
         PROV_AF_XDP,
         PROV_POSIX_UDP,
         PROV_MOCK_HFT_FEED
     };
 
-    static std::unique_ptr<IngressChannel> create(ProviderType type, const std::string& interface_name);
+    static AnyIngressChannel create(ProviderType type, const std::string& interface_name);
 };
 
 } // namespace AXIOM
-

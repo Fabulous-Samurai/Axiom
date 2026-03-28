@@ -1,75 +1,146 @@
-// [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
-#include "../include/telemetry.h"
+#include "telemetry.h"
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#endif
 #include <iostream>
-#include <format>
+#include <mutex>
 
 namespace AXIOM {
 
-TelemetryScribe& TelemetryScribe::instance() {
-    static TelemetryScribe inst;
-    return inst;
+class SharedMemoryManager {
+public:
+    static SharedMemoryManager& instance() {
+        static SharedMemoryManager manager;
+        return manager;
+    }
+
+    ~SharedMemoryManager() {
+        cleanup();
+    }
+
+    bool init(const std::string& name, size_t size) {
+        if (buffer_) cleanup();
+        name_ = name;
+        size_ = size;
+
+#ifdef _WIN32
+        handle_ = CreateFileMappingA(
+            INVALID_HANDLE_VALUE,
+            nullptr,
+            PAGE_READWRITE,
+            0,
+            static_cast<DWORD>(size),
+            name.c_str()
+        );
+
+        if (!handle_) return false;
+
+        buffer_ = MapViewOfFile(
+            handle_,
+            FILE_MAP_ALL_ACCESS,
+            0, 0, size
+        );
+
+        if (!buffer_) {
+            CloseHandle(handle_);
+            handle_ = nullptr;
+            return false;
+        }
+#else
+        // POSIX implementation for Linux and macOS
+        // Ensure name starts with '/' for POSIX compliance
+        std::string posix_name = (name[0] == '/') ? name : "/" + name;
+        
+        fd_ = shm_open(posix_name.c_str(), O_CREAT | O_RDWR, 0666);
+        if (fd_ == -1) return false;
+
+        // Set size
+        if (ftruncate(fd_, size) == -1) {
+            close(fd_);
+            shm_unlink(posix_name.c_str());
+            return false;
+        }
+
+        buffer_ = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0);
+        if (buffer_ == MAP_FAILED) {
+            close(fd_);
+            shm_unlink(posix_name.c_str());
+            buffer_ = nullptr;
+            return false;
+        }
+        posix_path_ = posix_name;
+#endif
+        std::cout << "[IPC] Shared Memory initialized: " << name << " (" << size / 1024 << " KB)" << std::endl;
+        return true;
+    }
+
+    void cleanup() {
+        if (!buffer_) return;
+
+#ifdef _WIN32
+        UnmapViewOfFile(buffer_);
+        if (handle_) CloseHandle(handle_);
+        handle_ = nullptr;
+#else
+        munmap(buffer_, size_);
+        if (fd_ != -1) close(fd_);
+        if (!posix_path_.empty()) shm_unlink(posix_path_.c_str());
+        fd_ = -1;
+#endif
+        buffer_ = nullptr;
+    }
+
+    void* buffer() { return buffer_; }
+
+private:
+    SharedMemoryManager() = default;
+    void* buffer_ = nullptr;
+    size_t size_ = 0;
+    std::string name_;
+#ifdef _WIN32
+    HANDLE handle_ = nullptr;
+#else
+    int fd_ = -1;
+    std::string posix_path_;
+#endif
+};
+
+// Global Telemetry Implementation using Zero-Copy Shared Memory
+void TelemetryScribe::log_throughput(double ops_per_sec) {
+    void* buf = SharedMemoryManager::instance().buffer();
+    if (buf) {
+        // Simple Ring Buffer Header Update (Wait-free)
+        auto* data = static_cast<double*>(buf);
+        *data = ops_per_sec; // Simplified for Phase 7 start
+    }
 }
 
-bool TelemetryScribe::start(std::string_view log_path) {
-    std::cout << "[AXIOM Telemetry] Starting Phase G (Heisenberg-Defying) scribe for: " << log_path << std::endl;
-    if (running_.load(std::memory_order_acquire)) return false;
+bool TelemetryScribe::start(const std::string& name) {
+    return SharedMemoryManager::instance().init(name, 1024 * 1024); // 1MB shared buffer
+}
 
-    // [MANDATORY PATH]: Initialize HW Counters before hot-path entry
-    if (!PMUOrchestrator::instance().Initialize()) {
-        std::cerr << "[AXIOM Telemetry] WARNING: PMU Initialization failed. Falling back to RDTSC-only mode." << std::endl;
+double TelemetryScribe::read_throughput() {
+    void* buf = SharedMemoryManager::instance().buffer();
+    if (buf) {
+        auto* data = static_cast<double*>(buf);
+        return *data;
     }
-    
-    log_file_path_ = std::string(log_path);
-    running_.store(true, std::memory_order_release);
-    
-    scribe_thread_ = std::jthread([this] { scribe_loop(); });
-    return true;
+    return 0.0;
 }
 
 void TelemetryScribe::shutdown() {
-    if (!running_.load(std::memory_order_acquire)) return;
-    
-    running_.store(false, std::memory_order_release);
-    if (scribe_thread_.joinable()) {
-        scribe_thread_.join();
-    }
+    // Shared memory is cleaned up by the manager's destructor or explicit close
+    std::cout << "[IPC] Telemetry Scribe shutdown." << std::endl;
 }
 
-void TelemetryScribe::scribe_loop() {
-    std::ofstream log_file(log_file_path_, std::ios::binary | std::ios::out);
-    if (!log_file.is_open()) {
-        std::cerr << "[AXIOM Telemetry] Failed to open log file: " << log_file_path_ << std::endl;
-        running_.store(false, std::memory_order_release);
-        return;
-    }
-
-    // Write header
-    uint32_t magic = 0xABCD1234;
-    log_file.write(reinterpret_cast<const char*>(&magic), sizeof(magic));
-
-    while (running_.load(std::memory_order_acquire) || head_.load(std::memory_order_acquire) != tail_.load(std::memory_order_acquire)) {
-        size_t current_tail = tail_.load(std::memory_order_relaxed);
-        size_t current_head = head_.load(std::memory_order_acquire);
-
-        if (current_tail == current_head) {
-            std::this_thread::yield();
-            continue;
-        }
-
-        // Process batch of records
-        while (current_tail != current_head) {
-            const TelemetryRecord& rec = ring_buffer_[current_tail];
-            log_file.write(reinterpret_cast<const char*>(&rec), sizeof(TelemetryRecord));
-            
-            current_tail = (current_tail + 1) % RING_BUFFER_SIZE;
-            tail_.store(current_tail, std::memory_order_release);
-        }
-        
-        log_file.flush();
-    }
-    
-    log_file.close();
+TelemetryScribe& TelemetryScribe::instance() {
+    static TelemetryScribe scribe;
+    return scribe;
 }
 
 } // namespace AXIOM
-

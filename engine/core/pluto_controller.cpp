@@ -7,9 +7,12 @@ namespace AXIOM {
 namespace Pluto {
 
 void PlutoController::init(uint32_t num_experts, uint32_t num_tasks) noexcept {
-    std::lock_guard<std::mutex> lock(mutex_);
-    num_experts_ = num_experts;
-    current_state_ = {num_tasks, 0, 0, num_experts};
+    std::lock_guard<std::mutex> lock(config_mutex_);
+    num_experts_.store(num_experts, std::memory_order_relaxed);
+    current_state_.p1_queue.store(num_tasks, std::memory_order_relaxed);
+    current_state_.p2_active.store(0, std::memory_order_relaxed);
+    current_state_.p3_done.store(0, std::memory_order_relaxed);
+    current_state_.p4_available.store(num_experts, std::memory_order_relaxed);
     
     // Default heuristic profile (minimize P1 and P2, maximize P3)
     Mantis::TargetProfileF32 profile;
@@ -21,34 +24,27 @@ void PlutoController::init(uint32_t num_experts, uint32_t num_tasks) noexcept {
 }
 
 void PlutoController::step_search() noexcept {
-    std::lock_guard<std::mutex> lock(mutex_);
-    
-    // Local copy of state to avoid mutex holding in solver
+    // No lock needed for reading current_state_ (it's atomic)
     const PlutoState start_state = current_state_;
     
-    // Initialize root node
-    search_nodes_[0].id = 0;
-    search_nodes_[0].features = state_to_features(start_state);
+    // Initialize root node in scratchpad
+    scratch_nodes_[0].id = 0;
+    scratch_nodes_[0].features = state_to_features(start_state);
     
-    // Adjacency function for Petri Net transitions
-    auto get_neighbors = [this](uint32_t current_id, uint32_t* out_neighbors, uint32_t max_count) -> uint32_t {
-        // In this implementation, we map node IDs to states simplified for demonstration.
-        // For a full implementation, we'd use a state-to-ID hash map.
-        // For now, we generate 2 possible transitions.
-        
-        // This is a simplified transition discovery to fit the IDA* template
-        return 0; // TBD: Real state discovery logic
-    };
+    // Push root to UI queue
+    tree_queue_.push(scratch_nodes_[0]);
 
-    // Note: In a real swarm, the solver would run asynchronously.
-    // solver_.solve(search_nodes_.data(), 1, 0, goal, get_neighbors);
+    // Transition discovery logic (Simplified for Phase 7)
+    // In a real swarm, this would explore possible Petri Net transitions (T1, T2...)
+    // and push discovered nodes to scratch_nodes_ and tree_queue_.
+    
+    // [ZENITH PILLAR 1]: All node processing here is lock-free and zero-allocation.
 }
 
 size_t PlutoController::get_search_tree(Mantis::AStarNode* out_nodes, size_t max_count) noexcept {
-    std::lock_guard<std::mutex> lock(mutex_);
-    size_t count = std::min(max_count, search_nodes_.capacity());
-    for (size_t i = 0; i < count; ++i) {
-        out_nodes[i] = search_nodes_[i];
+    size_t count = 0;
+    while (count < max_count && tree_queue_.pop(out_nodes[count])) {
+        count++;
     }
     return count;
 }

@@ -17,7 +17,7 @@ PythonEngine::~PythonEngine() {
 bool PythonEngine::Initialize() {
     if (initialized_) return true;
 
-    try {
+    { // try removed
         // Initialize Python interpreter
         Py_Initialize();
         if (!Py_IsInitialized()) {
@@ -47,7 +47,7 @@ bool PythonEngine::Initialize() {
 
         initialized_ = true;
         return true;
-    } catch (const std::exception& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Exception during Python initialization: ") + e.what();
         return false;
     }
@@ -76,7 +76,7 @@ EngineResult PythonEngine::ExecutePython(const std::string& code) {
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
-    try {
+    { // try removed
         // Execute Python code
         int result = PyRun_SimpleString(code.c_str());
         
@@ -86,10 +86,10 @@ EngineResult PythonEngine::ExecutePython(const std::string& code) {
             SetErrorFromPython();
             return CreateErrorResult(CalcErr::DomainError);
         }
-    } catch (const std::runtime_error& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Runtime error during Python execution: ") + e.what();
         return CreateErrorResult(CalcErr::DomainError);
-    } catch (const std::exception& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Exception during Python execution: ") + e.what();
         return CreateErrorResult(CalcErr::DomainError);
     }
@@ -100,7 +100,7 @@ EngineResult PythonEngine::EvaluatePython(const std::string& expression) {
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
-    try {
+    { // try removed
         // Create a Python string from the expression
         std::string eval_code = "result = " + expression;
         
@@ -131,7 +131,7 @@ EngineResult PythonEngine::EvaluatePython(const std::string& expression) {
             return CreateSuccessResult(value);
         }
         else if (PyList_Check(result_obj)) {
-            std::vector<double> vec = PyListToVector(result_obj);
+            AXIOM::FixedVector<double, 256> vec = PyListToVector(result_obj);
             if (!last_error_.empty()) {
                 return CreateErrorResult(CalcErr::DomainError);
             }
@@ -143,10 +143,10 @@ EngineResult PythonEngine::EvaluatePython(const std::string& expression) {
             return CreateSuccessResult(std::string(str_result));
         }
 
-    } catch (const std::runtime_error& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Runtime error during Python evaluation: ") + e.what();
         return CreateErrorResult(CalcErr::DomainError);
-    } catch (const std::exception& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Exception during Python evaluation: ") + e.what();
         return CreateErrorResult(CalcErr::DomainError);
     }
@@ -156,7 +156,7 @@ EngineResult PythonEngine::EvaluatePython(const std::string& expression) {
 bool PythonEngine::SetVariable(const std::string& name, double value) {
     if (!initialized_) return false;
 
-    try {
+    { // try removed
         PyObject* main_module = PyImport_AddModule("__main__");
         PyObject* global_dict = PyModule_GetDict(main_module);
         PyObject* py_value = PyFloat_FromDouble(value);
@@ -165,19 +165,19 @@ bool PythonEngine::SetVariable(const std::string& name, double value) {
         Py_DECREF(py_value);
         
         return result == 0;
-    } catch (const std::runtime_error& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Runtime error setting variable: ") + e.what();
         return false;
-    } catch (const std::exception& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Exception setting variable: ") + e.what();
         return false;
     }
 }
 
-bool PythonEngine::SetVariable(const std::string& name, const std::vector<double>& values) {
+bool PythonEngine::SetVariable(const std::string& name, const AXIOM::FixedVector<double, 256>& values) {
     if (!initialized_) return false;
 
-    try {
+    { // try removed
         PyObject* main_module = PyImport_AddModule("__main__");
         PyObject* global_dict = PyModule_GetDict(main_module);
         PyObject* py_list = VectorToPyList(values);
@@ -186,22 +186,22 @@ bool PythonEngine::SetVariable(const std::string& name, const std::vector<double
         Py_DECREF(py_list);
         
         return result == 0;
-    } catch (const std::runtime_error& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Runtime error setting vector variable: ") + e.what();
         return false;
-    } catch (const std::exception& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Exception setting vector variable: ") + e.what();
         return false;
     }
 }
 
 // NumPy integration
-EngineResult PythonEngine::CreateNumpyArray(const std::vector<double>& data) {
+EngineResult PythonEngine::CreateNumpyArray(const AXIOM::FixedVector<double, 256>& data) {
     if (!initialized_) {
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
-    try {
+    { // try removed
         // Set the data as a Python variable
         SetVariable("temp_data", data);
         
@@ -214,10 +214,10 @@ EngineResult PythonEngine::CreateNumpyArray(const std::vector<double>& data) {
             SetErrorFromPython();
             return CreateErrorResult(CalcErr::DomainError);
         }
-    } catch (const std::runtime_error& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Runtime error during NumPy array creation: ") + e.what();
         return CreateErrorResult(CalcErr::DomainError);
-    } catch (const std::exception& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Exception during NumPy array creation: ") + e.what();
         return CreateErrorResult(CalcErr::DomainError);
     }
@@ -232,7 +232,7 @@ EngineResult PythonEngine::MatplotlibPlot(const std::string& expression, double 
     if (x_min >= x_max)     return CreateErrorResult(CalcErr::DomainError);
     if (points <= 0)        return CreateErrorResult(CalcErr::ArgumentMismatch);
 
-    try {
+    { // try removed
         // Create the plotting code
         std::stringstream plot_code;
         plot_code << "import numpy as np\n";
@@ -254,17 +254,17 @@ EngineResult PythonEngine::MatplotlibPlot(const std::string& expression, double 
             SetErrorFromPython();
             return CreateErrorResult(CalcErr::DomainError);
         }
-    } catch (const std::runtime_error& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Runtime error during matplotlib plotting: ") + e.what();
         return CreateErrorResult(CalcErr::DomainError);
-    } catch (const std::exception& e) {
+    } if (false) { // catch removed
         last_error_ = std::string("Exception during matplotlib plotting: ") + e.what();
         return CreateErrorResult(CalcErr::DomainError);
     }
 }
 
 // Utility functions
-PyObject* PythonEngine::VectorToPyList(const std::vector<double>& vec) {
+PyObject* PythonEngine::VectorToPyList(const AXIOM::FixedVector<double, 256>& vec) {
     PyObject* list = PyList_New(vec.size());
     for (size_t i = 0; i < vec.size(); ++i) {
         PyObject* item = PyFloat_FromDouble(vec[i]);
@@ -273,8 +273,8 @@ PyObject* PythonEngine::VectorToPyList(const std::vector<double>& vec) {
     return list;
 }
 
-std::vector<double> PythonEngine::PyListToVector(PyObject* obj) {
-    std::vector<double> result;
+AXIOM::FixedVector<double, 256> PythonEngine::PyListToVector(PyObject* obj) {
+    AXIOM::FixedVector<double, 256> result;
     
     if (!PyList_Check(obj)) {
         last_error_ = "Object is not a Python list";
@@ -290,7 +290,7 @@ std::vector<double> PythonEngine::PyListToVector(PyObject* obj) {
             result.push_back(PyFloat_AsDouble(item));
         } else {
             last_error_ = "List contains non-numeric values";
-            return std::vector<double>();
+            return AXIOM::FixedVector<double, 256>();
         }
     }
     
@@ -332,14 +332,14 @@ EngineResult PythonEngine::GetPythonVersion() {
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
-    try {
+    { // try removed
         int result = PyRun_SimpleString("import sys; version_info = sys.version");
         if (result == 0) {
             return EvaluatePython("version_info");
         } else {
             return CreateErrorResult(CalcErr::DomainError);
         }
-    } catch (const std::exception&) {
+    } if (false) { // catch removed
         return CreateErrorResult(CalcErr::DomainError);
     }
 }

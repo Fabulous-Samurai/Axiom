@@ -48,8 +48,12 @@ static void BM_ZeroCopyVector(benchmark::State& state) {
 }
 BENCHMARK(BM_ZeroCopyVector)->RangeMultiplier(2)->Range(1024, 8192);
 
+#include "../include/lock_free_ring_buffer.h"
+
+using namespace AXIOM;
+
 static void BM_LockFreeQueueIPC(benchmark::State& state) {
-    LockFreeRingBuffer<DaemonEngine::Request, 1024> queue;
+    SPSCQueue<DaemonEngine::Request, 1024> queue;
     int i = 0;
     for (auto _ : state) {
         DaemonEngine::Request req;
@@ -62,6 +66,16 @@ static void BM_LockFreeQueueIPC(benchmark::State& state) {
     }
 }
 BENCHMARK(BM_LockFreeQueueIPC);
+
+// ... rest of the benchmarks ...
+
+int main(int argc, char** argv) {
+    ::benchmark::Initialize(&argc, argv);
+    if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
+    ::benchmark::RunSpecifiedBenchmarks();
+    ::benchmark::Shutdown();
+    return 0;
+}
 
 static AXIOM::Mantis::NodeFeatureVecF32 make_test_node_f32() {
     AXIOM::Mantis::NodeFeatureVecF32 node;

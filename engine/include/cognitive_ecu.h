@@ -10,10 +10,10 @@
 #pragma once
 
 #include <string>
-#include <vector>
 #include <memory>
 #include <atomic>
 #include "arena_allocator.h"
+#include "fixed_vector.h"
 
 namespace AXIOM {
 
@@ -56,8 +56,7 @@ public:
     /**
      * @brief Perform inference using pre-allocated pools
      */
-    void run_inference(const std::vector<float>& input, std::vector<float>& output);
+    void run_inference(const FixedVector<float, 1024>& input, FixedVector<float, 1024>& output);
 };
 
 } // namespace AXIOM
-

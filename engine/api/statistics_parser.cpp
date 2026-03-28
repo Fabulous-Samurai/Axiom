@@ -12,8 +12,8 @@ static std::string trim(const std::string& s) {
     return s.substr(b, e - b + 1);
 }
 
-std::vector<double> StatisticsParser::ParseVector(const std::string& s) {
-    std::vector<double> out;
+AXIOM::FixedVector<double, 256> StatisticsParser::ParseVector(const std::string& s) {
+    AXIOM::FixedVector<double, 256> out;
     // Find outer brackets
     size_t lb = s.find('[');
     size_t rb = s.rfind(']');

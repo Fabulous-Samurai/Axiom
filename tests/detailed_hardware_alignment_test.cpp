@@ -27,7 +27,7 @@ TEST(HarmonicStringTest, AppendWithinCapacity) {
 
 TEST(HarmonicStringTest, AppendExceedsCapacity) {
     HarmonicString str(64);
-    EXPECT_THROW(str.append(std::string(100, 'A')), std::bad_alloc);
+    EXPECT_FALSE(str.append(std::string(100, 'A')));
 }
 
 TEST(HarmonicStringTest, NoDynamicAllocation) {

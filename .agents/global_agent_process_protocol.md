@@ -1,10 +1,10 @@
 ---
 title: Global Agent Process Protocol
-version: 2.0
+version: 3.1.2
 author: Principal Systems & Performance Architect / Fabulous-Samurai
 ---
 
-> **Status Update**: The repository has transitioned to **AXIOM Zenith (Phases E-H)**. All agents must now adhere to the Zenith Master Architect V2.0 protocols, prioritizing zero-observer telemetry, kernel-bypass networking, and hardware-secured enclaves.
+> **Status Update**: The repository has transitioned to **AXIOM Zenith (Phases E-H)**. All agents must now adhere to the Zenith Master Architect V3.1.2 protocols, prioritizing zero-observer telemetry, kernel-bypass networking, and hardware-secured enclaves.
 
 # Global Agent Process Protocol (Zenith Edition)
 
@@ -19,10 +19,13 @@ This document defines the strict operational standards for autonomous agents, pe
 3. **Pillar 5: Zero-Exception**: Critical engine paths must be `noexcept`. Use `std::optional`, `std::expected` (C++23), or error codes.
 
 ---
-
 ### Basic Principles
 
-- **Agent Coordination (MANDATORY)**: All agents MUST consult `.agents/MANDATORY_AGENT_PROTOCOL.md` and update `.agents/AGENT_ACTIVITY_LOG.md` before starting any task. This ensures real-time synchronization and prevents conflicting work.
+- **Agent Coordination (MANDATORY)**: All agents MUST:
+    1. Consult `.agents/MANDATORY_AGENT_PROTOCOL.md`.
+    2. Review their specific role definition in `.agents/roles/{role}.md`.
+    3. Update `.agents/AGENT_ACTIVITY_LOG.md` before starting.
+- **Role Switching**: If a task requires a different specialty, the agent must announce the role switch in the log (e.g., "Switching from Engine to Janitor for cleanup").
 - **Security**: Hardware enclaves (Phase H) protect the Mantis state machine. Agents must never log or leak raw state memory from secured regions.
 - **Repeatability**: Benchmarks must be run with fixed CPU frequency and isolated cores to ensure RDTSC consistency.
 - **Zero-Observer Telemetry**: Use only the `TelemetryScribe` (lock-free SPSC) for logging during performance critical sections. `std::cout` or `printf` are strictly forbidden in hot-paths.

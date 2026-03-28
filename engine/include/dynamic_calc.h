@@ -65,7 +65,7 @@ namespace AXIOM
         DynamicCalc();
         ~DynamicCalc();
 
-        EngineResult Evaluate(const std::string &input);
+        EngineResult Evaluate(std::string_view input);
         [[nodiscard]] EngineResult EvaluateFast(double lhs, double rhs, FastArithmeticOp op) noexcept;
 
         /**

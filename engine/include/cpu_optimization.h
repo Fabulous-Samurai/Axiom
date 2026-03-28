@@ -120,6 +120,12 @@ public:
     static std::string GetCPUInfo();
     static void OptimizeForCurrentCPU();
     
+    /**
+     * @brief Set thread affinity for the calling thread.
+     * @param core_index The CPU core index to pin to.
+     */
+    static void SetThreadAffinity(int core_index) noexcept;
+    
 private:
     static bool DetectSSE();
     static bool DetectAVX();

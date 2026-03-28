@@ -6,9 +6,12 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 add_library(axui_runtime STATIC
     src/binding_engine.cpp
     src/dashboard_manager.cpp
-    ../../engine/core/arena_allocator.cpp
+    src/jit_execution_manager.cpp
+    src/style_pipeline.cpp
     include/axui/dashboard_manager.h
     include/axui/binding_engine.h
+    include/axui/jit_execution_manager.h
+    include/axui/style_pipeline.h
 )
 
 target_include_directories(axui_runtime PUBLIC
@@ -19,6 +22,7 @@ target_include_directories(axui_runtime PUBLIC
 
 target_link_libraries(axui_runtime PUBLIC
     axui_compiler
+    axiom_engine
     Qt6::Core
 )
 

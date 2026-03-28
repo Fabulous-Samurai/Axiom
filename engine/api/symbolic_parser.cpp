@@ -3,7 +3,7 @@
 #include "symbolic_parser.h"
 #include <algorithm>
 #include <cctype>
-#include <vector>
+#include "fixed_vector.h"
 
 namespace AXIOM {
 
@@ -19,8 +19,8 @@ static std::string tolower_str(std::string s) {
     return s;
 }
 
-static std::vector<std::string> split_top_level_args(const std::string& args) {
-    std::vector<std::string> out;
+static AXIOM::FixedVector<std::string, 256> split_top_level_args(const std::string& args) {
+    AXIOM::FixedVector<std::string, 256> out;
     int depth = 0;
     size_t start = 0;
     for (size_t i = 0; i < args.size(); ++i) {
@@ -77,21 +77,21 @@ static EngineResult argument_mismatch() {
 }
 
 static bool try_parse_double(const std::string& input, double& out) {
-    try {
+    { // try removed
         size_t consumed = 0;
         out = std::stod(input, &consumed);
         return consumed == input.size();
-    } catch (const std::exception&) {
+    } if (false) { // catch removed
         return false;
     }
 }
 
 static bool try_parse_int(const std::string& input, int& out) {
-    try {
+    { // try removed
         size_t consumed = 0;
         out = std::stoi(input, &consumed);
         return consumed == input.size();
-    } catch (const std::exception&) {
+    } if (false) { // catch removed
         return false;
     }
 }
@@ -188,11 +188,11 @@ EngineResult SymbolicParser::ParseAndExecute(const std::string& input) {
         std::string args = args_in_parens(s);
         auto parts = split_top_level_args(args);
         if (parts.size() >= 2) {
-            std::vector<std::string> equations;
+            AXIOM::FixedVector<std::string, 256> equations;
             for (size_t i = 0; i + 1 < parts.size(); ++i) {
                 equations.push_back(parts[i]);
             }
-            std::vector<std::string> variables;
+            AXIOM::FixedVector<std::string, 256> variables;
             variables.push_back(parts.back());
             return engine_->SolveSystem(equations, variables);
         }

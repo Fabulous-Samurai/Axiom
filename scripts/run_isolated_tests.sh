@@ -15,11 +15,11 @@ echo "Ensure kernel boot parameter 'isolcpus=$ISOLATED_CORE' is set."
 
 # Run the benchmark on the isolated core using taskset
 echo "Running benchmark on isolated core $ISOLATED_CORE..."
-taskset -c $ISOLATED_CORE ./build/axiom_benchmark.exe
+taskset -c $ISOLATED_CORE ./out/default-ninja/axiom_benchmark.exe
 
 # Run the tests on the isolated core using taskset
 echo "Running tests on isolated core $ISOLATED_CORE..."
-taskset -c $ISOLATED_CORE ./build/run_tests.exe
+taskset -c $ISOLATED_CORE ./out/default-ninja/run_tests.exe
 
 # Provide a warning about OS jitter
 echo "Note: Running benchmarks or tests on non-isolated cores may introduce OS jitter."

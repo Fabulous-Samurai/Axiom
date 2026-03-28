@@ -1,30 +1,29 @@
 #pragma once
 
 #include "types.h"
-#include <string>
-#include <vector>
+#include "fixed_vector.h" // AXIOM::FixedVector
+#include <string_view>
 #include <variant>
 #include <optional>
-#include <unordered_map>
 
 namespace axui {
 
 struct Binding {
-    std::string path;
-    std::string format;
+    std::string_view path;
+    std::string_view format;
     bool is_bound = false;
 };
 
 using PropValue = std::variant<
     double,
-    std::string,
+    std::string_view,
     bool,
     Color,
     Binding
 >;
 
 struct Property {
-    std::string key;
+    std::string_view key;
     PropValue value;
 };
 
@@ -61,18 +60,22 @@ struct LayoutParams {
     LayoutType type = LayoutType::Column;
 };
 
+// Zenith Limit: Max 32 properties and 16 children per node to maintain L1 cache locality
+constexpr size_t MAX_PROPS_PER_NODE = 32;
+constexpr size_t MAX_CHILDREN_PER_NODE = 16;
+
 struct UINode {
     ComponentType component_type = ComponentType::Container;
-    std::string id;
+    std::string_view id;
 
-    std::vector<Property> properties;
+    AXIOM::FixedVector<Property, MAX_PROPS_PER_NODE> properties;
     GlassParams glass;
     HoverParams hover;
     LayoutParams layout;
 
-    std::vector<UINode> children;
+    AXIOM::FixedVector<UINode*, MAX_CHILDREN_PER_NODE> children;
 
-    const PropValue* getProperty(const std::string& key) const {
+    const PropValue* getProperty(std::string_view key) const {
         for (const auto& p : properties) {
             if (p.key == key) return &p.value;
         }
@@ -82,7 +85,7 @@ struct UINode {
     size_t totalNodeCount() const {
         size_t count = 1;
         for (const auto& child : children) {
-            count += child.totalNodeCount();
+            if (child) count += child->totalNodeCount();
         }
         return count;
     }

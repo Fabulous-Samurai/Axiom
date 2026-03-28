@@ -14,8 +14,8 @@
 #pragma once
 #include "fixed_vector.h"
 
+#include <memory_resource>
 #include <memory>
-#include <vector>
 #include <array>
 #include <unordered_map>
 #include <unordered_set>
@@ -68,7 +68,7 @@ public:
  * This arena complements MemoryArena for ultra-low-latency burst allocation
  * workloads where deallocation is handled through block rotation.
  */
-class AXIOM_EXPORT HarmonicArena {
+class AXIOM_EXPORT HarmonicArena : public std::pmr::memory_resource {
 public:
     static constexpr size_t DEFAULT_BLOCK_SIZE = 512ull * 1024ull * 1024ull; // 512MB
     static constexpr size_t SCRIBE_PREPARE_THRESHOLD_PERCENT = 85;
@@ -112,6 +112,22 @@ public:
 
     [[nodiscard]] void* allocate(size_t bytes) noexcept;
 
+protected:
+    // std::pmr::memory_resource implementation
+    void* do_allocate(size_t bytes, size_t alignment) override {
+        // HarmonicArena doesn't currently support specific alignment beyond CACHE_LINE_SIZE
+        // and doesn't handle small allocations with different alignment needs specially.
+        return allocate(bytes);
+    }
+
+    void do_deallocate(void* p, size_t bytes, size_t alignment) override {
+        // HarmonicArena does not support individual deallocations (block rotation only).
+    }
+
+    bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {
+        return this == &other;
+    }
+
 private:
     [[nodiscard]] static std::byte* reserve_from_block(ArenaBlock* block, size_t bytes) noexcept;
     [[nodiscard]] bool try_install_spare(ArenaBlock* expected_current, ArenaBlock* replacement) noexcept;
@@ -137,7 +153,7 @@ private:
  * 
  * Zero-fragmentation allocator for scientific computing workloads
  */
-class AXIOM_EXPORT MemoryArena {
+class AXIOM_EXPORT MemoryArena : public std::pmr::memory_resource {
 public:
     static constexpr size_t DEFAULT_ARENA_SIZE = 64 * 1024 * 1024;  // 64MB
     static constexpr size_t PAGE_SIZE = 4096;
@@ -185,7 +201,22 @@ public:
     // Core allocation interface
     [[nodiscard]] void* allocate(size_t size, size_t alignment = CACHE_LINE_SIZE) noexcept;
     void deallocate(void* ptr, size_t size) noexcept;
-    
+
+protected:
+    // std::pmr::memory_resource implementation
+    void* do_allocate(size_t bytes, size_t alignment) override {
+        return allocate(bytes, alignment);
+    }
+
+    void do_deallocate(void* p, size_t bytes, size_t alignment) override {
+        deallocate(p, bytes);
+    }
+
+    bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {
+        return this == &other;
+    }
+
+public:
     [[nodiscard]] bool is_valid() const noexcept { return memory_base_ != nullptr; }
     
     // Typed allocation helpers
@@ -238,6 +269,7 @@ public:
  * @brief NUMA-Aware Memory Pool Manager
  * 
  * Manages multiple arenas across NUMA nodes for optimal performance
+ * Implementing Dual Channel (2x64MB) architecture per bank.
  */
 class AXIOM_EXPORT PoolManager {
 public:
@@ -247,35 +279,35 @@ public:
     };
 
 private:
-    struct PoolInfo {
-        std::unique_ptr<MemoryArena> arena;
+    struct BankInfo {
+        std::unique_ptr<MemoryArena> channel_1; // 64MB Channel
+        std::unique_ptr<MemoryArena> channel_2; // 64MB Channel
         PoolType type{PoolType::ZENITH_BANK_A};
         int numa_node{-1};
         std::atomic<size_t> active_allocations{0};
 
-        PoolInfo() = default;
-
-        PoolInfo(PoolInfo&& other) noexcept
-            : arena(std::move(other.arena))
+        BankInfo() = default;
+        BankInfo(BankInfo&& other) noexcept
+            : channel_1(std::move(other.channel_1))
+            , channel_2(std::move(other.channel_2))
             , type(other.type)
             , numa_node(other.numa_node)
             , active_allocations(other.active_allocations.load()) {}
 
-        ~PoolInfo() = default;
-        PoolInfo(const PoolInfo&) = delete;
-        PoolInfo& operator=(const PoolInfo&) = delete;
-        PoolInfo& operator=(PoolInfo&&) = delete;
+        ~BankInfo() = default;
+        BankInfo(const BankInfo&) = delete;
+        BankInfo& operator=(const BankInfo&) = delete;
+        BankInfo& operator=(BankInfo&&) = delete;
     };
 
-    std::array<PoolInfo, 2> pools_;
+    std::array<BankInfo, 2> banks_;
 
 #ifdef ENABLE_HARMONIC_ARENA
-    std::unique_ptr<HarmonicArena> harmonic_arena_;
+    std::unique_ptr<HarmonicArena> harmonic_channel_1; // 256MB Fast-Path
+    std::unique_ptr<HarmonicArena> harmonic_channel_2; // 256MB Fast-Path
     std::atomic<size_t> harmonic_allocations_{0};
     static constexpr size_t HARMONIC_FAST_PATH_LIMIT = 1024;
 #endif
-
-    thread_local static size_t preferred_pool_index_;
 
 public:
     PoolManager();
@@ -284,8 +316,53 @@ public:
     void* allocate(size_t size, size_t alignment = AXIOM::CACHE_LINE_SIZE);
     void deallocate(void* ptr, size_t size);
 
-    std::vector<MemoryArena::ArenaStats> get_all_stats() const;
-    static PoolManager& instance();
+    AXIOM::FixedVector<MemoryArena::ArenaStats, 8> get_all_stats() const noexcept;
+    static PoolManager& instance() noexcept;
+};
+
+/**
+ * @brief Central Memory Orchestrator
+ * 
+ * Single point of control for all memory subsystems:
+ * - Real-time health monitoring
+ * - Automatic bank switching
+ * - Emergency maintenance and backpressure signaling
+ * - Pillar 3 (Determinism) validation
+ */
+class AXIOM_EXPORT MemoryOrchestrator {
+public:
+    enum class HealthStatus {
+        OPTIMAL,    // < 70% usage, low fragmentation
+        WARNING,    // > 70% usage or moderate fragmentation
+        CRITICAL,   // > 90% usage, backpressure active
+        EMERGENCY   // Exhausted, emergency flush required
+    };
+
+    struct SystemMemoryStats {
+        HealthStatus status;
+        double fragmentation_avg;
+        size_t total_reserved_bytes;
+        size_t total_used_bytes;
+        size_t active_allocations;
+        size_t harmonic_allocations;
+    };
+
+private:
+    MemoryOrchestrator() = default;
+
+public:
+    static MemoryOrchestrator& instance() noexcept;
+
+    // Central allocation entry point
+    void* allocate(size_t size, size_t alignment = AXIOM::CACHE_LINE_SIZE);
+    void deallocate(void* ptr, size_t size);
+
+    // Orchestration & Health
+    SystemMemoryStats get_system_stats() const noexcept;
+    void perform_emergency_maintenance() noexcept;
+    
+    // Pillar 3: Determinism validation
+    bool is_deterministic_path(size_t size, size_t alignment) const noexcept;
 };
 
 /**
@@ -323,7 +400,7 @@ public:
         if (arena_) {
             return arena_->allocate_array<T>(n);
         } else {
-            return static_cast<pointer>(PoolManager::instance().allocate(n * sizeof(T), alignof(T)));
+            return static_cast<pointer>(MemoryOrchestrator::instance().allocate(n * sizeof(T), alignof(T)));
         }
     }
     
@@ -331,7 +408,7 @@ public:
         if (arena_) {
             arena_->deallocate(p, n * sizeof(T));
         } else {
-            PoolManager::instance().deallocate(p, n * sizeof(T));
+            MemoryOrchestrator::instance().deallocate(p, n * sizeof(T));
         }
     }
     
@@ -466,28 +543,28 @@ public:
     };
 
 private:
-    std::vector<AllocationProfile> allocation_history_;
+    AXIOM::FixedVector<AllocationProfile, 4096> allocation_history_;
     mutable Spinlock history_mutex_;
     std::atomic<bool> profiling_enabled_;
 
 public:
-    MemoryProfiler();
+    MemoryProfiler() noexcept;
     
-    void enable_profiling(bool enable = true);
-    bool is_profiling_enabled() const;
+    void enable_profiling(bool enable = true) noexcept;
+    bool is_profiling_enabled() const noexcept;
     
-    void record_allocation(void* ptr, size_t size, size_t alignment, size_t pool_index);
-    void record_deallocation(void* ptr);
+    void record_allocation(void* ptr, size_t size, size_t alignment, size_t pool_index) noexcept;
+    void record_deallocation(void* ptr) noexcept;
     
-    PerformanceMetrics get_metrics() const;
-    std::vector<AllocationProfile> get_recent_allocations(size_t count = 100) const;
+    PerformanceMetrics get_metrics() const noexcept;
+    AXIOM::FixedVector<AllocationProfile, 128> get_recent_allocations(size_t count = 100) const noexcept;
     
     // Analysis and optimization suggestions
-    std::vector<std::string> analyze_patterns() const;
-    std::vector<std::string> get_optimization_suggestions() const;
+    AXIOM::FixedVector<std::string_view, 16> analyze_patterns() const noexcept;
+    AXIOM::FixedVector<std::string_view, 16> get_optimization_suggestions() const noexcept;
     
     // Global profiler instance
-    static MemoryProfiler& instance();
+    static MemoryProfiler& instance() noexcept;
 };
 
 } // namespace AXIOM

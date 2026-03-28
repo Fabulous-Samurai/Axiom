@@ -1,22 +1,19 @@
 @echo off
-echo 🚀 AXIOM ENGINE v3.0 - NINJA BUILD SYSTEM
+echo 🚀 AXIOM ENGINE v3.0 - CENTRALIZED BUILD SYSTEM
 echo ========================================
 
-REM Clean any existing builds
-if exist "ninja-build" rmdir /s /q "ninja-build"
+REM Check if CMakePresets.json exists
+if not exist "CMakePresets.json" (
+    echo ❌ Error: CMakePresets.json not found!
+    exit /b 1
+)
 
-REM Create fresh ninja build directory
-mkdir ninja-build
-cd ninja-build
+echo 🏗️ Configuring with preset: default-ninja...
+cmake --preset default-ninja
 
-echo 🏗️ Configuring NINJA build with maximum optimization...
-cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ..
-
-echo 🏎️ Building AXIOM Engine with NINJA parallel compilation...
-ninja -j %NUMBER_OF_PROCESSORS%
+echo 🏎️ Building AXIOM Engine...
+cmake --build out\default-ninja -j %NUMBER_OF_PROCESSORS%
 
 echo ✅ AXIOM Engine v3.0 build complete!
-echo 📍 Executable: ninja-build\axiom.exe
-echo 🧪 Test suite: ninja-build\run_tests.exe
-
-cd ..
+echo 📍 Executable: out\default-ninja\axiom.exe
+echo 🧪 Test suite: out\default-ninja\run_tests.exe

@@ -11,17 +11,18 @@
 
 #include "../include/daemon_engine.h"
 #include "../include/dynamic_calc.h"
+#include "../include/sentry.h"
 #include "cpu_optimization.h"
 
 #include <iostream>
 #include <format>
 #include <sstream>
-#include <stdexcept>
 #include <cstring>
 #include <cerrno>
 #include <cstdlib>
 #include <type_traits>
 #include <variant>
+#include <expected>
 
 #ifndef _WIN32
 #include <sys/stat.h>
@@ -201,52 +202,51 @@ DaemonEngine::~DaemonEngine() noexcept
         return;
     }
 
-    try
-    {
-        stop();
-    }
-    catch (...)
-    {
-        // Destructors must not throw; swallow shutdown failures.
-    }
+    stop();
 }
 
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 
-bool DaemonEngine::start()
+std::expected<void, DaemonEngine::DaemonStatus> DaemonEngine::start()
 {
-    bool expected = false;
-    if (!running_.compare_exchange_strong(expected, true,
+    bool expected_run = false;
+    if (!running_.compare_exchange_strong(expected_run, true,
                                           std::memory_order_release,
                                           std::memory_order_relaxed))
     {
-        return false; // already running
+        return std::unexpected(status_.load(std::memory_order_acquire)); // already running
     }
 
     status_.store(DaemonStatus::STARTING, std::memory_order_release);
 
-    PipeError err = setup_pipe();
-    if (err != PipeError::None)
+    auto result = setup_pipe();
+    if (!result)
     {
         std::cerr << "[AXIOM Daemon] setup_pipe failed: "
-                  << pipe_error_to_string(err) << '\n';
+                  << pipe_error_to_string(result.error()) << '\n';
         running_.store(false, std::memory_order_release);
         status_.store(DaemonStatus::PIPE_ERROR, std::memory_order_release);
-        return false;
+        return std::unexpected(DaemonStatus::PIPE_ERROR);
     }
 
     status_.store(DaemonStatus::READY, std::memory_order_release);
-    daemon_thread_    = std::jthread([this] { daemon_loop(); });
-    request_processor_ = std::jthread([this] { request_processor_loop(); });
-    return true;
+    daemon_thread_    = std::jthread([this] { 
+        CPUOptimization::SetThreadAffinity(2); // Pin to core 2
+        daemon_loop(); 
+    });
+    request_processor_ = std::jthread([this] { 
+        CPUOptimization::SetThreadAffinity(3); // Pin to core 3
+        request_processor_loop(); 
+    });
+    return {};
 }
 
 void DaemonEngine::stop() noexcept
 {
-    bool expected = true;
-    if (!running_.compare_exchange_strong(expected, false,
+    bool expected_run = true;
+    if (!running_.compare_exchange_strong(expected_run, false,
                                           std::memory_order_release,
                                           std::memory_order_relaxed))
     {
@@ -255,33 +255,26 @@ void DaemonEngine::stop() noexcept
 
     status_.store(DaemonStatus::SHUTDOWN, std::memory_order_release);
 
-    try
+    if (daemon_thread_.joinable())
     {
-        if (daemon_thread_.joinable())
-        {
-            daemon_thread_.join();
-        }
-        if (request_processor_.joinable())
-        {
-            request_processor_.join();
-        }
-
-        cleanup_pipe();
-
-        std::scoped_lock lock(sessions_mutex_);
-        sessions_.clear();
+        daemon_thread_.join();
     }
-    catch (const std::exception&)
+    if (request_processor_.joinable())
     {
-        // Keep noexcept contract: errors during teardown are intentionally ignored.
+        request_processor_.join();
     }
+
+    cleanup_pipe();
+
+    std::scoped_lock lock(sessions_mutex_);
+    sessions_.clear();
 }
 
 // ---------------------------------------------------------------------------
 // Pipe setup / teardown
 // ---------------------------------------------------------------------------
 
-DaemonEngine::PipeError DaemonEngine::setup_pipe()
+std::expected<void, DaemonEngine::PipeError> DaemonEngine::setup_pipe()
 {
 #ifdef _WIN32
     std::wstring full_name = L"\\\\.\\pipe\\" + std::wstring(pipe_name_.begin(), pipe_name_.end());
@@ -298,11 +291,11 @@ DaemonEngine::PipeError DaemonEngine::setup_pipe()
     if (pipe_handle_ == INVALID_HANDLE_VALUE)
     {
         DWORD err = GetLastError();
-        if (err == ERROR_ACCESS_DENIED)    return PipeError::PermissionDenied;
-        if (err == ERROR_ALREADY_EXISTS)   return PipeError::AlreadyExists;
-        return PipeError::SystemError;
+        if (err == ERROR_ACCESS_DENIED)    return std::unexpected(PipeError::PermissionDenied);
+        if (err == ERROR_ALREADY_EXISTS)   return std::unexpected(PipeError::AlreadyExists);
+        return std::unexpected(PipeError::SystemError);
     }
-    return PipeError::None;
+    return {};
 #else
     std::string path = std::format("/tmp/{}", pipe_name_);
     // Remove stale FIFO
@@ -456,24 +449,12 @@ void DaemonEngine::daemon_loop()
 {
     while (running_.load(std::memory_order_acquire))
     {
-        try
-        {
+        AXIOM::Sentry::instance().heartbeat_core();
 #ifdef _WIN32
-            process_windows_pipe();
+        process_windows_pipe();
 #else
-            process_posix_pipe();
+        process_posix_pipe();
 #endif
-        }
-        catch (const std::runtime_error& e)
-        {
-            std::cerr << "[AXIOM Daemon] loop runtime error: " << e.what() << '\n';
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-        catch (const std::exception& e)
-        {
-            std::cerr << "[AXIOM Daemon] loop exception: " << e.what() << '\n';
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
     }
 }
 
@@ -581,22 +562,9 @@ void DaemonEngine::request_processor_loop()
         }
 
         status_.store(DaemonStatus::BUSY, std::memory_order_release);
-        try
-        {
-            auto resp = execute_command(request);
-            (void)resp; // async path: responses for send_command() callers are not piped back
-            completed_requests_.fetch_add(1, std::memory_order_relaxed);
-        }
-        catch (const std::runtime_error& e)
-        {
-            rejected_requests_.fetch_add(1, std::memory_order_relaxed);
-            std::cerr << "[AXIOM Daemon] processor runtime error: " << e.what() << '\n';
-        }
-        catch (const std::exception& e)
-        {
-            rejected_requests_.fetch_add(1, std::memory_order_relaxed);
-            std::cerr << "[AXIOM Daemon] processor exception: " << e.what() << '\n';
-        }
+        auto resp = execute_command(request);
+        (void)resp; // async path: responses for send_command() callers are not piped back
+        completed_requests_.fetch_add(1, std::memory_order_relaxed);
 
         total_requests_.fetch_add(1, std::memory_order_relaxed);
         // Fairness contract mirror: each started request reaches terminal state and daemon goes idle/ready.
@@ -616,59 +584,47 @@ DaemonEngine::Response DaemonEngine::execute_command(const Request& req)
     resp.timestamp         = std::chrono::steady_clock::now();
 
     auto t0 = std::chrono::high_resolution_clock::now();
-    try
+    
+    const auto open_until = circuit_open_until_ms_.load(std::memory_order_acquire);
+    const auto now = now_ms();
+    if (open_until > now)
     {
-        const auto open_until = circuit_open_until_ms_.load(std::memory_order_acquire);
-        const auto now = now_ms();
-        if (open_until > now)
+        resp.success = false;
+        resp.error = "CircuitBreakerOpen";
+        rejected_requests_.fetch_add(1, std::memory_order_relaxed);
+        return resp;
+    }
+
+    thread_local DynamicCalc calc;
+
+    apply_mode_from_request(calc, req.mode);
+
+    auto engine_result = calc.Evaluate(req.command);
+
+    if (engine_result.HasErrors())
+    {
+        resp.success = false;
+        if (engine_result.error.has_value())
         {
-            resp.success = false;
-            resp.error = "CircuitBreakerOpen";
-            rejected_requests_.fetch_add(1, std::memory_order_relaxed);
-            return resp;
-        }
-
-        thread_local DynamicCalc calc;
-
-        apply_mode_from_request(calc, req.mode);
-
-        auto engine_result = calc.Evaluate(req.command);
-
-        if (engine_result.HasErrors())
-        {
-            resp.success = false;
-            if (engine_result.error.has_value())
-            {
-                resp.error = engine_error_to_string(engine_result.error.value());
-            }
-            else
-            {
-                resp.error = "EngineError";
-            }
+            resp.error = engine_error_to_string(engine_result.error.value());
         }
         else
         {
-            resp.success = true;
-            auto d = engine_result.GetDouble();
-            if (d) {
-                char buf[64];
-                auto [ptr, ec] = std::to_chars(buf, buf + 64, *d);
-                if (ec == std::errc()) resp.result = std::string(buf, ptr - buf);
-                else resp.result = "error:to_chars";
-            } else {
-                resp.result = "ok";
-            }
+            resp.error = "EngineError";
         }
     }
-    catch (const std::runtime_error& e)
+    else
     {
-        resp.success = false;
-        resp.error   = e.what();
-    }
-    catch (const std::exception& e)
-    {
-        resp.success = false;
-        resp.error   = e.what();
+        resp.success = true;
+        auto d = engine_result.GetDouble();
+        if (d) {
+            char buf[64];
+            auto [ptr, ec] = std::to_chars(buf, buf + 64, *d);
+            if (ec == std::errc()) resp.result = std::string(buf, ptr - buf);
+            else resp.result = "error:to_chars";
+        } else {
+            resp.result = "ok";
+        }
     }
 
     auto t1 = std::chrono::high_resolution_clock::now();
@@ -741,7 +697,7 @@ bool DaemonEngine::send_command(const std::string& session_id,
     return true;
 }
 
-std::string DaemonEngine::create_session()
+std::expected<std::string, std::error_code> DaemonEngine::create_session()
 {
     // Use a nanosecond timestamp for a unique-enough ID without external deps
     auto ns = std::chrono::steady_clock::now().time_since_epoch().count();
@@ -762,13 +718,14 @@ bool DaemonEngine::destroy_session(const std::string& session_id)
     return sessions_.erase(session_id) > 0;
 }
 
-std::vector<std::string> DaemonEngine::get_active_sessions()
+void DaemonEngine::get_active_sessions(FixedVector<std::string, 128>& out_sessions)
 {
     std::scoped_lock lock(sessions_mutex_);
-    std::vector<std::string> ids;
-    ids.reserve(sessions_.size());
-    for (const auto& [k, _] : sessions_) ids.push_back(k);
-    return ids;
+    out_sessions.clear();
+    for (const auto& [k, _] : sessions_) {
+        if (out_sessions.size() >= 128) break;
+        out_sessions.push_back(k);
+    }
 }
 
 std::chrono::milliseconds DaemonEngine::get_uptime() const noexcept

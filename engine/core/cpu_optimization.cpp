@@ -7,6 +7,13 @@
 #include "cpu_optimization.h"
 #include <iostream>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <pthread.h>
+#include <sched.h>
+#endif
+
 namespace AXIOM {
 
 void CPUOptimization::Initialize() {
@@ -19,6 +26,23 @@ std::string CPUOptimization::GetCPUInfo() {
 
 void CPUOptimization::OptimizeForCurrentCPU() {
     std::cout << "CPU optimizations applied for Senna speed!" << std::endl;
+}
+
+void CPUOptimization::SetThreadAffinity(int core_index) noexcept {
+#ifdef _WIN32
+    DWORD_PTR mask = (static_cast<DWORD_PTR>(1) << core_index);
+    if (SetThreadAffinityMask(GetCurrentThread(), mask) == 0) {
+        std::cerr << "[AXIOM CPU] Failed to set thread affinity for core " << core_index << std::endl;
+    }
+#else
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(core_index, &cpuset);
+    pthread_t current_thread = pthread_self();
+    if (pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset) != 0) {
+        std::cerr << "[AXIOM CPU] Failed to set thread affinity for core " << core_index << std::endl;
+    }
+#endif
 }
 
 bool CPUOptimization::DetectSSE() {

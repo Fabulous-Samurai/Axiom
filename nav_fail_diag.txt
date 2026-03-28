@@ -1,0 +1,3 @@
+QQmlApplicationEngine failed to load component
+qrc:/ui/main.qml:114:9: PageTemplate is not a type
+QDxgiVSyncService not destroyed in time

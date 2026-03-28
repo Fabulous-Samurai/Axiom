@@ -27,13 +27,13 @@ NB_MODULE(axiom_core, m) {
 
     // 2. Telemetry Control
     m.def("start_telemetry", []() {
-        AXIOM::TelemetryScribe::instance().start();
+        AXIOM::TelemetryScribe::instance().start("python_telemetry.log");
     }, "Initializes the zero-observer telemetry scribe.");
 
     // 3. CalculationMode & Operation Enums
     nb::enum_<AXIOM::CalculationMode>(m, "CalculationMode")
         .value("ALGEBRAIC", AXIOM::CalculationMode::ALGEBRAIC)
-        .value("LINEAR", AXIOM::CalculationMode::LINEAR)
+        .value("LINEAR", AXIOM::CalculationMode::LINEAR_SYSTEM)
         .export_values();
 
     nb::enum_<AXIOM::FastArithmeticOp>(m, "FastArithmeticOp")

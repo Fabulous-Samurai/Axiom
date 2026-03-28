@@ -1,194 +1,90 @@
 import QtQuick 2.15
 
-/*
- * FlowLink — Animated data path between pipeline nodes
- * 
- * Pulsing glow particles flow from source to target.
- * Speed/density correlates to throughput ratio.
- */
-
 Item {
     id: root
-
+    
     // ═══════════════════════════════════════════════════════════════
-    // PUBLIC
+    // PUBLIC PROPERTIES
     // ═══════════════════════════════════════════════════════════════
-
     property point startPoint: Qt.point(0, 0)
-    property point endPoint: Qt.point(100, 0)
-    property real throughputRatio: 0.0      // 0.0 - 1.0
-    property real dropRate: 0.0             // 0.0 - 1.0
-    property bool active: false
-    property color linkColor: "#3B82F6"
-    property color errorColor: "#EF4444"
-    property bool backpressure: false
-
-    // ═══════════════════════════════════════════════════════════════
-    // COMPUTED
-    // ═══════════════════════════════════════════════════════════════
-
-    readonly property real linkLength: {
-        var dx = endPoint.x - startPoint.x
-        var dy = endPoint.y - startPoint.y
-        return Math.sqrt(dx * dx + dy * dy)
+    property point endPoint: Qt.point(100, 100)
+    property real throughput: 0
+    property real maxThroughput: 1000000
+    
+    // Heat Visualization
+    readonly property real heatFactor: Math.min(1.0, throughput / maxThroughput)
+    readonly property real lineWidth: 1 + (heatFactor * 8)
+    readonly property color lineColor: {
+        if (heatFactor > 0.8) return "#3B82F6" // Standard Blue, but thick
+        return "#475569" // Muted Slate
     }
-
-    readonly property real linkAngle: {
-        return Math.atan2(
-            endPoint.y - startPoint.y,
-            endPoint.x - startPoint.x
-        ) * 180 / Math.PI
-    }
-
-    readonly property int particleCount: Math.max(1, Math.floor(throughputRatio * 6))
-    readonly property int particleSpeed: {
-        if (!active) return 0
-        return Math.max(500, 3000 - (throughputRatio * 2500))
-    }
-
-    readonly property color currentColor: (dropRate > 0.1 || backpressure) ? errorColor : linkColor
-
+    
     // ═══════════════════════════════════════════════════════════════
-    // BASE LINE
+    // UI COMPONENTS
     // ═══════════════════════════════════════════════════════════════
-
+    
     Canvas {
-        id: lineCanvas
+        id: canvas
         anchors.fill: parent
-
         onPaint: {
-            var ctx = getContext("2d")
-            ctx.clearRect(0, 0, width, height)
-
-            // Base line (dim)
-            ctx.beginPath()
-            ctx.moveTo(startPoint.x, startPoint.y)
-            ctx.lineTo(endPoint.x, endPoint.y)
-            ctx.strokeStyle = Qt.rgba(
-                currentColor.r, currentColor.g, currentColor.b,
-                active ? 0.3 : 0.1
-            )
-            ctx.lineWidth = 2 + (throughputRatio * 5)
-            ctx.setLineDash(active ? [] : [8, 8])
-            ctx.stroke()
-
-            // Direction arrow (ortada)
-            if (active) {
-                var midX = (startPoint.x + endPoint.x) / 2
-                var midY = (startPoint.y + endPoint.y) / 2
-                var angle = Math.atan2(
-                    endPoint.y - startPoint.y,
-                    endPoint.x - startPoint.x
-                )
-                var arrowSize = 8
-
-                ctx.beginPath()
-                ctx.moveTo(
-                    midX + Math.cos(angle) * arrowSize,
-                    midY + Math.sin(angle) * arrowSize
-                )
-                ctx.lineTo(
-                    midX + Math.cos(angle + 2.5) * arrowSize,
-                    midY + Math.sin(angle + 2.5) * arrowSize
-                )
-                ctx.lineTo(
-                    midX + Math.cos(angle - 2.5) * arrowSize,
-                    midY + Math.sin(angle - 2.5) * arrowSize
-                )
-                ctx.closePath()
-                ctx.fillStyle = Qt.rgba(
-                    currentColor.r, currentColor.g, currentColor.b, 0.6
-                )
-                ctx.fill()
+            var ctx = getContext("2d");
+            ctx.clearRect(0, 0, width, height);
+            
+            ctx.beginPath();
+            ctx.moveTo(startPoint.x, startPoint.y);
+            
+            // Cubic bezier for smooth flow
+            var cp1x = startPoint.x + (endPoint.x - startPoint.x) / 2;
+            var cp1y = startPoint.y;
+            var cp2x = startPoint.x + (endPoint.x - startPoint.x) / 2;
+            var cp2y = endPoint.y;
+            
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endPoint.x, endPoint.y);
+            
+            // Shadow / Glow for high heat
+            if (heatFactor > 0.5) {
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = Qt.rgba(59/255, 130/255, 246/255, heatFactor * 0.5);
+            }
+            
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = "round";
+            ctx.stroke();
+            
+            // Flow Particles (Optional animation)
+            if (throughput > 0) {
+                drawParticle(ctx, cp1x, cp1y, cp2x, cp2y);
             }
         }
-
+        
+        property real particlePos: 0
+        NumberAnimation on particlePos {
+            from: 0; to: 1; duration: 2000; loops: Animation.Infinite
+            running: throughput > 0
+        }
+        
+        function drawParticle(ctx, cp1x, cp1y, cp2x, cp2y) {
+            // Very simple particle at current particlePos along the curve
+            // For simplicity, we use linear interpolation for the example, 
+            // but a true bezier interp would be better.
+            var t = particlePos;
+            var cx = (1-t)*(1-t)*(1-t)*startPoint.x + 3*(1-t)*(1-t)*t*cp1x + 3*(1-t)*t*t*cp2x + t*t*t*endPoint.x;
+            var cy = (1-t)*(1-t)*(1-t)*startPoint.y + 3*(1-t)*(1-t)*t*cp1y + 3*(1-t)*t*t*cp2y + t*t*t*endPoint.y;
+            
+            ctx.beginPath();
+            ctx.arc(cx, cy, 2 + (heatFactor * 2), 0, Math.PI * 2);
+            ctx.fillStyle = "#F8FAFC";
+            ctx.shadowBlur = 0; // Reset shadow for particle
+            ctx.fill();
+        }
+        
+        onWidthChanged: requestPaint()
+        onHeightChanged: requestPaint()
         Connections {
             target: root
-            function onActiveChanged() { lineCanvas.requestPaint() }
-            function onStartPointChanged() { lineCanvas.requestPaint() }
-            function onEndPointChanged() { lineCanvas.requestPaint() }
+            function onThroughputChanged() { canvas.requestPaint() }
+            function onParticlePosChanged() { canvas.requestPaint() }
         }
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // FLOWING PARTICLES
-    // ═══════════════════════════════════════════════════════════════
-
-    Repeater {
-        model: active ? particleCount : 0
-
-        Rectangle {
-            id: particle
-            width: 6 + (throughputRatio * 4)
-            height: width
-            radius: width / 2
-            color: currentColor
-            opacity: 0
-
-            // Glow effect (simplified for Qt 6 compatibility)
-            border.color: Qt.rgba(currentColor.r, currentColor.g, currentColor.b, 0.5)
-            border.width: backpressure ? 3 : 2
-            
-            // Jitter for backpressure
-            NumberAnimation on x {
-                running: backpressure
-                loops: Animation.Infinite
-                from: -2; to: 2; duration: 50
-            }
-
-            // Flow animation
-            PathAnimation {
-                id: flowAnimation
-                running: active
-                loops: Animation.Infinite
-                duration: particleSpeed
-                
-                // Stagger start time per particle
-                Component.onCompleted: {
-                    if (active) {
-                        flowAnimation.start()
-                    }
-                }
-
-                path: Path {
-                    startX: startPoint.x
-                    startY: startPoint.y
-                    PathLine {
-                        x: endPoint.x
-                        y: endPoint.y
-                    }
-                }
-            }
-
-            // Fade in/out along path
-            SequentialAnimation on opacity {
-                running: active
-                loops: Animation.Infinite
-                NumberAnimation { to: 0.9; duration: particleSpeed * 0.2 }
-                NumberAnimation { to: 0.9; duration: particleSpeed * 0.6 }
-                NumberAnimation { to: 0.0; duration: particleSpeed * 0.2 }
-            }
-
-            // Stagger each particle
-            Component.onCompleted: {
-                // Staggering would require PathInterpolator or individual timers
-                // Removing problematic currentTime assignment
-            }
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // DROP RATE INDICATOR
-    // ═══════════════════════════════════════════════════════════════
-
-    Text {
-        visible: active && dropRate > 0.05
-        x: (startPoint.x + endPoint.x) / 2
-        y: (startPoint.y + endPoint.y) / 2 - 16
-        text: "▼ " + (dropRate * 100).toFixed(1) + "% drop"
-        font.pixelSize: 9
-        color: errorColor
-        font.family: "JetBrains Mono"
     }
 }

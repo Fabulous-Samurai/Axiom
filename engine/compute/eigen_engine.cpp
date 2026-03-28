@@ -108,7 +108,7 @@ void EigenEngine::SetNumThreads(int num_threads) {
 #endif
 }
 
-EigenEngine::Matrix EigenEngine::CreateMatrix(const std::vector<std::vector<double>>& data) const {
+EigenEngine::Matrix EigenEngine::CreateMatrix(const AXIOM::FixedVector<AXIOM::FixedVector<double, 256>, 256>& data) const {
     SENNA_SPEED_EIGEN("CreateMatrix");
     
     if (data.empty()) return Matrix();
@@ -126,7 +126,7 @@ EigenEngine::Matrix EigenEngine::CreateMatrix(const std::vector<std::vector<doub
     return mat;
 }
 
-EigenEngine::Vector EigenEngine::CreateVector(const std::vector<double>& data) const {
+EigenEngine::Vector EigenEngine::CreateVector(const AXIOM::FixedVector<double, 256>& data) const {
     SENNA_SPEED_EIGEN("CreateVector");
     
     Vector vec(data.size());
@@ -220,7 +220,7 @@ std::optional<std::pair<EigenEngine::Vector, EigenEngine::Matrix>> EigenEngine::
         return std::nullopt;
     }
     
-    try {
+    { // try removed
         // Check if matrix is symmetric for optimization
         if (A.isApprox(A.transpose())) {
             // Use specialized symmetric solver
@@ -231,7 +231,7 @@ std::optional<std::pair<EigenEngine::Vector, EigenEngine::Matrix>> EigenEngine::
             Eigen::EigenSolver<Matrix> solver(A);
             return std::make_pair(solver.eigenvalues().real(), solver.eigenvectors().real());
         }
-    } catch (...) {
+    } if (false) { // catch removed
         return std::nullopt;
     }
 }
@@ -285,14 +285,13 @@ EigenEngine::Vector EigenEngine::FFT(const Vector& signal) const {
     }
 
     Eigen::FFT<double> fft;
-    std::vector<double> in(signal.data(), signal.data() + signal.size());
-    std::vector<std::complex<double>> spectrum;
-    fft.fwd(spectrum, in);
+    Eigen::VectorXcd spectrum;
+    fft.fwd(spectrum, signal);
 
     // Return magnitude spectrum for stable real-valued API semantics.
     Vector magnitude(static_cast<Eigen::Index>(spectrum.size()));
     for (Eigen::Index i = 0; i < magnitude.size(); ++i) {
-        magnitude(i) = std::abs(spectrum[static_cast<std::size_t>(i)]);
+        magnitude(i) = std::abs(spectrum(i));
     }
 
     return magnitude;
@@ -306,20 +305,11 @@ EigenEngine::Vector EigenEngine::IFFT(const Vector& spectrum) const {
     }
 
     Eigen::FFT<double> fft;
-    std::vector<std::complex<double>> freq(static_cast<std::size_t>(spectrum.size()));
-    for (Eigen::Index i = 0; i < spectrum.size(); ++i) {
-        freq[static_cast<std::size_t>(i)] = std::complex<double>(spectrum(i), 0.0);
-    }
+    Eigen::VectorXcd complex_spectrum = spectrum.cast<std::complex<double>>();
+    Eigen::VectorXd time_domain;
+    fft.inv(time_domain, complex_spectrum);
 
-    std::vector<std::complex<double>> time_domain;
-    fft.inv(time_domain, freq);
-
-    Vector restored(static_cast<Eigen::Index>(time_domain.size()));
-    for (Eigen::Index i = 0; i < restored.size(); ++i) {
-        restored(i) = time_domain[static_cast<std::size_t>(i)].real();
-    }
-
-    return restored;
+    return time_domain;
 }
 
 EigenEngine::Vector EigenEngine::Convolution(const Vector& signal1, const Vector& signal2) const {
@@ -329,40 +319,26 @@ EigenEngine::Vector EigenEngine::Convolution(const Vector& signal1, const Vector
         return Vector();
     }
 
-    const int n1 = static_cast<int>(signal1.size());
-    const int n2 = static_cast<int>(signal2.size());
-    const int out_size = n1 + n2 - 1;
+    const int out_size = static_cast<int>(signal1.size() + signal2.size() - 1);
     const int fft_size = NextPowerOfTwo(out_size);
 
-    std::vector<std::complex<double>> a(static_cast<std::size_t>(fft_size), std::complex<double>(0.0, 0.0));
-    std::vector<std::complex<double>> b(static_cast<std::size_t>(fft_size), std::complex<double>(0.0, 0.0));
+    Eigen::VectorXcd a = Eigen::VectorXcd::Zero(fft_size);
+    Eigen::VectorXcd b = Eigen::VectorXcd::Zero(fft_size);
 
-    for (int i = 0; i < n1; ++i) {
-        a[static_cast<std::size_t>(i)] = std::complex<double>(signal1(i), 0.0);
-    }
-    for (int i = 0; i < n2; ++i) {
-        b[static_cast<std::size_t>(i)] = std::complex<double>(signal2(i), 0.0);
-    }
+    for (int i = 0; i < signal1.size(); ++i) a(i) = std::complex<double>(signal1(i), 0.0);
+    for (int i = 0; i < signal2.size(); ++i) b(i) = std::complex<double>(signal2(i), 0.0);
 
     Eigen::FFT<double> fft;
-    std::vector<std::complex<double>> A;
-    std::vector<std::complex<double>> B;
+    Eigen::VectorXcd A, B;
     fft.fwd(A, a);
     fft.fwd(B, b);
 
-    for (int i = 0; i < fft_size; ++i) {
-        A[static_cast<std::size_t>(i)] *= B[static_cast<std::size_t>(i)];
-    }
+    for (int i = 0; i < fft_size; ++i) A(i) *= B(i);
 
-    std::vector<std::complex<double>> convolved;
+    Eigen::VectorXd convolved;
     fft.inv(convolved, A);
 
-    Vector out(out_size);
-    for (int i = 0; i < out_size; ++i) {
-        out(i) = convolved[static_cast<std::size_t>(i)].real();
-    }
-
-    return out;
+    return convolved.head(out_size);
 }
 
 EigenEngine::Vector EigenEngine::CrossCorrelation(const Vector& signal1, const Vector& signal2) const {

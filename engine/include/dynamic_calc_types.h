@@ -11,49 +11,37 @@
 #include <functional>
 #include <limits>
 #include <optional>
-#include <string>
+#include <string_view>
+#include <utility>
 #include <variant>
-#include <vector>
-#include <map>
+#include "fixed_vector.h"
 
 namespace AXIOM
 {
 
     // --- 1. CORE TYPES & ALIASES (Taşıyıcı Kolonlar) ---
     using Number = std::variant<double, std::complex<double>>;
-    using Matrix = std::vector<std::vector<double>>;
-    using Vector = std::vector<double>;
-
-    struct StringHash {
-        using is_transparent = void;
-        size_t operator()(std::string_view sv) const { return std::hash<std::string_view>{}(sv); }
-        size_t operator()(const std::string& s) const { return std::hash<std::string>{}(s); }
-        size_t operator()(const char* s) const { return std::hash<std::string_view>{}(s); }
-    };
-
-    struct StringEqual {
-        using is_transparent = void;
-        bool operator()(std::string_view lhs, std::string_view rhs) const { return lhs == rhs; }
-    };
+    using Vector = AXIOM::FixedVector<double, 256>;
+    using Matrix = AXIOM::FixedVector<Vector, 256>;
 
     template<typename T>
-    using StringUnorderedMap = std::unordered_map<std::string, T, StringHash, StringEqual>;
+    using StringUnorderedMap = FixedVector<std::pair<std::string_view, T>, 256>;
 
     template<typename T>
-    using StringMap = std::map<std::string, T, std::less<>>;
+    using StringMap = FixedVector<std::pair<std::string_view, T>, 256>;
 
     // --- 2. MATH UTILITIES ---
-    inline bool IsReal(const Number &num) { return std::holds_alternative<double>(num); }
-    inline bool IsComplex(const Number &num) { return std::holds_alternative<std::complex<double>>(num); }
+    inline bool IsReal(const Number &num) noexcept { return std::holds_alternative<double>(num); }
+    inline bool IsComplex(const Number &num) noexcept { return std::holds_alternative<std::complex<double>>(num); }
 
-    inline double GetReal(const Number &num)
+    inline double GetReal(const Number &num) noexcept
     {
         if (IsReal(num))
             return std::get<double>(num);
         return std::get<std::complex<double>>(num).real();
     }
 
-    inline std::complex<double> GetComplex(const Number &num)
+    inline std::complex<double> GetComplex(const Number &num) noexcept
     {
         if (IsReal(num))
             return std::complex<double>(std::get<double>(num), 0.0);
@@ -113,7 +101,7 @@ namespace AXIOM
     // --- 4. THE TITANIUM RESULT STRUCT (Move Semantics) ---
     struct EngineResult
     {
-        std::optional<std::variant<double, std::complex<double>, AXIOM::Number, Vector, Matrix, std::string>> result = std::nullopt;
+        std::optional<std::variant<double, std::complex<double>, AXIOM::Number, Vector, Matrix, std::string_view>> result = std::nullopt;
         std::optional<EngineErrorResult> error = std::nullopt;
 
         EngineResult() = default;
@@ -126,7 +114,7 @@ namespace AXIOM
         EngineResult(const EngineResult &other) = default;
         EngineResult &operator=(const EngineResult &other) = default;
 
-        std::optional<double> GetDouble() const
+        std::optional<double> GetDouble() const noexcept
         {
             if (!result.has_value())
                 return std::nullopt;
@@ -139,7 +127,7 @@ namespace AXIOM
             else return std::nullopt; }, result.value());
         }
 
-        std::optional<std::complex<double>> GetComplex() const
+        std::optional<std::complex<double>> GetComplex() const noexcept
         {
             if (!result.has_value())
                 return std::nullopt;
@@ -152,8 +140,8 @@ namespace AXIOM
             else return std::nullopt; }, result.value());
         }
 
-        bool HasResult() const { return result.has_value() && !error.has_value(); }
-        bool HasErrors() const { return error.has_value(); }
+        bool HasResult() const noexcept { return result.has_value() && !error.has_value(); }
+        bool HasErrors() const noexcept { return error.has_value(); }
     };
 
     // --- 5. ZERO-COPY FACTORY FUNCTIONS ---
@@ -171,29 +159,29 @@ namespace AXIOM
         return res;
     }
 
-    inline EngineResult CreateSuccessResult(std::string &&value) noexcept
-    {
-        EngineResult res;
-        res.result = std::move(value);
-        return res;
-    }
-
-    // --- 6. FALLBACK COPY FACTORY FUNCTIONS ---
-    inline EngineResult CreateSuccessResult(double value)
+    inline EngineResult CreateSuccessResult(std::string_view value) noexcept
     {
         EngineResult res;
         res.result = value;
         return res;
     }
 
-    inline EngineResult CreateSuccessResult(const std::complex<double> &value)
+    // --- 6. FALLBACK COPY FACTORY FUNCTIONS ---
+    inline EngineResult CreateSuccessResult(double value) noexcept
+    {
+        EngineResult res;
+        res.result = value;
+        return res;
+    }
+
+    inline EngineResult CreateSuccessResult(const std::complex<double> &value) noexcept
     {
         EngineResult res;
         res.result = value; // store as std::complex<double> directly, not wrapped in Number
         return res;
     }
 
-    inline EngineResult CreateSuccessResult(const AXIOM::Number &value)
+    inline EngineResult CreateSuccessResult(const AXIOM::Number &value) noexcept
     {
         EngineResult res;
         if (AXIOM::IsComplex(value))
@@ -203,21 +191,14 @@ namespace AXIOM
         return res;
     }
 
-    inline EngineResult CreateSuccessResult(const Vector &value)
+    inline EngineResult CreateSuccessResult(const Vector &value) noexcept
     {
         EngineResult res;
         res.result = value;
         return res;
     }
 
-    inline EngineResult CreateSuccessResult(const Matrix &value)
-    {
-        EngineResult res;
-        res.result = value;
-        return res;
-    }
-
-    inline EngineResult CreateSuccessResult(const std::string &value)
+    inline EngineResult CreateSuccessResult(const Matrix &value) noexcept
     {
         EngineResult res;
         res.result = value;
@@ -242,7 +223,7 @@ namespace AXIOM
     // Özel Linear Algebra Sonuç Tipi
     struct LinAlgResult
     {
-        std::optional<std::vector<double>> solution;
+        std::optional<Vector> solution;
         LinAlgErr error;
     };
 

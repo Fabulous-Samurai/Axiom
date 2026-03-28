@@ -1,90 +1,77 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
 
-/*
- * TelemetryGauge — Inline horizontal gauge for system metrics
- * 
- * CPU ████████░░░░ 78%
- */
-
 Item {
     id: root
-
-    property string label: "CPU"
+    
+    // ═══════════════════════════════════════════════════════════════
+    // PUBLIC PROPERTIES
+    // ═══════════════════════════════════════════════════════════════
+    property string label: "METRIC"
     property real value: 0
-    property real maxValue: 100
     property string unit: "%"
-    property string subtitle: ""
-    property color color: "#3B82F6"
-    property bool enabled: true
-
-    implicitHeight: 48
-
-    readonly property real ratio: enabled ? Math.min(1, value / maxValue) : 0
-
-    readonly property color barColor: {
-        if (!enabled) return "#334155"
-        if (ratio > 0.9) return "#EF4444"
-        if (ratio > 0.75) return "#EAB308"
-        return color
+    property real warningThreshold: 70
+    property real criticalThreshold: 90
+    
+    // Internal Smoothing
+    property real smoothValue: 0
+    property real emaAlpha: 0.15
+    onValueChanged: {
+        smoothValue = (value * emaAlpha) + (smoothValue * (1.0 - emaAlpha))
     }
-
+    
+    width: 120
+    height: 60
+    
+    // Severity Logic
+    readonly property color severityColor: {
+        if (smoothValue > criticalThreshold) return "#EF4444"
+        if (smoothValue > warningThreshold) return "#F59E0B"
+        return "#3B82F6" // Standard Blue
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // UI COMPONENTS
+    // ═══════════════════════════════════════════════════════════════
+    
     ColumnLayout {
         anchors.fill: parent
-        spacing: 4
-
-        // Label + Value
-        RowLayout {
-            spacing: 8
-
-            Text {
-                text: label
-                font.pixelSize: 11
-                font.weight: Font.Medium
-                color: enabled ? "#94A3B8" : "#475569"
-            }
-
-            Item { Layout.fillWidth: true }
-
-            Text {
-                text: enabled ? value.toFixed(value >= 100 ? 0 : 1) + unit : "N/A"
-                font.pixelSize: 13
-                font.weight: Font.Bold
-                font.family: "JetBrains Mono"
-                color: enabled ? barColor : "#475569"
-            }
+        spacing: 2
+        
+        Text {
+            text: label.toUpperCase()
+            font.pixelSize: 10
+            font.weight: Font.Bold
+            font.family: "JetBrains Mono"
+            color: "#94A3B8"
+            Layout.alignment: Qt.AlignHCenter
         }
-
-        // Bar
+        
+        Text {
+            text: smoothValue.toFixed(1) + unit
+            font.pixelSize: 20
+            font.weight: Font.Bold
+            font.family: "JetBrains Mono"
+            color: severityColor
+            Layout.alignment: Qt.AlignHCenter
+            
+            Behavior on color { ColorAnimation { duration: 500 } }
+        }
+        
+        // Mini Progress line
         Rectangle {
             Layout.fillWidth: true
-            height: 6
-            radius: 3
-            color: "#1E293B"
-
+            Layout.preferredHeight: 2
+            color: "#334155"
+            radius: 1
+            
             Rectangle {
-                width: parent.width * ratio
+                width: Math.min(parent.width, (smoothValue / 100) * parent.width)
                 height: parent.height
-                radius: 3
-                color: barColor
-
-                Behavior on width {
-                    NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
-                }
-
-                Behavior on color {
-                    ColorAnimation { duration: 300 }
-                }
+                radius: 1
+                color: severityColor
+                Behavior on width { NumberAnimation { duration: 300 } }
             }
-        }
-
-        // Subtitle
-        Text {
-            visible: subtitle !== ""
-            text: subtitle
-            font.pixelSize: 9
-            color: "#475569"
-            font.family: "JetBrains Mono"
         }
     }
 }

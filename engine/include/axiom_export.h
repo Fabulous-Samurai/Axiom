@@ -2,14 +2,18 @@
 #ifndef AXIOM_EXPORT_H
 #define AXIOM_EXPORT_H
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(AXIOM_BUILD_DLL)
   #ifdef AXIOM_ENGINE_EXPORTS
     #define AXIOM_EXPORT __declspec(dllexport)
   #else
     #define AXIOM_EXPORT __declspec(dllimport)
   #endif
 #else
-  #define AXIOM_EXPORT __attribute__((visibility("default")))
+  #if defined(__GNUC__)
+    #define AXIOM_EXPORT __attribute__((visibility("default")))
+  #else
+    #define AXIOM_EXPORT
+  #endif
 #endif
 
 #endif // AXIOM_EXPORT_H

@@ -97,7 +97,9 @@ public:
         head_.store(next_head, std::memory_order_release);
     }
 
-    bool start(std::string_view log_path);
+    bool start(const std::string& log_path);
+    void log_throughput(double ops_per_sec);
+    double read_throughput();
     void shutdown();
 
     static TelemetryScribe& instance();

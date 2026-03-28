@@ -11,6 +11,7 @@
 #include <string_view>
 
 #include "axiom_export.h"
+#include "fixed_vector.h"
 
 namespace Utils {
     
@@ -52,7 +53,7 @@ namespace Utils {
     AXIOM_EXPORT std::string Trim(std::string_view str);
     
     // Helper to split string by delimiter
-    AXIOM_EXPORT std::vector<std::string> Split(std::string_view s, char delimiter);
+    AXIOM_EXPORT AXIOM::FixedVector<std::string, 256> Split(std::string_view s, char delimiter);
 
     // Modern C++ Way: Exception-free number check with fast parsing
     inline bool IsNumber(std::string_view str) {

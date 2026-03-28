@@ -3,122 +3,118 @@
 
 #include "dynamic_calc_types.h"
 #include "arena.h"
-#include <string>
+#include "fixed_vector.h"
 #include <string_view>
-#include <vector>
-#include <unordered_map>
-#include <functional>
+#include <variant>
 #include <optional>
 #include <complex>
+#include <asmjit/core.h>
+
+#if defined(ASMJIT_BUILD_X86)
 #include <asmjit/x86.h>
+#endif
+#if defined(ASMJIT_BUILD_AARCH64) || defined(ASMJIT_BUILD_ARM)
+#include <asmjit/arm.h>
+#endif
 
 namespace AXIOM {
 
-enum class NodeType {
-    Number,
-    Variable,
-    BinaryOp,
-    UnaryOp,
-    MultiArgFunction
-};
+using SymbolTable = FixedVector<std::pair<std::string_view, Number>, 128>;
+
+// Forward declarations
+struct NumberNode;
+struct VariableNode;
+struct BinaryOpNode;
+struct UnaryOpNode;
+struct MultiArgFunctionNode;
+struct MatrixNode;
+struct MatrixBinaryOpNode;
+
+/**
+ * @brief AnyNode: The master variant for Operation VARIANT SHIFT.
+ * Replaces the virtual ExprNode hierarchy with zero-overhead static dispatch.
+ */
+using AnyNode = std::variant<
+    NumberNode,
+    VariableNode,
+    BinaryOpNode,
+    UnaryOpNode,
+    MultiArgFunctionNode,
+    MatrixNode,
+    MatrixBinaryOpNode
+>;
+
+using NodePtr = AnyNode*;
 
 struct EvalResult {
     std::optional<Number> value;
+    std::optional<Vector> vector;
+    std::optional<Matrix> matrix;
     CalcErr error = CalcErr::None;
 
-    static EvalResult Success(double val) {
-        EvalResult result;
-        result.value = Number(val);
-        return result;
-    }
-    static EvalResult Success(const std::complex<double>& val) {
-        EvalResult result;
-        result.value = Number(val);
-        return result;
-    }
-    static EvalResult Success(const Number& val) {
-        EvalResult result;
-        result.value = val;
-        return result;
-    }
-    static EvalResult Failure(CalcErr err) {
-        EvalResult result;
-        result.error = err;
-        return result;
-    }
-    bool HasValue() const { return value.has_value() && error == CalcErr::None; }
+    static EvalResult Success(double val) noexcept { EvalResult r; r.value = Number(val); return r; }
+    static EvalResult Success(const Number& val) noexcept { EvalResult r; r.value = val; return r; }
+    static EvalResult Success(Vector&& val) noexcept { EvalResult r; r.vector = std::move(val); return r; }
+    static EvalResult Success(Matrix&& val) noexcept { EvalResult r; r.matrix = std::move(val); return r; }
+    static EvalResult Failure(CalcErr err) noexcept { EvalResult r; r.error = err; return r; }
+    bool HasValue() const noexcept { return (value || vector || matrix) && error == CalcErr::None; }
 };
 
-struct ExprNode;
-using NodePtr = ExprNode*;
+// --- Node Structs (Non-virtual, Data-oriented) ---
 
-struct ExprNode {
-    virtual ~ExprNode() = default;
-    virtual NodeType GetType() const = 0;
-    virtual EvalResult Evaluate(const StringUnorderedMap<Number>& vars) const = 0;
-    virtual std::string ToString(Precedence parent_prec = Precedence::None) const = 0;
-    virtual bool Compile(::asmjit::x86::Compiler& cc,
-                         ::asmjit::x86::Gp vars_ptr,
-                         const std::unordered_map<std::string, int>& var_map,
-                         ::asmjit::x86::Vec& out) const = 0;
-    virtual ExprNode* Derivative(Arena& arena, std::string_view var) const = 0;
-    virtual ExprNode* Simplify(Arena& arena) const = 0;
-};
-
-struct NumberNode : ExprNode {
+struct NumberNode {
     double value;
-    explicit NumberNode(double v) : value(v) {}
-    NodeType GetType() const override { return NodeType::Number; }
-    EvalResult Evaluate(const StringUnorderedMap<Number>&) const override;
-    bool Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, const std::unordered_map<std::string, int>&, asmjit::x86::Vec& out) const override;
-    std::string ToString(Precedence) const override;
-    ExprNode* Derivative(Arena& arena, std::string_view) const override;
-    ExprNode* Simplify(Arena& arena) const override;
+    explicit NumberNode(double v) noexcept : value(v) {}
 };
 
-struct VariableNode : ExprNode {
+struct VariableNode {
     std::string_view name;
-    explicit VariableNode(std::string_view n) : name(n) {}
-    NodeType GetType() const override { return NodeType::Variable; }
-    EvalResult Evaluate(const StringUnorderedMap<Number>& vars) const override;
-    bool Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, const std::unordered_map<std::string, int>& var_map, asmjit::x86::Vec& out) const override;
-    std::string ToString(Precedence) const override;
-    ExprNode* Derivative(Arena& arena, std::string_view var) const override;
-    ExprNode* Simplify(Arena& arena) const override;
+    explicit VariableNode(std::string_view n) noexcept : name(n) {}
 };
 
-struct BinaryOpNode : ExprNode {
-    char op; NodePtr left, right;
-    BinaryOpNode(char c, NodePtr l, NodePtr r) : op(c), left(l), right(r) {}
-    NodeType GetType() const override { return NodeType::BinaryOp; }
-    EvalResult Evaluate(const StringUnorderedMap<Number>& vars) const override;
-    bool Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, const std::unordered_map<std::string, int>& var_map, asmjit::x86::Vec& out) const override;
-    std::string ToString(Precedence p) const override;
-    ExprNode* Derivative(Arena& arena, std::string_view var) const override;
-    ExprNode* Simplify(Arena& arena) const override;
+struct BinaryOpNode {
+    char op;
+    NodePtr left;
+    NodePtr right;
+    BinaryOpNode(char o, NodePtr l, NodePtr r) noexcept : op(o), left(l), right(r) {}
 };
 
-struct UnaryOpNode : ExprNode {
-    std::string_view func; NodePtr operand;
-    UnaryOpNode(std::string_view f, NodePtr op) : func(f), operand(op) {}
-    NodeType GetType() const override { return NodeType::UnaryOp; }
-    EvalResult Evaluate(const StringUnorderedMap<Number>& vars) const override;
-    bool Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, const std::unordered_map<std::string, int>& var_map, asmjit::x86::Vec& out) const override;
-    std::string ToString(Precedence) const override;
-    ExprNode* Derivative(Arena& arena, std::string_view var) const override;
-    ExprNode* Simplify(Arena& arena) const override;
+struct UnaryOpNode {
+    std::string_view func;
+    NodePtr operand;
+    UnaryOpNode(std::string_view f, NodePtr op) noexcept : func(f), operand(op) {}
 };
 
-struct MultiArgFunctionNode : ExprNode {
-    std::string_view func; std::vector<NodePtr> args;
-    MultiArgFunctionNode(std::string_view f, std::vector<NodePtr> a) : func(f), args(std::move(a)) {}
-    NodeType GetType() const override { return NodeType::MultiArgFunction; }
-    EvalResult Evaluate(const StringUnorderedMap<Number>& vars) const override;
-    bool Compile(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, const std::unordered_map<std::string, int>& var_map, asmjit::x86::Vec& out) const override;
-    std::string ToString(Precedence) const override;
-    ExprNode* Derivative(Arena& arena, std::string_view var) const override;
-    ExprNode* Simplify(Arena& arena) const override;
+struct MultiArgFunctionNode {
+    std::string_view func;
+    FixedVector<NodePtr, 16> args;
+    MultiArgFunctionNode(std::string_view f, FixedVector<NodePtr, 16> a) noexcept : func(f), args(std::move(a)) {}
+};
+
+struct MatrixNode {
+    Matrix matrix;
+    explicit MatrixNode(Matrix m) noexcept : matrix(std::move(m)) {}
+};
+
+struct MatrixBinaryOpNode {
+    char op;
+    NodePtr left;
+    NodePtr right;
+    MatrixBinaryOpNode(char o, NodePtr l, NodePtr r) noexcept : op(o), left(l), right(r) {}
+};
+
+// --- Static Dispatcher (The Core of VARIANT SHIFT) ---
+
+struct NodeDispatcher {
+    static EvalResult Evaluate(NodePtr node, const SymbolTable& vars) noexcept;
+    static std::string_view ToString(NodePtr node, Arena& arena, Precedence p = Precedence::None) noexcept;
+    static void CollectVariables(NodePtr node, SymbolTable& var_map) noexcept;
+    static NodePtr Derivative(NodePtr node, Arena& arena, std::string_view var) noexcept;
+    static NodePtr Simplify(NodePtr node, Arena& arena) noexcept;
+
+#if defined(ASMJIT_BUILD_X86)
+    static bool CompileX86(NodePtr node, asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, const SymbolTable& var_map, asmjit::x86::Vec& out) noexcept;
+#endif
 };
 
 } // namespace AXIOM
-

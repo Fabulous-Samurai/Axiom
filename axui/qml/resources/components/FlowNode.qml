@@ -1,274 +1,146 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
 
-/*
- * FlowNode — Simatic-style pipeline stage indicator
- * 
- * Görünüm:
- * ┌──────────────────────────┐
- * │  ◉ INPUT SOURCE          │
- * │  ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔  │
- * │  12.4K msg/s             │
- * │  █████████░░░░ 78%       │
- * │  Latency: 0.2ms          │
- * └──────────────────────────┘
- */
-
-Rectangle {
+Item {
     id: root
-
+    
     // ═══════════════════════════════════════════════════════════════
     // PUBLIC PROPERTIES
     // ═══════════════════════════════════════════════════════════════
-
-    property string nodeId: ""
-    property string nodeName: "Stage"
-    property string state: "offline"     // offline, idle, active, blocked, error
-    property real messagesPerSecond: 0
-    property real bytesPerSecond: 0
-    property real peakMessagesPerSecond: 0
-    property real avgLatencyUs: 0
-    property real queueFillRatio: 0
-    property real uptimeSeconds: 0
-    property string errorMessage: ""
-    property real shakeOffset: 0
-
-    // Visual
-    property real nodeWidth: 200
-    property real nodeHeight: 140
-
-    // Phase 6.1: Health & Vibration
-    property real healthScore: Math.max(0, 1.0 - (queueFillRatio * 0.7 + (avgLatencyUs > 200 ? 0.3 : 0)))
-    property color healthColor: {
-        if (healthScore > 0.8) return "#22C55E" // Green
-        if (healthScore > 0.4) return "#F59E0B" // Orange/Yellow
-        return "#EF4444" // Red
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // COMPUTED
-    // ═══════════════════════════════════════════════════════════════
-
-    readonly property color stateColor: {
-        switch (state) {
-            case "active":  return "#22C55E"    // Yeşil
-            case "idle":    return "#3B82F6"    // Mavi
-            case "blocked": return "#EAB308"    // Sarı
-            case "error":   return "#EF4444"    // Kırmızı
-            default:        return "#475569"    // Gri (offline)
-        }
-    }
-
-    readonly property string stateIcon: {
-        switch (state) {
-            case "active":  return "◉"
-            case "idle":    return "◎"
-            case "blocked": return "⊘"
-            case "error":   return "✖"
-            default:        return "○"
-        }
-    }
-
-    readonly property string throughputText: {
-        if (messagesPerSecond >= 1000000) {
-            return (messagesPerSecond / 1000000).toFixed(1) + "M msg/s"
-        } else if (messagesPerSecond >= 1000) {
-            return (messagesPerSecond / 1000).toFixed(1) + "K msg/s"
-        }
-        return messagesPerSecond.toFixed(0) + " msg/s"
-    }
-
-    readonly property string latencyText: {
-        if (avgLatencyUs >= 1000) {
-            return (avgLatencyUs / 1000).toFixed(1) + "ms"
-        }
-        return avgLatencyUs.toFixed(0) + "μs"
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // VISUAL
-    // ═══════════════════════════════════════════════════════════════
-
-    width: nodeWidth
-    height: nodeHeight
-    radius: 8
-    antialiasing: true
-
-    // Glass background
-    color: Qt.rgba(0.12, 0.15, 0.2, 0.95) 
+    property string stageId: ""
+    property string stageName: "Unknown Stage"
+    property real throughput: 0
+    property real latency: 0
+    property real queueSaturation: 0  // 0.0 to 1.0
+    property string type: "compute"   // "compute", "storage", "ai"
     
-    // Subtle gradient for glass effect (P3.2)
-    Rectangle {
-        anchors.fill: parent
-        radius: parent.radius
-        opacity: 0.1
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "white" }
-            GradientStop { position: 1.0; color: "transparent" }
-        }
-    }
-
-    border.color: errorMessage !== "" ? "#EF4444" : healthColor
-    border.width: 1.5
+    signal clicked()
     
-    // Backpressure Vibration (Sprint 2)
-    SequentialAnimation on x {
-        running: queueFillRatio > 0.8
-        loops: Animation.Infinite
-        NumberAnimation { from: root.x - 1; to: root.x + 1; duration: 40; easing.type: Easing.Linear }
-        NumberAnimation { from: root.x + 1; to: root.x - 1; duration: 40; easing.type: Easing.Linear }
+    // EMA Smoothing State
+    property real smoothSaturation: 0
+    property real emaAlpha: 0.2
+    
+    onQueueSaturationChanged: {
+        smoothSaturation = (queueSaturation * emaAlpha) + (smoothSaturation * (1.0 - emaAlpha))
     }
-
-    // State glow pulse (active durumda)
-    Rectangle {
-        id: glowPulse
-        anchors.fill: parent
-        anchors.margins: -4
-        radius: parent.radius + 4
-        color: "transparent"
-        border.color: stateColor
-        border.width: 2
-        opacity: 0
-        visible: state === "active"
-
-        SequentialAnimation on opacity {
-            running: state === "active"
-            loops: Animation.Infinite
-            NumberAnimation { to: 0.9; duration: 800; easing.type: Easing.InOutSine }
-            NumberAnimation { to: 0.2; duration: 800; easing.type: Easing.InOutSine }
+    
+    // Visual Configuration
+    width: 140
+    height: 100
+    
+    // ═══════════════════════════════════════════════════════════════
+    // COMPUTED STATE
+    // ═══════════════════════════════════════════════════════════════
+    
+    readonly property color severityColor: {
+        if (smoothSaturation > 0.8) return "#EF4444" // CRITICAL
+        if (smoothSaturation > 0.5) return "#F59E0B" // WARNING
+        return "#22C55E" // HEALTHY (Green)
+    }
+    
+    // Vibration Logic (Backpressure)
+    property real vibrationOffset: 0
+    Timer {
+        id: vibrationTimer
+        interval: 30
+        repeat: true
+        running: smoothSaturation > 0.8
+        onTriggered: {
+            vibrationOffset = (Math.random() - 0.5) * 4
+        }
+        onRunningChanged: {
+            if (!running) vibrationOffset = 0
         }
     }
-
-    // Error shake animation
-    SequentialAnimation {
-        id: errorShake
-        running: state === "error"
-        loops: 3
-
-        NumberAnimation { target: root; property: "shakeOffset"; to: 5; duration: 50 }
-        NumberAnimation { target: root; property: "shakeOffset"; to: -5; duration: 50 }
-        NumberAnimation { target: root; property: "shakeOffset"; to: 0; duration: 50 }
-    }
-
+    
     // ═══════════════════════════════════════════════════════════════
-    // CONTENT
+    // UI COMPONENTS
     // ═══════════════════════════════════════════════════════════════
-
-    ColumnLayout {
+    
+    Rectangle {
+        id: body
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 6
-
-        // Header: State icon + Name
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 8
-
-            Text {
-                text: stateIcon
-                font.pixelSize: 14
-                color: stateColor
-            }
-
-            Text {
+        anchors.leftMargin: vibrationOffset
+        anchors.rightMargin: -vibrationOffset
+        
+        color: "#1E293B"
+        radius: 8
+        border.color: severityColor
+        border.width: smoothSaturation > 0.8 ? 2 : 1
+        
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 4
+            
+            // Header
+            RowLayout {
                 Layout.fillWidth: true
-                text: nodeName.toUpperCase()
-                font.pixelSize: 11
-                font.weight: Font.Bold
-                font.letterSpacing: 1.2
-                color: "#E2E8F0"
-                elide: Text.ElideRight
+                Text {
+                    text: stageName.toUpperCase()
+                    font.pixelSize: 11
+                    font.weight: Font.Bold
+                    font.family: "JetBrains Mono"
+                    color: "#F8FAFC"
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                }
+                Rectangle {
+                    width: 8; height: 8; radius: 4
+                    color: severityColor
+                }
             }
-        }
-
-        // Separator
-        Rectangle {
-            Layout.fillWidth: true
-            height: 1
-            color: Qt.rgba(stateColor.r, stateColor.g, stateColor.b, 0.3)
-        }
-
-        // Throughput
-        Text {
-            text: throughputText
-            font.pixelSize: 18
-            font.weight: Font.Bold
-            color: state === "active" ? "#F8FAFC" : "#64748B"
-            font.family: "JetBrains Mono"
-        }
-
-        // Queue bar (varsa)
-        Item {
-            Layout.fillWidth: true
-            height: 8
-            visible: queueFillRatio > 0
-
-            Rectangle {
-                anchors.fill: parent
-                radius: 4
-                color: "#1E293B"
+            
+            Item { Layout.fillHeight: true }
+            
+            // Metrics
+            Column {
+                spacing: 2
+                Text {
+                    text: "TP: " + formatThroughput(throughput)
+                    font.pixelSize: 10
+                    font.family: "JetBrains Mono"
+                    color: "#94A3B8"
+                }
+                Text {
+                    text: "LAT: " + latency.toFixed(2) + "ms"
+                    font.pixelSize: 10
+                    font.family: "JetBrains Mono"
+                    color: "#94A3B8"
+                }
             }
-
+            
+            // Saturation Bar
             Rectangle {
-                width: parent.width * queueFillRatio
-                height: parent.height
-                radius: 4
-                color: queueFillRatio > 0.9 ? "#EF4444" :
-                       queueFillRatio > 0.7 ? "#EAB308" : stateColor
-
-                Behavior on width {
-                    NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                Layout.fillWidth: true
+                Layout.preferredHeight: 4
+                color: "#334155"
+                radius: 2
+                
+                Rectangle {
+                    width: parent.width * smoothSaturation
+                    height: parent.height
+                    radius: 2
+                    color: severityColor
+                    Behavior on width { NumberAnimation { duration: 200 } }
                 }
             }
         }
-
-        // Latency
-        RowLayout {
-            spacing: 4
-
-            Text {
-                text: "Latency:"
-                font.pixelSize: 10
-                color: "#64748B"
-            }
-
-            Text {
-                text: latencyText
-                font.pixelSize: 10
-                font.weight: Font.Medium
-                color: avgLatencyUs > 1000 ? "#EAB308" :
-                       avgLatencyUs > 5000 ? "#EF4444" : "#94A3B8"
-                font.family: "JetBrains Mono"
-            }
+        
+        // Hover effect
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            onEntered: body.opacity = 1.0
+            onExited: body.opacity = 0.9
+            onClicked: root.clicked()
         }
-
-        // Error message
-        Text {
-            visible: state === "error" && errorMessage !== ""
-            Layout.fillWidth: true
-            text: "⚠ " + errorMessage
-            font.pixelSize: 9
-            color: "#EF4444"
-            wrapMode: Text.WordWrap
-            maximumLineCount: 2
-            elide: Text.ElideRight
-        }
+        opacity: 0.9
     }
-
-    // Hover effect
-    MouseArea {
-        anchors.fill: parent
-        hoverEnabled: true
-        onEntered: root.scale = 1.03
-        onExited: root.scale = 1.0
-        onClicked: root.nodeClicked()
+    
+    function formatThroughput(val) {
+        if (val >= 1000000) return (val / 1000000).toFixed(1) + "M/s"
+        if (val >= 1000) return (val / 1000).toFixed(1) + "K/s"
+        return val.toFixed(0) + "/s"
     }
-
-    Behavior on scale {
-        NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
-    }
-
-    transform: Translate { x: shakeOffset }
-
-    signal nodeClicked()
 }

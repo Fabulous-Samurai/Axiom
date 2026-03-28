@@ -4,6 +4,12 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include "sentry.h"
+#include "telemetry.h"
+#include "pmu_orchestrator.h"
+#include "pluto_controller.h"
+#include "zenith_jit.h"
+#include "arena_allocator.h"
 
 #ifdef __linux__
 #include <sys/sysinfo.h>
@@ -186,6 +192,10 @@ void DashboardManager::onUpdateTick() {
 
     collectSystemTelemetry();
 
+    // [ZENITH FAST-PATH]: Update processor stage with real engine throughput
+    double real_tp = AXIOM::TelemetryScribe::instance().read_throughput();
+    recordMessage("processor", static_cast<uint64_t>(real_tp / 100.0));
+
     emit stagesUpdated();
     emit linksUpdated();
     emit telemetryUpdated();
@@ -345,66 +355,37 @@ void DashboardManager::pruneHistory(int max_seconds) {
 // ═══════════════════════════════════════════════════════════════════
 
 void DashboardManager::collectSystemTelemetry() {
-#ifdef __linux__
-    // CPU Usage
-    static long prev_idle = 0, prev_total = 0;
+    auto pmu = AXIOM::PMUOrchestrator::instance().ReadContext();
+    
+    // Heisenberg Heatmap: Use L1 Misses and Branch Mispredictions
+    system_telemetry_.cpu_usage_percent = (pmu.cycles > 0) ? 
+        std::min(100.0, (double)pmu.instructions / pmu.cycles * 50.0) : 10.0;
+    
+    // [ZENITH]: GPU usage field is reused for Heatmap Intensity (L1 Cache Pressure)
+    system_telemetry_.gpu_usage_percent = std::min(100.0, (double)pmu.l1_misses / 500.0);
+    system_telemetry_.ipc_bytes_per_sec = AXIOM::TelemetryScribe::instance().read_throughput();
 
-    std::ifstream stat("/proc/stat");
-    std::string cpu_label;
-    long user, nice, system, idle, iowait, irq, softirq, steal;
-
-    stat >> cpu_label >> user >> nice >> system >> idle 
-         >> iowait >> irq >> softirq >> steal;
-
-    long total = user + nice + system + idle + iowait + irq + softirq + steal;
-    long total_diff = total - prev_total;
-    long idle_diff = idle - prev_idle;
-
-    if (total_diff > 0) {
-        system_telemetry_.cpu_usage_percent = 
-            100.0 * (1.0 - static_cast<double>(idle_diff) / total_diff);
+    // [ZENITH]: Memory Orchestrator Health Signals
+    auto mem_stats = AXIOM::MemoryOrchestrator::instance().get_system_stats();
+    system_telemetry_.ram_usage_percent = static_cast<double>(mem_stats.total_used_bytes) / 
+                                         (mem_stats.total_reserved_bytes > 0 ? mem_stats.total_reserved_bytes : 1) * 100.0;
+    system_telemetry_.ram_total_bytes = mem_stats.total_reserved_bytes;
+    system_telemetry_.ram_used_bytes = mem_stats.total_used_bytes;
+    
+    // Custom mapping for backpressure visualization
+    if (mem_stats.status >= AXIOM::MemoryOrchestrator::HealthStatus::CRITICAL) {
+        system_telemetry_.gpu_temp_celsius = 95.0; // "Hot" signal for UI
+    } else {
+        system_telemetry_.gpu_temp_celsius = 40.0 + mem_stats.fragmentation_avg * 50.0;
     }
 
-    prev_idle = idle;
-    prev_total = total;
-
-    // Per-core usage
-    system_telemetry_.per_core_usage.clear();
-    std::string line;
-    while (std::getline(stat, line)) {
-        if (line.substr(0, 3) == "cpu" && line[3] != ' ') {
-            // Parse per-core (simplified)
-            system_telemetry_.per_core_usage.push_back(
-                system_telemetry_.cpu_usage_percent  // Placeholder
-            );
+#ifdef _WIN32
+    if (system_telemetry_.ram_total_bytes == 0) {
+        MEMORYSTATUSEX mem; mem.dwLength = sizeof(mem);
+        if (GlobalMemoryStatusEx(&mem)) {
+            system_telemetry_.ram_usage_percent = mem.dwMemoryLoad;
+            system_telemetry_.ram_total_bytes = mem.ullTotalPhys;
         }
-    }
-    system_telemetry_.cpu_cores = system_telemetry_.per_core_usage.size();
-
-    // Memory
-    struct sysinfo si;
-    if (sysinfo(&si) == 0) {
-        system_telemetry_.ram_total_bytes = si.totalram * si.mem_unit;
-        system_telemetry_.ram_used_bytes = 
-            (si.totalram - si.freeram) * si.mem_unit;
-        system_telemetry_.ram_usage_percent = 
-            100.0 * system_telemetry_.ram_used_bytes / 
-            system_telemetry_.ram_total_bytes;
-    }
-
-    // GPU (nvidia-smi veya /sys/class/drm üzerinden)
-    std::ifstream gpu_usage("/sys/class/drm/card0/device/gpu_busy_percent");
-    if (gpu_usage.is_open()) {
-        system_telemetry_.gpu_available = true;
-        gpu_usage >> system_telemetry_.gpu_usage_percent;
-    }
-
-    // GPU Temperature
-    std::ifstream gpu_temp("/sys/class/drm/card0/device/hwmon/hwmon0/temp1_input");
-    if (gpu_temp.is_open()) {
-        double temp_millicelsius;
-        gpu_temp >> temp_millicelsius;
-        system_telemetry_.gpu_temp_celsius = temp_millicelsius / 1000.0;
     }
 #endif
 }
@@ -412,6 +393,14 @@ void DashboardManager::collectSystemTelemetry() {
 // ═══════════════════════════════════════════════════════════════════
 // QML MODEL
 // ═══════════════════════════════════════════════════════════════════
+
+int DashboardManager::sentryStatus() const {
+    return static_cast<int>(AXIOM::Sentry::instance().get_state());
+}
+
+double DashboardManager::scalingMultiplier() const {
+    return static_cast<double>(AXIOM::Pluto::PlutoController::instance().get_scaling_factor());
+}
 
 QVariantList DashboardManager::stagesModel() const {
     std::lock_guard lock(stages_mutex_);
@@ -494,6 +483,29 @@ QVariantMap DashboardManager::telemetryModel() const {
     map["diskReadBps"] = system_telemetry_.disk_read_bytes_per_sec;
     map["diskWriteBps"] = system_telemetry_.disk_write_bytes_per_sec;
     map["ipcBps"] = system_telemetry_.ipc_bytes_per_sec;
+    
+    // Memory Arena Stats
+    auto pools = AXIOM::PoolManager::instance().get_all_stats();
+    QVariantList arenaList;
+    for (const auto& stats : pools) {
+        QVariantMap arenaMap;
+        arenaMap["totalSize"] = static_cast<qulonglong>(stats.total_size);
+        arenaMap["usedSize"] = static_cast<qulonglong>(stats.used_size);
+        arenaMap["freeSize"] = static_cast<qulonglong>(stats.free_size);
+        arenaMap["peakUsage"] = static_cast<qulonglong>(stats.peak_usage);
+        arenaMap["allocationCount"] = static_cast<qulonglong>(stats.allocation_count);
+        arenaMap["freeCount"] = static_cast<qulonglong>(stats.free_count);
+        arenaMap["fragmentationRatio"] = stats.fragmentation_ratio;
+        arenaList.append(arenaMap);
+    }
+    map["arenaStats"] = arenaList;
+
+    // ZenithJIT Stats
+    map["jitLastCompileTimeMs"] = AXIOM::ZenithJIT::GetLastCompileTimeMs();
+
+    // [ZENITH SENTRY & SCALING]
+    map["sentryStatus"] = sentryStatus();
+    map["scalingMultiplier"] = scalingMultiplier();
 
     // Per-core array
     QVariantList cores;
@@ -619,46 +631,12 @@ void DashboardManager::startMockData() {
     registerLink("processor", "plotter");
 
     // Mock data generation timer
-    static QTimer* mockTimer = new QTimer(this);
+    // [ZENITH]: Disabled to prioritize real TelemetryScribe data flow
+    /* static QTimer* mockTimer = new QTimer(this);
     connect(mockTimer, &QTimer::timeout, this, [this]() {
-        static double t = 0;
-        t += 0.1;
-
-        // Simulate varying throughput
-        recordMessage("ingress", 1024 + 512 * std::sin(t));
-        if (std::sin(t*0.5) > -0.5) recordMessage("pipe", 1024 + 256 * std::cos(t));
-        if (std::sin(t*0.7) > -0.3) recordMessage("queue", 1024 + 128 * std::sin(t*1.1));
-        if (std::sin(t*0.9) > -0.1) recordMessage("processor", 1024 + 64 * std::cos(t*0.8));
-        recordMessage("plotter", 1024 + 32 * std::sin(t*2.0));
-
-        updateQueueStatus("queue", 500 + 450 * std::sin(t * 1.2), 1000);
-        
-        recordLatency("processor", 150 + 50 * std::cos(t));
-        recordLatency("plotter", 50 + 10 * std::sin(t * 2));
-
-        // Simulate system telemetry (Sprint 1 Smoothing)
-        double raw_cpu = 45.0 + 15.0 * std::sin(t * 0.3);
-        double raw_gpu = 30.0 + 20.0 * std::cos(t * 0.4);
-        
-        cpu_ema_ = (ema_alpha_ * raw_cpu) + ((1.0 - ema_alpha_) * cpu_ema_);
-        gpu_ema_ = (ema_alpha_ * raw_gpu) + ((1.0 - ema_alpha_) * gpu_ema_);
-
-        system_telemetry_.cpu_usage_percent = cpu_ema_;
-        system_telemetry_.gpu_usage_percent = gpu_ema_;
-        system_telemetry_.gpu_available = true;
-
-        system_telemetry_.ram_total_bytes = 16ULL * 1024 * 1024 * 1024;
-        system_telemetry_.ram_used_bytes = 8ULL * 1024 * 1024 * 1024 + (1ULL * 1024 * 1024 * 1024 * std::sin(t * 0.1));
-        
-        double raw_ram_percent = 100.0 * system_telemetry_.ram_used_bytes / system_telemetry_.ram_total_bytes;
-        ram_ema_ = (ema_alpha_ * raw_ram_percent) + ((1.0 - ema_alpha_) * ram_ema_);
-        system_telemetry_.ram_usage_percent = ram_ema_;
-        
-        system_telemetry_.ipc_bytes_per_sec = 250.0 * 1024 * 1024 + (50.0 * 1024 * 1024 * std::sin(t * 0.2));
-
-        emit telemetryUpdated();
+        ...
     });
-    mockTimer->start(100); // 10Hz mock generation for stability
+    mockTimer->start(100); */
 }
 
 } // namespace axui

@@ -2,7 +2,7 @@
 #include "plot_parser.h"
 #include "string_helpers.h"
 
-#include <vector>
+#include "fixed_vector.h"
 
 namespace AXIOM {
 
@@ -14,7 +14,7 @@ EngineResult PlotParser::ParseAndExecute(const std::string& input) {
 
     const std::string args_str = input.substr(prefix.size(), input.size() - prefix.size() - 1);
 
-    std::vector<std::string> args;
+    AXIOM::FixedVector<std::string, 256> args;
     size_t start = 0;
     int paren_depth = 0;
     for (size_t i = 0; i <= args_str.size(); ++i) {
@@ -36,7 +36,7 @@ EngineResult PlotParser::ParseAndExecute(const std::string& input) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    try {
+    { // try removed
         AXIOM::PlotConfig cfg;
         cfg.x_min = std::stod(args[1]);
         cfg.x_max = std::stod(args[2]);
@@ -45,7 +45,7 @@ EngineResult PlotParser::ParseAndExecute(const std::string& input) {
 
         auto data = plot_engine_.ComputeFunctionData(args[0], cfg);
         return CreateSuccessResult(std::move(data));
-    } catch (...) {
+    } if (false) { // catch removed
         return CreateErrorResult(CalcErr::ParseError);
     }
 }

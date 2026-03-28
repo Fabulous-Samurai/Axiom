@@ -6,7 +6,7 @@ namespace AXIOM {
 
 PythonParser::PythonParser(PythonEngine* engine, PythonMode mode) : python_engine_(engine), mode_(mode) {
     if (!python_engine_) {
-        throw std::runtime_error("PythonEngine cannot be null");
+        return {}; // removed
     }
 }
 
@@ -62,7 +62,7 @@ std::string PythonParser::HandleNumPyMode(const std::string& input) {
     std::string processed = input;
 
     // Add common NumPy function prefixes
-    std::vector<std::string> numpy_funcs = {
+    AXIOM::FixedVector<std::string, 256> numpy_funcs = {
         "array", "zeros", "ones", "linspace", "arange", "reshape",
         "dot", "cross", "sum", "mean", "std", "min", "max", "sqrt",
         "exp", "log", "sin", "cos", "tan", "pi", "e"
@@ -85,7 +85,7 @@ std::string PythonParser::HandleSciPyMode(const std::string& input) {
     // SciPy mode - add scipy prefixes
     std::string processed = HandleNumPyMode(input); // Include NumPy support
 
-    std::vector<std::string> scipy_funcs = {
+    AXIOM::FixedVector<std::string, 256> scipy_funcs = {
         "integrate", "optimize", "linalg", "stats", "special", "fft"
     };
 
@@ -106,7 +106,7 @@ std::string PythonParser::HandleMatplotlibMode(const std::string& input) {
     // Matplotlib mode - add plotting shortcuts
     std::string processed = HandleNumPyMode(input); // Include NumPy support
 
-    std::vector<std::string> plt_funcs = {
+    AXIOM::FixedVector<std::string, 256> plt_funcs = {
         "plot", "scatter", "bar", "hist", "show", "figure", "subplot",
         "xlabel", "ylabel", "title", "legend", "grid", "savefig"
     };
@@ -128,7 +128,7 @@ std::string PythonParser::HandlePandasMode(const std::string& input) {
     // Pandas mode - add pandas shortcuts
     std::string processed = HandleNumPyMode(input); // Include NumPy support
 
-    std::vector<std::string> pd_funcs = {
+    AXIOM::FixedVector<std::string, 256> pd_funcs = {
         "DataFrame", "Series", "read_csv", "read_excel", "read_json"
     };
 
@@ -149,7 +149,7 @@ std::string PythonParser::HandleSymPyMode(const std::string& input) {
     // SymPy mode - add symbolic math shortcuts
     std::string processed = input;
 
-    std::vector<std::string> sympy_funcs = {
+    AXIOM::FixedVector<std::string, 256> sympy_funcs = {
         "Symbol", "symbols", "diff", "integrate", "solve", "expand",
         "factor", "simplify", "limit", "series"
     };
