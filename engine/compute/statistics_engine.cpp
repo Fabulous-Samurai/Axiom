@@ -184,11 +184,17 @@ EngineResult StatisticsEngine::MovingAverage(const Vector& data, int window_size
     Vector result;
     result.reserve(data.size() - window_size + 1);
     
-    for (size_t i = 0; i <= data.size() - window_size; ++i) {
-        double sum = 0.0;
-        for (int j = 0; j < window_size; ++j) {
-            sum += data[i + j];
-        }
+    // Performance Optimization: Sliding Window Algorithm
+    // Reduces time complexity from O(n * k) to O(n) by maintaining a rolling sum
+    // instead of recalculating the sum of the entire window at each step.
+    double sum = 0.0;
+    for (int i = 0; i < window_size; ++i) {
+        sum += data[i];
+    }
+    result.push_back(sum / window_size);
+
+    for (size_t i = 1; i <= data.size() - window_size; ++i) {
+        sum += data[i + window_size - 1] - data[i - 1];
         result.push_back(sum / window_size);
     }
     
