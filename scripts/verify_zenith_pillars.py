@@ -108,7 +108,7 @@ def get_modified_files():
                 capture_output=True, text=True, check=True
             )
             return {f for f in result.stdout.strip().split('\n') if f}
-        except:
+        except Exception:
             pass
 
         # For GitHub Actions pull requests, we can use the default branch as reference
@@ -121,7 +121,7 @@ def get_modified_files():
             files = {f for f in result.stdout.strip().split('\n') if f}
             if files:
                 return files
-        except:
+        except Exception:
             pass
 
         # If running in GitHub Actions PR, we can use env vars to find changed files,
