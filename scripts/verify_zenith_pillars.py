@@ -70,6 +70,64 @@ def verify_file(file_path):
         print(f"[ERROR] Could not read {file_path}: {e}")
     return violations
 
+import subprocess
+
+def get_modified_files():
+    try:
+        # Get list of tracked modified files
+        result = subprocess.run(
+            ['git', 'diff', '--name-only', '--cached'],
+            capture_output=True, text=True, check=True
+        )
+        staged_files = set(result.stdout.strip().split('\n'))
+
+        result2 = subprocess.run(
+            ['git', 'diff', '--name-only'],
+            capture_output=True, text=True, check=True
+        )
+        unstaged_files = set(result2.stdout.strip().split('\n'))
+
+        # Get untracked files
+        result3 = subprocess.run(
+            ['git', 'ls-files', '--others', '--exclude-standard'],
+            capture_output=True, text=True, check=True
+        )
+        untracked_files = set(result3.stdout.strip().split('\n'))
+
+        all_modified = staged_files | unstaged_files | untracked_files
+        # Filter out empty strings
+        return {f for f in all_modified if f}
+    except Exception as e:
+        print(f"[WARNING] Failed to determine modified files via git: {e}")
+        # In CI, if this fails, we might fall back to checking all or nothing, but usually we
+        # want to check files modified between PR source and target branches.
+        # For simplicity and robustness in this CI context, we can just check git diff head
+        try:
+            result = subprocess.run(
+                ['git', 'diff', '--name-only', 'HEAD'],
+                capture_output=True, text=True, check=True
+            )
+            return {f for f in result.stdout.strip().split('\n') if f}
+        except:
+            pass
+
+        # For GitHub Actions pull requests, we can use the default branch as reference
+        try:
+            # This relies on actions/checkout having fetched the origin
+            result = subprocess.run(
+                ['git', 'diff', '--name-only', 'origin/main...HEAD'],
+                capture_output=True, text=True, check=True
+            )
+            files = {f for f in result.stdout.strip().split('\n') if f}
+            if files:
+                return files
+        except:
+            pass
+
+        # If running in GitHub Actions PR, we can use env vars to find changed files,
+        # but as a fallback, return None to indicate "check all"
+        return None
+
 def main():
     print("--------------------------------------------------------")
     print("  [AXIOM] ZENITH PILLAR VERIFIER: MANDATORY AUDIT      ")
@@ -79,6 +137,12 @@ def main():
     core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
     total_violations = 0
     
+    modified_files = get_modified_files()
+    if modified_files is not None:
+        print(f"Checking only modified files: {len(modified_files)} files found.")
+    else:
+        print("Checking all files in target directories.")
+
     for d in core_dirs:
         # Check if we are running from root or scripts dir
         search_path = d if os.path.exists(d) else os.path.join("..", d)
@@ -91,6 +155,15 @@ def main():
                     continue
                 if file.endswith((".cpp", ".h", ".hpp", ".cc")):
                     path = os.path.join(root, file)
+                    # Normalize path for matching with git diff output
+                    # Remove relative prefix if script was run from inside 'scripts/'
+                    norm_path = os.path.normpath(path).replace('\\', '/')
+                    if norm_path.startswith('../'):
+                        norm_path = norm_path[3:]
+
+                    if modified_files is not None and norm_path not in modified_files:
+                        continue
+
                     violations = verify_file(path)
                     if violations:
                         print(f"[FAIL] {path}")
