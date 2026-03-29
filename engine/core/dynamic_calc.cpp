@@ -17,7 +17,7 @@
 #include "plot_parser.h"
 #include "python_parser.h"
 #include "python_engine.h"
-#include "telemetry.h"
+#include "telemetry_base.h"
 #include <memory>
 
 namespace {
@@ -47,14 +47,14 @@ DynamicCalc::DynamicCalc() {
 
 DynamicCalc::~DynamicCalc() = default;
 
-EngineResult DynamicCalc::Evaluate(const std::string &input) {
+EngineResult DynamicCalc::Evaluate(std::string_view input) noexcept {
     const auto policy = AssessExpressionPolicy(input, current_mode_);
     if (!policy.allowed) return CreateErrorResult(policy.error);
 
     const std::size_t idx = ModeToIndex(current_mode_);
     if (idx == kInvalidModeIndex) return CreateErrorResult(CalcErr::OperationNotFound);
 
-    return std::visit([&input](auto& parser) -> EngineResult {
+    return std::visit([input](auto& parser) -> EngineResult {
         using T = std::decay_t<decltype(parser)>;
         if constexpr (std::is_same_v<T, std::monostate>) {
             return CreateErrorResult(CalcErr::OperationNotFound);

@@ -31,7 +31,7 @@ struct PMUMetrics {
  */
 class PMUOrchestrator {
 public:
-    static PMUOrchestrator& instance();
+    static PMUOrchestrator& instance() noexcept;
 
     bool Initialize() noexcept;
     void Shutdown() noexcept;
@@ -45,7 +45,7 @@ public:
         PMUMetrics metrics;
         
         // Serialize pipeline
-        AXIOM_LFENCE;
+        AXIOM_LFENCE();
         
         #if defined(__linux__)
             // On Linux, indices are determined by mmap'd perf_event page.
@@ -56,7 +56,7 @@ public:
         #else
             // Fallback or Windows implementation
             metrics.instructions = 0;
-            metrics.cycles = AXIOM_RDTSC;
+            metrics.cycles = AXIOM_RDTSC();
             metrics.l1_misses = 0;
             metrics.br_misses = 0;
         #endif
@@ -65,8 +65,8 @@ public:
     }
 
 private:
-    PMUOrchestrator() = default;
-    ~PMUOrchestrator() { Shutdown(); }
+    PMUOrchestrator() noexcept = default;
+    ~PMUOrchestrator() noexcept { Shutdown(); }
 
     uint64_t ReadCounter(int idx) const noexcept;
 

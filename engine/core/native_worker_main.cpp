@@ -9,15 +9,17 @@
 #include <iostream>
 #include <string>
 #include <cstring>
+#include <cstdio>
 #include <thread>
 #include <chrono>
+#include <string_view>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
 
-int main(int argc, char* argv[]) {
+int main() {
     std::string shm_name = "Local\\AXIOM_SANDBOX_SHM"; // Fixed for now
     
     AXIOM::Sandbox::SandboxIPCLayout* ipc = nullptr;
@@ -49,18 +51,18 @@ int main(int argc, char* argv[]) {
             res.request_id = req.request_id;
             res.success = false;
 
-            if (std::string(req.command) == "STALL_INFINITE") {
+            if (std::string_view(req.command.data()) == "STALL_INFINITE") {
                 // Simulation of a 'Poison' command that hangs the process
                 while(true) { std::this_thread::yield(); } 
             }
-            auto calc_result = calculator.Evaluate(req.command);
+            auto calc_result = calculator.Evaluate(req.command.data());
             if (!calc_result.HasErrors()) {
                 res.success = true;
                 auto val = calc_result.GetDouble();
-                if (val) std::snprintf(res.result, AXIOM::Sandbox::MAX_RES_LEN, "%f", *val);
-                else std::strncpy(res.result, "OK", AXIOM::Sandbox::MAX_RES_LEN);
+                if (val) std::snprintf(res.result.data(), res.result.size(), "%f", *val);
+                else std::snprintf(res.result.data(), res.result.size(), "%s", "OK");
             } else {
-                std::strncpy(res.error, "Calculation Error", 255);
+                std::snprintf(res.error.data(), res.error.size(), "%s", "Calculation Error");
             }
 
             auto t1 = std::chrono::high_resolution_clock::now();

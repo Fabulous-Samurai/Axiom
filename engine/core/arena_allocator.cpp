@@ -8,7 +8,7 @@
 
 #include "arena_allocator.h"
 #include "cpu_optimization.h"
-#include "telemetry.h"
+#include "telemetry_base.h"
 #include <algorithm>
 #include <cstring>
 #include <cassert>
@@ -36,7 +36,7 @@ AXIOM_FORCE_INLINE bool is_power_of_two(size_t value) noexcept {
 
 AXIOM_FORCE_INLINE std::byte* HarmonicArena::reserve_from_block(ArenaBlock* block,
                                                                 const size_t bytes) noexcept {
-    const size_t old_offset = block->offset.fetch_add(bytes, std::memory_order_relaxed);
+    const size_t old_offset = block->offset.fetch_add(bytes, std::memory_order_seq_cst);
     if (old_offset <= block->capacity && bytes <= (block->capacity - old_offset)) {
         return block->storage.get() + old_offset;
     }
@@ -47,21 +47,21 @@ AXIOM_FORCE_INLINE bool HarmonicArena::try_install_spare(ArenaBlock* expected_cu
                                                          ArenaBlock* replacement) noexcept {
     return current_block_.compare_exchange_strong(expected_current,
                                                   replacement,
-                                                  std::memory_order_acq_rel,
-                                                  std::memory_order_acquire);
+                                                  std::memory_order_seq_cst,
+                                                  std::memory_order_seq_cst);
 }
 
 AXIOM_FORCE_INLINE bool HarmonicArena::should_prepare_spare() const noexcept {
-    if (spare_block_.load(std::memory_order_acquire) != nullptr) {
+    if (spare_block_.load(std::memory_order_seq_cst) != nullptr) {
         return false;
     }
 
-    ArenaBlock* active = current_block_.load(std::memory_order_acquire);
+    ArenaBlock* active = current_block_.load(std::memory_order_seq_cst);
     if (active == nullptr) {
         return false;
     }
 
-    const size_t used = active->offset.load(std::memory_order_relaxed);
+    const size_t used = active->offset.load(std::memory_order_seq_cst);
     const size_t threshold = (active->capacity * SCRIBE_PREPARE_THRESHOLD_PERCENT) / 100;
     return used >= threshold;
 }
@@ -116,22 +116,17 @@ HarmonicArena::HarmonicArena(size_t block_size, int numa_node)
 {
     auto first_owner = std::make_unique<ArenaBlock>(block_size_, numa_node_);
     ArenaBlock* first = first_owner.get();
-    first->is_ready.store(true, std::memory_order_release);
+    first->is_ready.store(true, std::memory_order_seq_cst);
 
     auto spare_owner = std::make_unique<ArenaBlock>(block_size_, numa_node_);
     ArenaBlock* spare = spare_owner.get();
-    spare->is_ready.store(true, std::memory_order_release);
+    spare->is_ready.store(true, std::memory_order_seq_cst);
 
-    current_block_.store(first, std::memory_order_release);
-    spare_block_.store(spare, std::memory_order_release);
+    current_block_.store(first, std::memory_order_seq_cst);
+    spare_block_.store(spare, std::memory_order_seq_cst);
     first_owner.release();
     spare_owner.release();
 
-#if defined(__apple_build_version__)
-    maintenance_thread_ = std::thread([this]() {
-        maintenance_worker();
-    });
-#else
     maintenance_thread_ = std::jthread([this](std::stop_token st) {
 #ifdef __linux__
         if (numa_node_ >= 0) {
@@ -144,35 +139,28 @@ HarmonicArena::HarmonicArena(size_t block_size, int numa_node)
 #endif
         maintenance_worker(st);
     });
-#endif
 }
 
 HarmonicArena::~HarmonicArena() {
-#if defined(__apple_build_version__)
-    stop_requested_.store(true, std::memory_order_release);
-    if (maintenance_thread_.joinable()) {
-        maintenance_thread_.join();
-    }
-#else
-    // jthread destructor requests stop and joins.
+    // jthread destructor requests stop and joins automatically.
+    // Explicit request_stop() is optional but safe.
     maintenance_thread_.request_stop();
-#endif
 
     // Simplified traversal to avoid exceptions and std::unordered_set in destructor.
     auto delete_block = [](ArenaBlock* b) {
         if (b) std::default_delete<ArenaBlock>{}(b);
     };
 
-    if (ArenaBlock* cur = current_block_.exchange(nullptr, std::memory_order_acq_rel)) {
+    if (ArenaBlock* cur = current_block_.exchange(nullptr, std::memory_order_seq_cst)) {
         delete_block(cur);
     }
-    if (ArenaBlock* spare = spare_block_.exchange(nullptr, std::memory_order_acq_rel)) {
+    if (ArenaBlock* spare = spare_block_.exchange(nullptr, std::memory_order_seq_cst)) {
         delete_block(spare);
     }
 
-    ArenaBlock* node = pool_head_.exchange(nullptr, std::memory_order_acq_rel);
+    ArenaBlock* node = pool_head_.exchange(nullptr, std::memory_order_seq_cst);
     while (node) {
-        ArenaBlock* next = node->next_in_pool.load(std::memory_order_relaxed);
+        ArenaBlock* next = node->next_in_pool.load(std::memory_order_seq_cst);
         delete_block(node);
         node = next;
     }
@@ -188,7 +176,7 @@ void* HarmonicArena::allocate(size_t bytes) noexcept {
         return nullptr;
     }
 
-    ArenaBlock* active = current_block_.load(std::memory_order_acquire);
+    ArenaBlock* active = current_block_.load(std::memory_order_seq_cst);
     if (!active) [[unlikely]] {
         return nullptr;
     }
@@ -203,14 +191,14 @@ void* HarmonicArena::allocate(size_t bytes) noexcept {
 
 std::byte* HarmonicArena::switch_and_retry(size_t bytes) noexcept {
     for (;;) {
-        ArenaBlock* old = current_block_.load(std::memory_order_acquire);
+        ArenaBlock* old = current_block_.load(std::memory_order_seq_cst);
         if (!old) [[unlikely]] {
             return nullptr;
         }
 
-        ArenaBlock* next = spare_block_.exchange(nullptr, std::memory_order_acq_rel);
+        ArenaBlock* next = spare_block_.exchange(nullptr, std::memory_order_seq_cst);
         if (!next) [[unlikely]] {
-            AXIOM_YIELD_PROCESSOR;
+            AXIOM_YIELD_PROCESSOR();
             continue;
         }
 
@@ -219,15 +207,15 @@ std::byte* HarmonicArena::switch_and_retry(size_t bytes) noexcept {
             return nullptr;
         }
 
-        while (!next->is_ready.load(std::memory_order_acquire)) {
-            AXIOM_YIELD_PROCESSOR;
+        while (!next->is_ready.load(std::memory_order_seq_cst)) {
+            AXIOM_YIELD_PROCESSOR();
         }
 
-        next->offset.store(0, std::memory_order_release);
+        next->offset.store(0, std::memory_order_seq_cst);
 
         if (try_install_spare(old, next)) {
-            old->is_ready.store(false, std::memory_order_release);
-            old->offset.store(0, std::memory_order_release);
+            old->is_ready.store(false, std::memory_order_seq_cst);
+            old->offset.store(0, std::memory_order_seq_cst);
             push_pool(old);
 
             if (std::byte* ptr = reserve_from_block(next, bytes)) {
@@ -246,12 +234,12 @@ void HarmonicArena::push_pool(ArenaBlock* block) noexcept {
     if (!block) {
         return;
     }
-    ArenaBlock* head = pool_head_.load(std::memory_order_relaxed);
+    ArenaBlock* head = pool_head_.load(std::memory_order_seq_cst);
     do {
-        block->next_in_pool.store(head, std::memory_order_relaxed);
+        block->next_in_pool.store(head, std::memory_order_seq_cst);
     } while (!pool_head_.compare_exchange_weak(head, block,
-                                                std::memory_order_release,
-                                                std::memory_order_relaxed));
+                                                std::memory_order_seq_cst,
+                                                std::memory_order_seq_cst));
 }
 
 void HarmonicArena::recycle_spare_block(ArenaBlock* block) noexcept {
@@ -261,81 +249,45 @@ void HarmonicArena::recycle_spare_block(ArenaBlock* block) noexcept {
 
     ArenaBlock* expected_null = nullptr;
     if (!spare_block_.compare_exchange_strong(expected_null, block,
-                                              std::memory_order_release,
-                                              std::memory_order_relaxed)) {
+                                              std::memory_order_seq_cst,
+                                              std::memory_order_seq_cst)) {
         push_pool(block);
     }
 }
 
 HarmonicArena::ArenaBlock* HarmonicArena::pop_pool() noexcept {
-    ArenaBlock* head = pool_head_.load(std::memory_order_acquire);
+    ArenaBlock* head = pool_head_.load(std::memory_order_seq_cst);
     while (head) {
-        ArenaBlock* next = head->next_in_pool.load(std::memory_order_relaxed);
+        ArenaBlock* next = head->next_in_pool.load(std::memory_order_seq_cst);
         if (pool_head_.compare_exchange_weak(head, next,
-                                             std::memory_order_acq_rel,
-                                             std::memory_order_acquire)) {
-            head->next_in_pool.store(nullptr, std::memory_order_relaxed);
+                                             std::memory_order_seq_cst,
+                                             std::memory_order_seq_cst)) {
+            head->next_in_pool.store(nullptr, std::memory_order_seq_cst);
             return head;
         }
     }
     return nullptr;
 }
 
-#if defined(__apple_build_version__)
-void HarmonicArena::maintenance_worker() noexcept {
-    while (!stop_requested_.load(std::memory_order_acquire)) {
-        const bool prepare_now = should_prepare_spare();
-        bool did_work = false;
-
-        if (prepare_now || spare_block_.load(std::memory_order_acquire) == nullptr) {
-            ArenaBlock* to_clean = pop_pool();
-            if (!to_clean) {
-                to_clean = new ArenaBlock(block_size_, numa_node_);
-            }
-            if (to_clean) {
-                std::memset(to_clean->storage.get(), 0, to_clean->capacity);
-                to_clean->offset.store(0, std::memory_order_release);
-                to_clean->is_ready.store(true, std::memory_order_release);
-
-                ArenaBlock* expected_null = nullptr;
-                if (!spare_block_.compare_exchange_strong(expected_null, to_clean,
-                                                          std::memory_order_release,
-                                                          std::memory_order_relaxed)) {
-                    push_pool(to_clean);
-                }
-                did_work = true;
-            }
-        }
-
-        if (did_work) {
-            std::this_thread::yield();
-        } else {
-            std::this_thread::sleep_for(std::chrono::microseconds(50));
-        }
-    }
-}
-#endif
-
-#if !defined(__apple_build_version__)
 void HarmonicArena::maintenance_worker(std::stop_token stop_token) noexcept {
     while (!stop_token.stop_requested()) {
         const bool prepare_now = should_prepare_spare();
         bool did_work = false;
 
-        if (prepare_now || spare_block_.load(std::memory_order_acquire) == nullptr) {
+        if (prepare_now || spare_block_.load(std::memory_order_seq_cst) == nullptr) {
             ArenaBlock* to_clean = pop_pool();
             if (!to_clean) {
                 to_clean = new ArenaBlock(block_size_, numa_node_);
             }
             if (to_clean) {
                 std::memset(to_clean->storage.get(), 0, to_clean->capacity);
-                to_clean->offset.store(0, std::memory_order_release);
-                to_clean->is_ready.store(true, std::memory_order_release);
+                to_clean->offset.store(0, std::memory_order_seq_cst);
+                to_clean->is_ready.store(true, std::memory_order_seq_cst);
 
                 ArenaBlock* expected_null = nullptr;
                 if (!spare_block_.compare_exchange_strong(expected_null, to_clean,
-                                                          std::memory_order_release,
-                                                          std::memory_order_relaxed)) {
+                                                          std::memory_order_seq_cst,
+                                                          std::memory_order_seq_cst)) {
                     push_pool(to_clean);
                 }
                 did_work = true;
@@ -349,7 +301,6 @@ void HarmonicArena::maintenance_worker(std::stop_token stop_token) noexcept {
         }
     }
 }
-#endif
 
 // ============================================================================
 // MemoryArena Implementation
@@ -403,12 +354,12 @@ void* MemoryArena::allocate(size_t size, size_t alignment) noexcept {
     if (!is_power_of_two(alignment)) alignment = CACHE_LINE_SIZE;
     size_t aligned_size = align_size(size, alignment);
     if (aligned_size > arena_size_) return nullptr;
-    allocation_count_.fetch_add(1, std::memory_order_relaxed);
+    allocation_count_.fetch_add(1, std::memory_order_seq_cst);
 
-    FreeBlock* current = free_list_head_.load(std::memory_order_acquire);
+    FreeBlock* current = free_list_head_.load(std::memory_order_seq_cst);
     while (current) {
         if (current->size >= aligned_size) {
-            if (free_list_head_.compare_exchange_weak(current, current->next, std::memory_order_acq_rel, std::memory_order_acquire)) {
+            if (free_list_head_.compare_exchange_weak(current, current->next, std::memory_order_seq_cst, std::memory_order_seq_cst)) {
                 return current;
             }
         } else {
@@ -416,31 +367,31 @@ void* MemoryArena::allocate(size_t size, size_t alignment) noexcept {
         }
     }
 
-    size_t current_pos = current_offset_.fetch_add(aligned_size, std::memory_order_acq_rel);
+    size_t current_pos = current_offset_.fetch_add(aligned_size, std::memory_order_seq_cst);
     if (current_pos > arena_size_ - aligned_size) {
-        current_offset_.fetch_sub(aligned_size, std::memory_order_acq_rel);
+        current_offset_.fetch_sub(aligned_size, std::memory_order_seq_cst);
         return nullptr;
     }
     void* ptr = static_cast<std::byte*>(memory_base_) + current_pos;
     size_t new_usage = current_pos + aligned_size;
-    size_t current_peak = peak_usage_.load(std::memory_order_relaxed);
+    size_t current_peak = peak_usage_.load(std::memory_order_seq_cst);
     while (new_usage > current_peak &&
-           !peak_usage_.compare_exchange_weak(current_peak, new_usage, std::memory_order_relaxed)) {}
+           !peak_usage_.compare_exchange_weak(current_peak, new_usage, std::memory_order_seq_cst, std::memory_order_seq_cst)) {}
     return ptr;
 }
 void MemoryArena::deallocate(void* ptr, size_t size) noexcept {
     if (!ptr || !is_pointer_in_arena(ptr)) return;
-    free_count_.fetch_add(1, std::memory_order_relaxed);
+    free_count_.fetch_add(1, std::memory_order_seq_cst);
     size_t aligned_size = align_size(size, CACHE_LINE_SIZE);
     FreeBlock* block = static_cast<FreeBlock*>(ptr);
     block->size = aligned_size;
 
-    FreeBlock* head = free_list_head_.load(std::memory_order_relaxed);
+    FreeBlock* head = free_list_head_.load(std::memory_order_seq_cst);
     do {
         block->next = head;
-    } while (!free_list_head_.compare_exchange_weak(head, block, std::memory_order_release, std::memory_order_relaxed));
+    } while (!free_list_head_.compare_exchange_weak(head, block, std::memory_order_seq_cst, std::memory_order_seq_cst));
 
-    if (free_count_.load(std::memory_order_relaxed) % 1000 == 0) {
+    if (free_count_.load(std::memory_order_seq_cst) % 1000 == 0) {
         coalesce_free_blocks();
     }
 }
@@ -514,13 +465,13 @@ void MemoryArena::prefault_pages(void* ptr, size_t size) {
 }
 
 void MemoryArena::reset() {
-    current_offset_.store(0, std::memory_order_release);
-    free_list_head_.store(nullptr, std::memory_order_release);
-    free_count_.store(0, std::memory_order_relaxed);
+    current_offset_.store(0, std::memory_order_seq_cst);
+    free_list_head_.store(nullptr, std::memory_order_seq_cst);
+    free_count_.store(0, std::memory_order_seq_cst);
 }
 
 void MemoryArena::coalesce_free_blocks() {
-    FreeBlock* head = free_list_head_.exchange(nullptr, std::memory_order_acq_rel);
+    FreeBlock* head = free_list_head_.exchange(nullptr, std::memory_order_seq_cst);
     if (!head) return;
 
     constexpr size_t MAX_BLOCKS = 1024;
@@ -555,7 +506,7 @@ void MemoryArena::coalesce_free_blocks() {
         new_head = blocks[i - 1];
     }
 
-    FreeBlock* old_head = free_list_head_.load(std::memory_order_relaxed);
+    FreeBlock* old_head = free_list_head_.load(std::memory_order_seq_cst);
     do {
         FreeBlock* tail = new_head;
         if (tail) {
@@ -564,7 +515,7 @@ void MemoryArena::coalesce_free_blocks() {
         } else {
             new_head = old_head;
         }
-    } while (!free_list_head_.compare_exchange_weak(old_head, new_head, std::memory_order_release, std::memory_order_relaxed));
+    } while (!free_list_head_.compare_exchange_weak(old_head, new_head, std::memory_order_seq_cst, std::memory_order_seq_cst));
 }
 size_t MemoryArena::align_size(size_t size, size_t alignment) const {
     return (size + alignment - 1) & ~(alignment - 1);
@@ -581,16 +532,16 @@ bool MemoryArena::is_pointer_in_arena(void* ptr) const {
 MemoryArena::ArenaStats MemoryArena::get_stats() const {
     ArenaStats stats;
     stats.total_size = arena_size_;
-    stats.used_size = current_offset_.load(std::memory_order_acquire);
+    stats.used_size = current_offset_.load(std::memory_order_seq_cst);
     stats.free_size = arena_size_ - stats.used_size;
-    stats.peak_usage = peak_usage_.load(std::memory_order_relaxed);
-    stats.allocation_count = allocation_count_.load(std::memory_order_relaxed);
-    stats.free_count = free_count_.load(std::memory_order_relaxed);
+    stats.peak_usage = peak_usage_.load(std::memory_order_seq_cst);
+    stats.allocation_count = allocation_count_.load(std::memory_order_seq_cst);
+    stats.free_count = free_count_.load(std::memory_order_seq_cst);
     
     // Calculate fragmentation ratio
     size_t free_block_count = 0;
     size_t free_block_total = 0;
-    FreeBlock* block = free_list_head_.load(std::memory_order_relaxed);
+    FreeBlock* block = free_list_head_.load(std::memory_order_seq_cst);
     while (block) {
         free_block_count++;
         free_block_total += block->size;
@@ -679,14 +630,14 @@ void* PoolManager::allocate(size_t size, size_t alignment) {
         // Probe Harmonic Channel 1
         if (harmonic_channel_1) {
             if (void* ptr = harmonic_channel_1->allocate(size)) {
-                harmonic_allocations_.fetch_add(1, std::memory_order_relaxed);
+                harmonic_allocations_.fetch_add(1, std::memory_order_seq_cst);
                 return ptr;
             }
         }
         // Probe Harmonic Channel 2
         if (harmonic_channel_2) {
             if (void* ptr = harmonic_channel_2->allocate(size)) {
-                harmonic_allocations_.fetch_add(1, std::memory_order_relaxed);
+                harmonic_allocations_.fetch_add(1, std::memory_order_seq_cst);
                 return ptr;
             }
         }
@@ -698,7 +649,7 @@ void* PoolManager::allocate(size_t size, size_t alignment) {
     if (!ptr) ptr = banks_[0].channel_2->allocate(size, alignment);
     
     if (ptr) {
-        banks_[0].active_allocations.fetch_add(1, std::memory_order_relaxed);
+        banks_[0].active_allocations.fetch_add(1, std::memory_order_seq_cst);
         return ptr;
     }
     
@@ -707,7 +658,7 @@ void* PoolManager::allocate(size_t size, size_t alignment) {
     if (!ptr) ptr = banks_[1].channel_2->allocate(size, alignment);
     
     if (ptr) {
-        banks_[1].active_allocations.fetch_add(1, std::memory_order_relaxed);
+        banks_[1].active_allocations.fetch_add(1, std::memory_order_seq_cst);
         return ptr;
     }
 
@@ -836,11 +787,11 @@ MemoryProfiler::MemoryProfiler() noexcept : profiling_enabled_(false) {
 }
 
 void MemoryProfiler::enable_profiling(bool enable) noexcept {
-    profiling_enabled_.store(enable, std::memory_order_release);
+    profiling_enabled_.store(enable, std::memory_order_seq_cst);
 }
 
 bool MemoryProfiler::is_profiling_enabled() const noexcept {
-    return profiling_enabled_.load(std::memory_order_acquire);
+    return profiling_enabled_.load(std::memory_order_seq_cst);
 }
 
 // Thread-local buffer for memory profiling to reduce global lock contention

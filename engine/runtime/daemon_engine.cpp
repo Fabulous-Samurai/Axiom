@@ -4,14 +4,13 @@
  * @brief AXIOM Engine v3.1 - Hardened Daemon Implementation (Operation PLUTO EXODUS)
  */
 
-#include "../include/daemon_engine.h"
-#include "../include/dynamic_calc.h"
-#include "../include/sentry.h"
-#include "../core/cpu_optimization.h"
+#include "daemon_engine.h"
+#include "dynamic_calc.h"
+#include "sentry.h"
+#include "cpu_optimization.h"
 
 #include <iostream>
 #include <format>
-#include <sstream>
 #include <cstring>
 #include <cerrno>
 #include <cstdlib>
@@ -93,7 +92,7 @@ namespace {
         .count();
 }
 
-AXIOM_FORCE_INLINE void apply_mode_from_request(DynamicCalc& calc, const std::string& mode)
+AXIOM_FORCE_INLINE void apply_mode_from_request(DynamicCalc& calc, const std::string& mode) noexcept
 {
     if (mode == "linear" || mode == "linear_system")
     {
@@ -125,11 +124,11 @@ AXIOM_FORCE_INLINE bool enqueue_until_deadline(Queue& queue,
         {
             return true;
         }
-        if (!running.load(std::memory_order_acquire)) [[unlikely]]
+        if (!running.load(std::memory_order::seq_cst)) [[unlikely]]
         {
             return false;
         }
-        AXIOM_YIELD_PROCESSOR;
+        AXIOM_YIELD_PROCESSOR();
     }
     return false;
 }
@@ -192,7 +191,7 @@ DaemonEngine::DaemonEngine(const std::string& pipe_name)
 
 DaemonEngine::~DaemonEngine() noexcept
 {
-    if (!running_.load(std::memory_order_acquire))
+    if (!running_.load(std::memory_order::seq_cst))
     {
         return;
     }
@@ -208,25 +207,25 @@ std::expected<void, DaemonEngine::DaemonStatus> DaemonEngine::start()
 {
     bool expected_run = false;
     if (!running_.compare_exchange_strong(expected_run, true,
-                                          std::memory_order_release,
-                                          std::memory_order_relaxed))
+                                          std::memory_order::seq_cst,
+                                          std::memory_order::seq_cst))
     {
-        return std::unexpected(status_.load(std::memory_order_acquire)); // already running
+        return std::unexpected(status_.load(std::memory_order::seq_cst)); // already running
     }
 
-    status_.store(DaemonStatus::STARTING, std::memory_order_release);
+    status_.store(DaemonStatus::STARTING, std::memory_order::seq_cst);
 
     auto result = setup_pipe();
     if (!result)
     {
         std::cerr << "[AXIOM Daemon] setup_pipe failed: "
                   << pipe_error_to_string(result.error()) << '\n';
-        running_.store(false, std::memory_order_release);
-        status_.store(DaemonStatus::PIPE_ERROR, std::memory_order_release);
+        running_.store(false, std::memory_order::seq_cst);
+        status_.store(DaemonStatus::PIPE_ERROR, std::memory_order::seq_cst);
         return std::unexpected(DaemonStatus::PIPE_ERROR);
     }
 
-    status_.store(DaemonStatus::READY, std::memory_order_release);
+    status_.store(DaemonStatus::READY, std::memory_order::seq_cst);
     daemon_thread_    = std::jthread([this] { 
         CPUOptimization::SetThreadAffinity(2); // Pin to core 2
         daemon_loop(); 
@@ -242,13 +241,13 @@ void DaemonEngine::stop() noexcept
 {
     bool expected_run = true;
     if (!running_.compare_exchange_strong(expected_run, false,
-                                          std::memory_order_release,
-                                          std::memory_order_relaxed))
+                                          std::memory_order::seq_cst,
+                                          std::memory_order::seq_cst))
     {
         return;
     }
 
-    status_.store(DaemonStatus::SHUTDOWN, std::memory_order_release);
+    status_.store(DaemonStatus::SHUTDOWN, std::memory_order::seq_cst);
 
     if (daemon_thread_.joinable())
     {
@@ -335,7 +334,8 @@ const char* DaemonEngine::pipe_error_to_string(PipeError error) noexcept
         case PipeError::InvalidName:             return "InvalidName";
         case PipeError::SystemError:             return "SystemError";
         case PipeError::SecurityDescriptorFailed:return "SecurityDescriptorFailed";
-        default:                                 return "Unknown";
+        case PipeError::UnknownError:            return "UnknownError";
+        default:                                 return "UnknownError";
     }
 }
 
@@ -403,7 +403,7 @@ AXIOM_FORCE_INLINE bool decode_request(const std::string& req_str,
     out.session_id = std::string(sid);
     out.mode = std::string(mod);
     
-    out.request_id = next_request_id.fetch_add(1, std::memory_order_relaxed);
+    out.request_id = next_request_id.fetch_add(1, std::memory_order::seq_cst);
     out.timestamp = std::chrono::steady_clock::now();
     return true;
 }
@@ -442,7 +442,7 @@ static void build_response_json_fixed(const DaemonEngine::Response& resp, FixedV
 
 void DaemonEngine::daemon_loop()
 {
-    while (running_.load(std::memory_order_acquire))
+    while (running_.load(std::memory_order::seq_cst))
     {
         AXIOM::Sentry::instance().heartbeat_core();
 #ifdef _WIN32
@@ -535,11 +535,11 @@ void DaemonEngine::process_posix_pipe()
         const auto deadline = std::chrono::steady_clock::now() + kLoopBudget;
         if (!enqueue_until_deadline(request_queue_, request, deadline, running_))
         {
-            rejected_requests_.fetch_add(1, std::memory_order_relaxed);
+            rejected_requests_.fetch_add(1, std::memory_order::seq_cst);
         }
         else
         {
-            enqueued_requests_.fetch_add(1, std::memory_order_relaxed);
+            enqueued_requests_.fetch_add(1, std::memory_order::seq_cst);
         }
     }
 #endif
@@ -547,23 +547,23 @@ void DaemonEngine::process_posix_pipe()
 
 void DaemonEngine::request_processor_loop()
 {
-    while (running_.load(std::memory_order_acquire))
+    while (running_.load(std::memory_order::seq_cst))
     {
         Request request;
 
         while (!request_queue_.pop(request)) {
-            if (!running_.load(std::memory_order_acquire)) return;
+            if (!running_.load(std::memory_order::seq_cst)) return;
             std::this_thread::yield();
         }
 
-        status_.store(DaemonStatus::BUSY, std::memory_order_release);
+        status_.store(DaemonStatus::BUSY, std::memory_order::seq_cst);
         auto resp = execute_command(request);
         (void)resp; // async path: responses for send_command() callers are not piped back
-        completed_requests_.fetch_add(1, std::memory_order_relaxed);
+        completed_requests_.fetch_add(1, std::memory_order::seq_cst);
 
-        total_requests_.fetch_add(1, std::memory_order_relaxed);
+        total_requests_.fetch_add(1, std::memory_order::seq_cst);
         // Fairness contract mirror: each started request reaches terminal state and daemon goes idle/ready.
-        status_.store(DaemonStatus::READY, std::memory_order_release);
+        status_.store(DaemonStatus::READY, std::memory_order::seq_cst);
     }
 }
 
@@ -580,13 +580,13 @@ DaemonEngine::Response DaemonEngine::execute_command(const Request& req)
 
     auto t0 = std::chrono::high_resolution_clock::now();
     
-    const auto open_until = circuit_open_until_ms_.load(std::memory_order_acquire);
+    const auto open_until = circuit_open_until_ms_.load(std::memory_order::seq_cst);
     const auto now = now_ms();
     if (open_until > now)
     {
         resp.success = false;
         resp.error = "CircuitBreakerOpen";
-        rejected_requests_.fetch_add(1, std::memory_order_relaxed);
+        rejected_requests_.fetch_add(1, std::memory_order::seq_cst);
         return resp;
     }
 
@@ -628,15 +628,15 @@ DaemonEngine::Response DaemonEngine::execute_command(const Request& req)
 
     if (resp.success)
     {
-        consecutive_failures_.store(0, std::memory_order_release);
+        consecutive_failures_.store(0, std::memory_order::seq_cst);
     }
     else
     {
-        const auto failures = consecutive_failures_.fetch_add(1, std::memory_order_acq_rel) + 1;
+        const auto failures = consecutive_failures_.fetch_add(1, std::memory_order::seq_cst) + 1;
         if (failures >= circuit_failure_threshold())
         {
-            circuit_open_until_ms_.store(now_ms() + circuit_open_duration_ms(), std::memory_order_release);
-            consecutive_failures_.store(0, std::memory_order_release);
+            circuit_open_until_ms_.store(now_ms() + circuit_open_duration_ms(), std::memory_order::seq_cst);
+            consecutive_failures_.store(0, std::memory_order::seq_cst);
         }
     }
 
@@ -646,10 +646,10 @@ DaemonEngine::Response DaemonEngine::execute_command(const Request& req)
 
 void DaemonEngine::update_metrics(double execution_time) noexcept
 {
-    const uint64_t n = total_requests_.load(std::memory_order_relaxed) + 1;
-    const double current_avg = avg_response_time_.load(std::memory_order_relaxed);
+    const uint64_t n = total_requests_.load(std::memory_order::seq_cst) + 1;
+    const double current_avg = avg_response_time_.load(std::memory_order::seq_cst);
     const double new_avg = current_avg + (execution_time - current_avg) / static_cast<double>(n);
-    avg_response_time_.store(new_avg, std::memory_order_relaxed);
+    avg_response_time_.store(new_avg, std::memory_order::seq_cst);
 }
 
 // ---------------------------------------------------------------------------
@@ -665,12 +665,12 @@ bool DaemonEngine::send_command(const std::string& session_id,
                                 const std::string& command,
                                 const std::string& mode)
 {
-    if (!running_.load(std::memory_order_acquire)) [[unlikely]] return false;
+    if (!running_.load(std::memory_order::seq_cst)) [[unlikely]] return false;
 
-    const auto open_until = circuit_open_until_ms_.load(std::memory_order_acquire);
+    const auto open_until = circuit_open_until_ms_.load(std::memory_order::seq_cst);
     if (open_until > now_ms()) [[unlikely]]
     {
-        rejected_requests_.fetch_add(1, std::memory_order_relaxed);
+        rejected_requests_.fetch_add(1, std::memory_order::seq_cst);
         return false;
     }
 
@@ -678,17 +678,17 @@ bool DaemonEngine::send_command(const std::string& session_id,
     req.session_id = session_id;
     req.command    = command;
     req.mode       = mode;
-    req.request_id = next_request_id_.fetch_add(1, std::memory_order_relaxed);
+    req.request_id = next_request_id_.fetch_add(1, std::memory_order::seq_cst);
     req.timestamp  = std::chrono::steady_clock::now();
 
     // Apply bounded backpressure: fail fast if queue remains saturated.
     const auto deadline = std::chrono::steady_clock::now() +
         std::chrono::milliseconds(backpressure_wait_ms());
     if (!enqueue_until_deadline(request_queue_, req, deadline, running_)) [[unlikely]] {
-        rejected_requests_.fetch_add(1, std::memory_order_relaxed);
+        rejected_requests_.fetch_add(1, std::memory_order::seq_cst);
         return false;
     }
-    enqueued_requests_.fetch_add(1, std::memory_order_relaxed);
+    enqueued_requests_.fetch_add(1, std::memory_order::seq_cst);
     return true;
 }
 
@@ -713,13 +713,13 @@ bool DaemonEngine::destroy_session(const std::string& session_id)
     return sessions_.erase(session_id) > 0;
 }
 
-void DaemonEngine::get_active_sessions(FixedVector<std::string, 128>& out_sessions)
+void DaemonEngine::get_active_sessions(FixedVector<std::string_view, 128>& out_sessions) noexcept
 {
     std::scoped_lock lock(sessions_mutex_);
     out_sessions.clear();
     for (const auto& [k, _] : sessions_) {
         if (out_sessions.size() >= 128) break;
-        out_sessions.push_back(k);
+        out_sessions.push_back(std::string_view(k));
     }
 }
 

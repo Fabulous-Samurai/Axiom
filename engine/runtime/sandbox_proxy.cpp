@@ -4,11 +4,12 @@
  * @brief Out-of-process isolation proxy implementation (Operation PLUTO EXODUS)
  */
 
-#include "../include/sandbox_proxy.h"
-#include "../core/sandbox_ipc.h"
-#include "../include/sentry.h"
+#include "sandbox_proxy.h"
+#include "sandbox_ipc.h"
+#include "sentry.h"
 #include <iostream>
 #include <cstring>
+#include <cstdio>
 #include <new>
 
 #ifdef _WIN32
@@ -22,8 +23,7 @@
 #include <fcntl.h>
 #endif
 
-namespace AXIOM {
-namespace Sandbox {
+namespace AXIOM::Sandbox {
 
 static const char* SHM_NAME = "Local\\AXIOM_SANDBOX_SHM";
 static const size_t SHM_SIZE = sizeof(SandboxIPCLayout);
@@ -93,7 +93,7 @@ std::future<SandboxResult> ProcessProxy::execute(const std::string& command, std
         uint64_t req_id = std::chrono::steady_clock::now().time_since_epoch().count();
         SandboxRequest req;
         req.request_id = req_id;
-        std::strncpy(req.command, command.c_str(), MAX_CMD_LEN - 1);
+        std::snprintf(req.command, sizeof(req.command), "%s", command.c_str());
 
         // Push to Lock-Free Queue
         if (!ipc_layout_->req_queue.push(req)) {
@@ -133,5 +133,4 @@ void ProcessProxy::terminate_worker() {
     is_worker_alive_.store(false);
 }
 
-} // namespace Sandbox
-} // namespace AXIOM
+} // namespace AXIOM::Sandbox

@@ -41,10 +41,9 @@ namespace AXIOM
         class MatrixLexer
         {
         public:
-            explicit MatrixLexer(const std::string &input) : input_(input), pos_(0) {}
-            explicit MatrixLexer(std::string_view input) : input_(input), pos_(0) {}
+            explicit MatrixLexer(std::string_view input) noexcept : input_(input), pos_(0) {}
 
-            Token NextToken()
+            Token NextToken() noexcept
             {
                 SkipWhitespace();
                 if (pos_ >= input_.length())
@@ -73,13 +72,11 @@ namespace AXIOM
                     return {TokenType::Comma, ","};
                 }
 
-                if (std::isdigit(current) || current == '-' || current == '.')
+                if (std::isdigit(static_cast<unsigned char>(current)) || current == '-' || current == '.')
                 {
-                    std::string num_str;
-
+                    size_t start = pos_;
                     if (current == '-')
                     {
-                        num_str += current;
                         pos_++;
                     }
 
@@ -87,14 +84,12 @@ namespace AXIOM
                     while (pos_ < input_.length())
                     {
                         char c = input_[pos_];
-                        if (std::isdigit(c))
+                        if (std::isdigit(static_cast<unsigned char>(c)))
                         {
-                            num_str += c;
                             pos_++;
                         }
                         else if (c == '.' && !has_decimal)
                         {
-                            num_str += c;
                             has_decimal = true;
                             pos_++;
                         }
@@ -102,9 +97,10 @@ namespace AXIOM
                             break;
                     }
 
-                    if (num_str == "-" || num_str == ".")
+                    std::string_view num_sv = input_.substr(start, pos_ - start);
+                    if (num_sv == "-" || num_sv == ".")
                         return {TokenType::End, ""};
-                    return {TokenType::Number, num_str};
+                    return {TokenType::Number, std::string(num_sv)};
                 }
 
                 pos_++;
@@ -112,12 +108,12 @@ namespace AXIOM
             }
 
         private:
-            std::string input_;
+            std::string_view input_;
             size_t pos_;
 
-            void SkipWhitespace()
+            void SkipWhitespace() noexcept
             {
-                while (pos_ < input_.length() && std::isspace(input_[pos_]))
+                while (pos_ < input_.length() && std::isspace(static_cast<unsigned char>(input_[pos_])))
                     pos_++;
             }
         };
@@ -134,20 +130,19 @@ namespace AXIOM
 
     void LinearSystemParser::RegisterCommands()
     {
-        command_registry_.emplace_back(CommandEntry{"qr", [this](const std::string &s)
+        command_registry_.emplace_back(CommandEntry{"qr", [this](std::string_view s) noexcept
                                      { return HandleQR(s); }, "Performs QR Decomposition"});
-        command_registry_.emplace_back(CommandEntry{"ortho", [this](const std::string &s)
+        command_registry_.emplace_back(CommandEntry{"ortho", [this](std::string_view s) noexcept
                                      { return HandleQR(s); }, "Performs QR Decomposition"});
-        command_registry_.emplace_back(CommandEntry{"eigen", [this](const std::string &s)
+        command_registry_.emplace_back(CommandEntry{"eigen", [this](std::string_view s) noexcept
                                      { return HandleEigen(s); }, "Computes Eigenvalues and Eigenvectors"});
-        command_registry_.emplace_back(CommandEntry{"cramer", [this](const std::string &s)
+        command_registry_.emplace_back(CommandEntry{"cramer", [this](std::string_view s) noexcept
                                      { return HandleCramer(s); }, "Solves system using Cramer's Rule"});
-        command_registry_.emplace_back(CommandEntry{"solve", [this](const std::string &s)
+        command_registry_.emplace_back(CommandEntry{"solve", [this](std::string_view s) noexcept
                                      { return HandleSolve(s); }, "Solves linear system Ax=b"});
     }
 
-    EngineResult LinearSystemParser::ParseAndExecute(const std::string &input)
-    {
+    EngineResult LinearSystemParser::ParseAndExecute(std::string_view input) noexcept {
         for (const auto &entry : command_registry_)
         {
             if (input.find(entry.command) == 0)
@@ -158,21 +153,21 @@ namespace AXIOM
         return HandleDefaultSolve(input);
     }
 
-    EngineResult LinearSystemParser::HandleQR(const std::string &input) const
+    EngineResult LinearSystemParser::HandleQR(std::string_view input) const noexcept
     {
-        auto extract_matrix_string = [&input]() -> std::string_view
+        auto extract_matrix_string = [input]() -> std::string_view
         {
             size_t matrix_start = input.find_first_of("0123456789-[");
-            if (matrix_start == std::string::npos)
+            if (matrix_start == std::string_view::npos)
                 return std::string_view();
-            return std::string_view(input).substr(matrix_start);
+            return input.substr(matrix_start);
         };
 
         std::string_view matrix_str = extract_matrix_string();
         if (matrix_str.empty())
             return CreateErrorResult(LinAlgErr::ParseError);
 
-        auto A = ParseMatrixString(std::string(matrix_str));
+        auto A = ParseMatrixString(matrix_str);
         if (A.empty())
             return CreateErrorResult(LinAlgErr::ParseError);
         if (A.size() < A[0].size())
@@ -194,21 +189,21 @@ namespace AXIOM
     }
 
 
-    EngineResult LinearSystemParser::HandleEigen(const std::string &input) const
+    EngineResult LinearSystemParser::HandleEigen(std::string_view input) const noexcept
     {
-        auto extract_matrix_string = [&input]() -> std::string_view
+        auto extract_matrix_string = [input]() -> std::string_view
         {
             size_t matrix_start = input.find_first_of("0123456789-[");
-            if (matrix_start == std::string::npos)
+            if (matrix_start == std::string_view::npos)
                 return std::string_view();
-            return std::string_view(input).substr(matrix_start);
+            return input.substr(matrix_start);
         };
 
         std::string_view matrix_str = extract_matrix_string();
         if (matrix_str.empty())
             return CreateErrorResult(LinAlgErr::ParseError);
 
-        auto A = ParseMatrixString(std::string(matrix_str));
+        auto A = ParseMatrixString(matrix_str);
         if (A.empty() || A.size() != A[0].size())
             return CreateErrorResult(LinAlgErr::MatrixMismatch);
 
@@ -220,9 +215,9 @@ namespace AXIOM
         return CreateSuccessResult(std::move(result_vec));
     }
 
-    EngineResult LinearSystemParser::HandleCramer(const std::string &input) const
+    EngineResult LinearSystemParser::HandleCramer(std::string_view input) const noexcept
     {
-        std::string equation{std::string(input).substr(6)};
+        std::string_view equation{input.substr(std::min<size_t>(6, input.size()))};
         ArenaVector<ArenaVector<double>> A;
         ArenaVector<double> b;
 
@@ -242,11 +237,11 @@ namespace AXIOM
     }
 
     namespace {
-        std::pair<std::string, size_t> extract_bracket_block(const std::string &s, size_t start_pos)
+        std::pair<std::string_view, size_t> extract_bracket_block(std::string_view s, size_t start_pos) noexcept
         {
             size_t start = s.find('[', start_pos);
-            if (start == std::string::npos)
-                return {"", std::string::npos};
+            if (start == std::string_view::npos)
+                return {"", std::string_view::npos};
             int depth = 0;
             for (size_t i = start; i < s.size(); ++i)
             {
@@ -259,15 +254,15 @@ namespace AXIOM
                         return {s.substr(start, i - start + 1), i + 1};
                 }
             }
-            return {"", std::string::npos};
+            return {"", std::string_view::npos};
         }
     }
 
-    EngineResult LinearSystemParser::HandleSolve(const std::string &input) const
+    EngineResult LinearSystemParser::HandleSolve(std::string_view input) const noexcept
     {
-        std::string_view content = std::string_view(input).substr(5);
+        std::string_view content = input.substr(std::min<size_t>(5, input.size()));
 
-        std::string processed;
+        std::string processed; // Temporary copy needed to remove spaces if we don't have a view-based space-ignoring parser
         processed.reserve(content.size());
         for (char c : content)
         {
@@ -276,7 +271,7 @@ namespace AXIOM
         }
 
         auto [matrix_str, after_matrix] = extract_bracket_block(processed, 0);
-        if (matrix_str.empty() || after_matrix == std::string::npos)
+        if (matrix_str.empty() || after_matrix == std::string_view::npos)
             return CreateErrorResult(LinAlgErr::ParseError);
 
         auto [vec_str, _after_vec] = extract_bracket_block(processed, after_matrix);
@@ -322,12 +317,12 @@ namespace AXIOM
         }
     }
 
-    EngineResult LinearSystemParser::HandleDefaultSolve(const std::string &input) const
+    EngineResult LinearSystemParser::HandleDefaultSolve(std::string_view input) const noexcept
     {
         ArenaVector<ArenaVector<double>> A;
         ArenaVector<double> b;
 
-        if (!ParseLinearSystem(std::string(input), A, b))
+        if (!ParseLinearSystem(input, A, b))
             return CreateErrorResult(LinAlgErr::ParseError);
         if (A.size() == 0 || A.size() != b.size())
             return CreateErrorResult(LinAlgErr::MatrixMismatch);
@@ -342,12 +337,12 @@ namespace AXIOM
         }
     }
 
-    ArenaVector<ArenaVector<double>> LinearSystemParser::MultiplyMatrices(const ArenaVector<ArenaVector<double>> &A, const ArenaVector<ArenaVector<double>> &B) const
+    ArenaVector<ArenaVector<double>> LinearSystemParser::MultiplyMatrices(const ArenaVector<ArenaVector<double>> &A, const ArenaVector<ArenaVector<double>> &B) const noexcept
     {
         if (A.empty() || B.empty() || A[0].size() != B.size())
             return {};
 
-        const int n = A.size(), m = B[0].size(), p = B.size();
+        const int n = static_cast<int>(A.size()), m = static_cast<int>(B[0].size()), p = static_cast<int>(B.size());
         ArenaVector<ArenaVector<double>> C(n, ArenaVector<double>(m, 0.0));
         const int BLOCK_SIZE = 64;
 
@@ -377,7 +372,7 @@ namespace AXIOM
         return C;
     }
 
-    ArenaVector<ArenaVector<double>> LinearSystemParser::CreateIdentityMatrix(int n) const
+    ArenaVector<ArenaVector<double>> LinearSystemParser::CreateIdentityMatrix(int n) const noexcept
     {
         ArenaVector<ArenaVector<double>> I(n, ArenaVector<double>(n, 0.0));
         for (int i = 0; i < n; ++i)
@@ -385,7 +380,7 @@ namespace AXIOM
         return I;
     }
 
-    ArenaVector<double> LinearSystemParser::GetDiagonal(const ArenaVector<ArenaVector<double>> &A) const
+    ArenaVector<double> LinearSystemParser::GetDiagonal(const ArenaVector<ArenaVector<double>> &A) const noexcept
     {
         ArenaVector<double> diag;
         for (size_t i = 0; i < A.size(); ++i)
@@ -393,10 +388,10 @@ namespace AXIOM
         return diag;
     }
 
-    std::pair<ArenaVector<double>, ArenaVector<ArenaVector<double>>> LinearSystemParser::ComputeEigenvalues(const ArenaVector<ArenaVector<double>> &inputA, int max_iterations) const
+    std::pair<ArenaVector<double>, ArenaVector<ArenaVector<double>>> LinearSystemParser::ComputeEigenvalues(const ArenaVector<ArenaVector<double>> &inputA, int max_iterations) const noexcept
     {
         ArenaVector<ArenaVector<double>> A = inputA;
-        int n = A.size();
+        int n = static_cast<int>(A.size());
         ArenaVector<ArenaVector<double>> EigenVectors = CreateIdentityMatrix(n);
 
         for (int k = 0; k < max_iterations; k++)
@@ -411,7 +406,7 @@ namespace AXIOM
         return {eigenValues, EigenVectors};
     }
 
-    bool LinearSystemParser::ParseLinearSystem(const std::string &input, ArenaVector<ArenaVector<double>> &A, ArenaVector<double> &b) const
+    bool LinearSystemParser::ParseLinearSystem(std::string_view input, ArenaVector<ArenaVector<double>> &A, ArenaVector<double> &b) const noexcept
     {
         std::string processed_input;
         processed_input.reserve(input.size());
@@ -502,7 +497,7 @@ namespace AXIOM
         return true;
     }
 
-    double LinearSystemParser::DotProduct(const ArenaVector<double> &v1, const ArenaVector<double> &v2) const
+    double LinearSystemParser::DotProduct(const ArenaVector<double> &v1, const ArenaVector<double> &v2) const noexcept
     {
         if (v1.size() != v2.size())
             return 0.0;
@@ -548,9 +543,9 @@ namespace AXIOM
         return sum;
     }
 
-    double LinearSystemParser::VectorNorm(const ArenaVector<double> &v) const { return std::sqrt(DotProduct(v, v)); }
+    double LinearSystemParser::VectorNorm(const ArenaVector<double> &v) const noexcept { return std::sqrt(DotProduct(v, v)); }
 
-    ArenaVector<double> LinearSystemParser::VectorScale(const ArenaVector<double> &v, const double scalar) const
+    ArenaVector<double> LinearSystemParser::VectorScale(const ArenaVector<double> &v, const double scalar) const noexcept
     {
         ArenaVector<double> result = v;
         for (double &val : result)
@@ -558,7 +553,7 @@ namespace AXIOM
         return result;
     }
 
-    ArenaVector<double> LinearSystemParser::VectorSub(const ArenaVector<double> &v1, const ArenaVector<double> &v2) const
+    ArenaVector<double> LinearSystemParser::VectorSub(const ArenaVector<double> &v1, const ArenaVector<double> &v2) const noexcept
     {
         if (v1.size() != v2.size())
             return {};
@@ -568,7 +563,7 @@ namespace AXIOM
         return result;
     }
 
-    ArenaVector<ArenaVector<double>> LinearSystemParser::GetMinor(const ArenaVector<ArenaVector<double>> &A, int row, int col) const
+    ArenaVector<ArenaVector<double>> LinearSystemParser::GetMinor(const ArenaVector<ArenaVector<double>> &A, int row, int col) const noexcept
     {
         int n = A.size();
         ArenaVector<ArenaVector<double>> minor;
@@ -590,7 +585,7 @@ namespace AXIOM
         return minor;
     }
 
-    double LinearSystemParser::Determinant(const ArenaVector<ArenaVector<double>> &A) const
+    double LinearSystemParser::Determinant(const ArenaVector<ArenaVector<double>> &A) const noexcept
     {
         int n = A.size();
         if (n == 1)
@@ -632,7 +627,7 @@ namespace AXIOM
         return std::abs(det) < 1e-9 ? 0.0 : det;
     }
 
-    ArenaVector<ArenaVector<double>> LinearSystemParser::Transpose(const ArenaVector<ArenaVector<double>> &A) const
+    ArenaVector<ArenaVector<double>> LinearSystemParser::Transpose(const ArenaVector<ArenaVector<double>> &A) const noexcept
     {
         if (A.empty())
             return {};
@@ -647,7 +642,7 @@ namespace AXIOM
         return T;
     }
 
-    std::pair<ArenaVector<ArenaVector<double>>, ArenaVector<ArenaVector<double>>> LinearSystemParser::GramSchmidt(const ArenaVector<ArenaVector<double>> &A) const
+    std::pair<ArenaVector<ArenaVector<double>>, ArenaVector<ArenaVector<double>>> LinearSystemParser::GramSchmidt(const ArenaVector<ArenaVector<double>> &A) const noexcept
     {
         auto A_cols = Transpose(A);
         if (A_cols.empty())
@@ -677,7 +672,7 @@ namespace AXIOM
         return {Q, R};
     }
 
-    ArenaVector<double> LinearSystemParser::solve_linear_system(const ArenaVector<ArenaVector<double>> &A, const ArenaVector<double> &b) const
+    ArenaVector<double> LinearSystemParser::solve_linear_system(const ArenaVector<ArenaVector<double>> &A, const ArenaVector<double> &b) const noexcept
     {
         int N = A.size();
         if (N == 0 || A[0].size() != N || b.size() != N)
@@ -718,7 +713,7 @@ namespace AXIOM
         return solution;
     }
 
-    std::optional<ArenaVector<double>> LinearSystemParser::CramersRule(const ArenaVector<ArenaVector<double>> &A, const ArenaVector<double> &b) const
+    std::optional<ArenaVector<double>> LinearSystemParser::CramersRule(const ArenaVector<ArenaVector<double>> &A, const ArenaVector<double> &b) const noexcept
     {
         int n = A.size();
         if (n != b.size())
@@ -739,7 +734,7 @@ namespace AXIOM
         return solution;
     }
 
-    ArenaVector<ArenaVector<double>> LinearSystemParser::ParseMatrixString(const std::string &input) const
+    ArenaVector<ArenaVector<double>> LinearSystemParser::ParseMatrixString(std::string_view input) const noexcept
     {
         ArenaVector<ArenaVector<double>> result;
         MatrixLexer lexer(input);

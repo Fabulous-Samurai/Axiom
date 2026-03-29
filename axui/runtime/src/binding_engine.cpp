@@ -130,11 +130,11 @@ void BindingEngine::scanNode(UINode& node) {
         if (auto* binding = std::get_if<Binding>(&prop.value)) {
             if (binding->is_bound) {
                 // Bu property'yi, binding path'ine abone et
-                subscriptions_[binding->path].push_back(&prop);
+                subscriptions_[std::string(binding->path)].push_back(&prop);
 
                 // Eğer cache'de veri varsa hemen uygula (late binding desteği)
                 std::lock_guard<std::mutex> clock(cache_mutex_);
-                auto cache_it = source_cache_.find(binding->path);
+                auto cache_it = source_cache_.find(std::string(binding->path));
                 if (cache_it != source_cache_.end()) {
                     applyValue(prop, cache_it->second);
                 }
@@ -142,8 +142,8 @@ void BindingEngine::scanNode(UINode& node) {
         }
     }
 
-    for (auto& child : node.children) {
-        scanNode(child);
+    for (auto* child : node.children) {
+        if (child) scanNode(*child);
     }
 }
 

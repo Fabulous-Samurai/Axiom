@@ -513,7 +513,7 @@ void test_binding_thread_safety() {
     const int thread_count = 4;
     const int updates_per_thread = 250;
 
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
     for (int t = 0; t < thread_count; t++) {
         threads.emplace_back([&engine, t, updates_per_thread]() {
             for (int i = 0; i < updates_per_thread; i++) {
@@ -521,10 +521,6 @@ void test_binding_thread_safety() {
                 engine.updateSource(" @engine.counter", val);
             }
         });
-    }
-
-    for (auto& th : threads) {
-        th.join();
     }
 
     // Property'de bir double değer olmalı (hangisi olduğu önemli değil, race)

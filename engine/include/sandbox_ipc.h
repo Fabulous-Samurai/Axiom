@@ -9,23 +9,23 @@
 #include "lock_free_ring_buffer.h"
 #include <atomic>
 #include <cstdint>
+#include <array>
 
-namespace AXIOM {
-namespace Sandbox {
+namespace AXIOM::Sandbox {
 
 static constexpr size_t MAX_CMD_LEN = 512;
 static constexpr size_t MAX_RES_LEN = 2048;
 
 struct SandboxRequest {
     uint64_t request_id;
-    char command[MAX_CMD_LEN];
+    std::array<char, MAX_CMD_LEN> command;
 };
 
 struct SandboxResponse {
     uint64_t request_id;
     bool success;
-    char result[MAX_RES_LEN];
-    char error[256];
+    std::array<char, MAX_RES_LEN> result;
+    std::array<char, 256> error;
     double execution_time_ms;
 };
 
@@ -49,5 +49,4 @@ struct alignas(64) SandboxIPCLayout {
     SPSCQueue<SandboxResponse, 128> res_queue;
 };
 
-} // namespace Sandbox
-} // namespace AXIOM
+} // namespace AXIOM::Sandbox

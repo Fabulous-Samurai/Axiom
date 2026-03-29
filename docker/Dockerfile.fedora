@@ -1,30 +1,37 @@
-FROM fedora:39
+FROM fedora:40
 
+# AXIOM Zenith Build Dependencies (Fedora)
 RUN dnf install -y \
     gcc-c++ \
+    clang \
+    lld \
     cmake \
     ninja-build \
+    ccache \
     git \
     curl \
     zip \
     unzip \
     tar \
     lcov \
-    clang \
-    python3 \
+    valgrind \
+    numactl-devel \
+    vulkan-loader-devel \
+    mesa-vulkan-devel \
+    spirv-tools \
+    python3-devel \
     python3-pip \
     && dnf clean all
 
-# Clang da mevcut (alternatif compiler testi)
-RUN clang++ --version && g++ --version
-
-# vcpkg
+# vcpkg Installation
 RUN git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg \
     && /opt/vcpkg/bootstrap-vcpkg.sh
-
 ENV VCPKG_ROOT=/opt/vcpkg
 ENV PATH="${VCPKG_ROOT}:${PATH}"
 
 WORKDIR /workspace
+
+LABEL project="AXIOM Zenith"
+LABEL version="3.1.2"
 
 CMD ["bash"]

@@ -39,12 +39,12 @@ namespace AXIOM
     {
         bool allowed = true;
         CalcErr error = CalcErr::None;
-        std::string reason;
+        const char *reason = nullptr;
     };
 
     inline ExpressionPolicyDecision AssessExpressionPolicy(
-        const std::string &input,
-        CalculationMode mode)
+        std::string_view input,
+        CalculationMode mode) noexcept
     {
         const std::size_t kMaxCharsDefault =
             ReadPolicySizeEnv("AXIOM_POLICY_MAX_CHARS_DEFAULT", 8192);
@@ -103,7 +103,7 @@ namespace AXIOM
             if (ch == '(' || ch == '[' || ch == '{')
             {
                 ++current_depth;
-                max_observed_depth = std::max(max_observed_depth, current_depth);
+                max_observed_depth = (max_observed_depth > current_depth) ? max_observed_depth : current_depth;
             }
             else if (ch == ')' || ch == ']' || ch == '}')
             {

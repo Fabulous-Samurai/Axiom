@@ -11,7 +11,7 @@ TEST(ArenaStress, MultiThreadedAllocDealloc) {
     const int iterations = 10000;
     AXIOM::HarmonicArena arena(1024 * 1024 * 10, 0); // 10MB arena
 
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
     std::atomic<bool> start{false};
 
     for (int t = 0; t < num_threads; ++t) {
@@ -30,7 +30,6 @@ TEST(ArenaStress, MultiThreadedAllocDealloc) {
     }
 
     start = true;
-    for (auto& t : threads) t.join();
     
     // Test passes if it doesn't crash or hang (deadlock)
 }

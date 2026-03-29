@@ -14,7 +14,7 @@ AXIOM_EXPORT Axiom_CalculationResult Axiom_Execute(const char* expression, const
     Axiom_CalculationResult res = {0.0, 0, 0, ""};
     if (!expression) {
         res.status_code = -1;
-        std::strncpy(res.error_msg, "Null expression", 127);
+        std::snprintf(res.error_msg, sizeof(res.error_msg), "%s", "Null expression");
         return res;
     }
 
@@ -36,10 +36,10 @@ AXIOM_EXPORT Axiom_CalculationResult Axiom_Execute(const char* expression, const
         // Map error type to string
         if (engine_res.error.has_value()) {
             std::visit([&](auto& err) {
-                std::snprintf(res.error_msg, 128, "Error Code: %d", (int)err);
+                std::snprintf(res.error_msg, sizeof(res.error_msg), "Error Code: %d", (int)err);
             }, *engine_res.error);
         } else {
-            std::strncpy(res.error_msg, "Unknown Engine Error", 127);
+            std::snprintf(res.error_msg, sizeof(res.error_msg), "%s", "Unknown Engine Error");
         }
     } else {
         auto val = engine_res.GetDouble();
@@ -53,8 +53,9 @@ AXIOM_EXPORT Axiom_CalculationResult Axiom_Execute(const char* expression, const
 AXIOM_EXPORT uintptr_t AxiomJit_GetDisassembly(const uint8_t* code_ptr, size_t size, char* out_preallocated_buffer, size_t max_len) {
     if (!out_preallocated_buffer || max_len == 0) return 0;
     // ... (rest of disassembly implementation)
-    std::snprintf(out_preallocated_buffer, max_len, "AXIOM_JIT_BINARY (0x%p, %zu bytes)", code_ptr, size);
-    return std::strlen(out_preallocated_buffer);
+    int written = std::snprintf(out_preallocated_buffer, max_len, "AXIOM_JIT_BINARY (0x%p, %zu bytes)", code_ptr, size);
+    if (written < 0) return 0;
+    return (static_cast<size_t>(written) < max_len) ? static_cast<uintptr_t>(written) : (max_len - 1);
 }
 
 AXIOM_EXPORT size_t AxiomMantis_StreamSearchTree(Axiom_MantisNode* out_nodes, size_t max_count) {

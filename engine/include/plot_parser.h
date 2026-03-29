@@ -10,7 +10,7 @@ namespace AXIOM {
 class PlotParser : public IParser {
 public:
     PlotParser() = default;
-    EngineResult ParseAndExecute(const std::string& input) override;
+    EngineResult ParseAndExecute(std::string_view input) noexcept override;
 
 private:
     PlotEngine plot_engine_;

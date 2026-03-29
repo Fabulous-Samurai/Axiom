@@ -15,10 +15,10 @@ public:
     explicit UnitParser(UnitManager* manager) noexcept : unit_manager_(manager) {}
 
     // Backwards-compatible virtual override (existing callers)
-    EngineResult ParseAndExecute(const std::string& input) override;
+    EngineResult ParseAndExecute(std::string_view input) noexcept override;
 
     // New, non-virtual view-based APIs for zero-copy call sites
-    EngineResult ParseAndExecuteView(std::string_view input);
+    EngineResult ParseAndExecuteView(std::string_view input) noexcept;
 
 private:
     bool IsUnitConversion(std::string_view input);

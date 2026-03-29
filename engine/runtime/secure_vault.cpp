@@ -24,7 +24,7 @@ bool SecureMantisVault::initialize_enclave() {
     return true;
 }
 
-bool SecureMantisVault::seal(const void* src, size_t size) {
+bool SecureMantisVault::seal(const void* src, size_t size) noexcept {
     if (!enclave_active_) return false;
 
     // [SECURITY]: SGX Data Sealing (AES-GCM-256)
@@ -45,7 +45,7 @@ bool SecureMantisVault::seal(const void* src, size_t size) {
     return true;
 }
 
-bool SecureMantisVault::unseal(void* dst, size_t size) {
+bool SecureMantisVault::unseal(void* dst, size_t size) noexcept {
     if (!enclave_active_ || !encrypted_storage_) return false;
     
     #ifdef AXIOM_ENABLE_SGX
@@ -61,7 +61,7 @@ bool SecureMantisVault::unseal(void* dst, size_t size) {
     return true;
 }
 
-void SecureMantisVault::secure_transition() {
+void SecureMantisVault::secure_transition() noexcept {
     // [ECALL]: Enter Enclave context for high-integrity Mantis heuristic computation.
     // [OCALL]: Call out to non-trusted telemetry scribe if needed.
     if (!enclave_active_) return;

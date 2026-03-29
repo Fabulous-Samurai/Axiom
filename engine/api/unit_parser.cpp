@@ -12,30 +12,31 @@ static const std::regex& GetUnitConversionPattern() {
     return kPattern;
 }
 
-EngineResult UnitParser::ParseAndExecute(const std::string& input) {
-    // keep backwards compatibility: forward to view-based implementation
-    return ParseAndExecuteView(std::string_view(input.data(), input.size()));
+EngineResult UnitParser::ParseAndExecute(std::string_view input) noexcept {
+    return ParseAndExecuteView(input);
 }
 
-EngineResult UnitParser::ParseAndExecuteView(std::string_view input) {
+EngineResult UnitParser::ParseAndExecuteView(std::string_view input) noexcept {
     if (IsUnitConversion(input)) {
         return ParseConversion(input);
     }
     return CreateErrorResult(CalcErr::ParseError);
 }
 
-bool UnitParser::IsUnitConversion(std::string_view input) {
-    // std::regex doesn't accept string_view directly portably; create a temporary only when needed.
+bool UnitParser::IsUnitConversion(std::string_view input) noexcept {
     std::string s(input);
     return std::regex_search(s, GetUnitConversionPattern());
 }
 
-EngineResult UnitParser::ParseConversion(std::string_view input) {
+EngineResult UnitParser::ParseConversion(std::string_view input) noexcept {
     std::string s(input);
     std::smatch matches;
 
     if (std::regex_search(s, matches, GetUnitConversionPattern())) {
-        double value = std::stod(matches[2].str());
+        auto value_opt = Utils::FastParseDouble(matches[2].str());
+        if (!value_opt) return CreateErrorResult(CalcErr::ParseError);
+        
+        double value = *value_opt;
         std::string from_unit = matches[3].str();
         std::string to_unit = matches[4].str();
 
@@ -46,4 +47,3 @@ EngineResult UnitParser::ParseConversion(std::string_view input) {
 }
 
 } // namespace AXIOM
-

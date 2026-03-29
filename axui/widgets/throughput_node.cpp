@@ -30,7 +30,7 @@ void AxiomThroughputNode::update(const QRectF& rect, TelemetryScribe& scribe) {
     // -------------------------------------------------------------------------
     
     static double last_time = 0;
-    double current_time = static_cast<double>(AXIOM_RDTSC) / 3e9; // Normalized to ~seconds
+    double current_time = static_cast<double>(AXIOM_RDTSC()) / 3e9; // Normalized to ~seconds
     
     if (last_time == 0) last_time = current_time;
 

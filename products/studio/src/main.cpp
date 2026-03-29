@@ -74,10 +74,10 @@ int main(int argc, char *argv[]) {
 
     // Start Engine Simulator
     std::atomic<bool> engine_running{true};
-    std::thread engine_thread;
+    std::jthread engine_thread;
     
     if (!parser.isSet(noSimOption)) {
-        engine_thread = std::thread(run_engine_simulation, std::ref(engine_running));
+        engine_thread = std::jthread(run_engine_simulation, std::ref(engine_running));
     } else {
         std::cout << "[Studio] Engine simulation disabled via CLI." << std::endl;
     }
@@ -115,7 +115,6 @@ int main(int argc, char *argv[]) {
     
     // Cleanup
     engine_running = false;
-    if (engine_thread.joinable()) engine_thread.join();
     
     return result;
 }

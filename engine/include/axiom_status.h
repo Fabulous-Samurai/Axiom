@@ -1,7 +1,7 @@
 // [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
 /**
  * @file axiom_status.h
- * @brief Central status and error codes for Project AXIOM.
+ * @brief Central status, error codes, and orchestration types for Project AXIOM.
  */
 
 #pragma once
@@ -16,6 +16,7 @@ namespace AXIOM {
  */
 enum class StatusCode : int32_t {
     Success = 0,
+    None = 0,
     
     // Calculation Errors
     DivideByZero = 1001,
@@ -25,6 +26,9 @@ enum class StatusCode : int32_t {
     ArgumentMismatch = 1005,
     NumericOverflow = 1006,
     OperationNotFound = 1007,
+    IndeterminateResult = 1008,
+    StackOverflow = 1009,
+    InfiniteLoop = 1010,
     
     // Resource Errors
     MemoryExhausted = 2001,
@@ -44,7 +48,18 @@ enum class StatusCode : int32_t {
     Unknown = 9999
 };
 
-// Legacy alias for compatibility during transition
+// Legacy alias for compatibility
 using CalcErr = StatusCode;
+
+enum class LinAlgErr : int32_t {
+    None = 0,
+    NoSolution = 1,
+    InfiniteSolutions = 2,
+    MatrixMismatch = 3,
+    ParseError = 4
+};
+
+enum class ComputeEngine { Native, Eigen, Python, Vulkan, Auto };
+enum class OperationComplexity { Simple, Medium, Complex, VeryComplex };
 
 } // namespace AXIOM

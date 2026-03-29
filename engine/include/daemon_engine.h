@@ -2,11 +2,6 @@
 /**
  * @file daemon_engine.h
  * @brief AXIOM Engine v3.1 - Enterprise Daemon Mode Architecture
- * * High-performance persistent computation daemon with:
- * - Named pipe communication (Windows/Linux)
- * - Memory-resident state management
- * - Lock-free SPSC request queue for zero-latency IPC
- * - OS-Bypass threading architecture
  */
 
 #pragma once
@@ -18,16 +13,15 @@
 #include <thread>
 #include <mutex>
 #include <unordered_map>
-#include <vector>
 #include <chrono>
 #include <array>
 #include <expected>
 #include <system_error>
 
-namespace AXIOM {
-// ... (LockFreeRingBuffer remains the same)
-// I will only show the changed parts for the replacement tool to be precise.
-
+#ifdef _WIN32
+    #ifndef WIN32_LEAN_AND_MEAN
+        #define WIN32_LEAN_AND_MEAN
+    #endif
     #include <windows.h>
 #endif
 
@@ -35,41 +29,36 @@ namespace AXIOM {
 
 /**
  * @brief High-performance Single-Producer Single-Consumer Lock-Free Queue
- * @tparam T Type of the elements
- * @tparam Capacity Maximum capacity (MUST be a power of 2 for bitwise modulo)
  */
 template<typename T, size_t Capacity>
 class LockFreeRingBuffer {
     static_assert((Capacity & (Capacity - 1)) == 0, "Capacity must be a power of 2");
     
     T buffer_[Capacity];
-    
-    // Hardware-level alignment to prevent False Sharing between CPU cores
     alignas(64) std::atomic<size_t> head_{0}; 
     alignas(64) std::atomic<size_t> tail_{0}; 
 
 public:
-    // Move-semantics enabled for zero-copy string transfers
     bool push(T item) noexcept {
-        const size_t current_tail = tail_.load(std::memory_order_acquire);
-        const size_t current_head = head_.load(std::memory_order_relaxed);
+        const size_t current_tail = tail_.load(std::memory_order::seq_cst);
+        const size_t current_head = head_.load(std::memory_order::seq_cst);
         
         if (current_head - current_tail >= Capacity) [[unlikely]] return false; 
         
         buffer_[current_head & (Capacity - 1)] = std::move(item);
-        head_.store(current_head + 1, std::memory_order_release);
+        head_.store(current_head + 1, std::memory_order::seq_cst);
         
         return true;
     }
 
     bool pop(T& item) noexcept {
-        const size_t current_head = head_.load(std::memory_order_acquire);
-        const size_t current_tail = tail_.load(std::memory_order_relaxed);
+        const size_t current_head = head_.load(std::memory_order::seq_cst);
+        const size_t current_tail = tail_.load(std::memory_order::seq_cst);
         
         if (current_head == current_tail) [[unlikely]] return false; 
         
         item = std::move(buffer_[current_tail & (Capacity - 1)]);
-        tail_.store(current_tail + 1, std::memory_order_release);
+        tail_.store(current_tail + 1, std::memory_order::seq_cst);
         
         return true;
     }
@@ -96,10 +85,9 @@ public:
     };
 
     enum class DaemonStatus { STARTING, READY, BUSY, PIPE_ERROR, SHUTDOWN };
-    enum class PipeError { None, PermissionDenied, AlreadyExists, ResourceExhausted, InvalidName, SystemError, SecurityDescriptorFailed, Unknown };
+    enum class PipeError { None, PermissionDenied, AlreadyExists, ResourceExhausted, InvalidName, SystemError, SecurityDescriptorFailed, UnknownError };
 
 private:
-    // SoA queue improves cache locality for producer/consumer hot-path fields.
     template<size_t Capacity>
     class RequestQueueSoA {
         static_assert((Capacity & (Capacity - 1)) == 0, "Capacity must be a power of 2");
@@ -115,32 +103,26 @@ private:
 
     public:
         [[nodiscard]] bool push(const Request& item) noexcept {
-            const size_t current_tail = tail_.load(std::memory_order_acquire);
-            const size_t current_head = head_.load(std::memory_order_relaxed);
+            const size_t current_tail = tail_.load(std::memory_order::seq_cst);
+            const size_t current_head = head_.load(std::memory_order::seq_cst);
 
-            if (current_head - current_tail >= Capacity) [[unlikely]] {
-                return false;
-            }
+            if (current_head - current_tail >= Capacity) [[unlikely]] return false;
 
             const size_t idx = current_head & (Capacity - 1);
-            // [ZENITH PILLAR 5]: No try/catch in hot-path. 
             session_ids_[idx] = item.session_id;
             commands_[idx] = item.command;
             modes_[idx] = item.mode;
-            
             timestamps_[idx] = item.timestamp;
             request_ids_[idx] = item.request_id;
-            head_.store(current_head + 1, std::memory_order_release);
+            head_.store(current_head + 1, std::memory_order::seq_cst);
             return true;
         }
 
         [[nodiscard]] bool pop(Request& item) noexcept {
-            const size_t current_head = head_.load(std::memory_order_acquire);
-            const size_t current_tail = tail_.load(std::memory_order_relaxed);
+            const size_t current_head = head_.load(std::memory_order::seq_cst);
+            const size_t current_tail = tail_.load(std::memory_order::seq_cst);
 
-            if (current_head == current_tail) [[unlikely]] {
-                return false;
-            }
+            if (current_head == current_tail) [[unlikely]] return false;
 
             const size_t idx = current_tail & (Capacity - 1);
             item.session_id = std::move(session_ids_[idx]);
@@ -148,7 +130,7 @@ private:
             item.mode = std::move(modes_[idx]);
             item.timestamp = timestamps_[idx];
             item.request_id = request_ids_[idx];
-            tail_.store(current_tail + 1, std::memory_order_release);
+            tail_.store(current_tail + 1, std::memory_order::seq_cst);
             return true;
         }
     };
@@ -161,11 +143,10 @@ private:
     std::jthread daemon_thread_;
     std::jthread request_processor_;
     
-    // Zero-latency request queue replacing std::queue and std::mutex
     RequestQueueSoA<1024> request_queue_;
     
-    std::unordered_map<std::string, std::unique_ptr<class SessionContext>> sessions_;
-    std::mutex sessions_mutex_; // Maintained solely for slow-path session initialization
+    std::unordered_map<std::string, std::unique_ptr<struct SessionContext>> sessions_;
+    std::mutex sessions_mutex_; 
     
     std::atomic<uint64_t> total_requests_{0};
     std::atomic<uint64_t> rejected_requests_{0};
@@ -186,25 +167,24 @@ public:
     explicit DaemonEngine(const std::string& pipe_name = "axiom_daemon");
     ~DaemonEngine() noexcept;
 
-    // Prevent copying and moving of the core daemon
     DaemonEngine(const DaemonEngine&) = delete;
     DaemonEngine& operator=(const DaemonEngine&) = delete;
 
     [[nodiscard]] std::expected<void, DaemonStatus> start();
     void stop() noexcept;
-    [[nodiscard]] bool is_running() const noexcept { return running_.load(std::memory_order_acquire); }
-    [[nodiscard]] DaemonStatus get_status() const noexcept { return status_.load(std::memory_order_acquire); }
+    [[nodiscard]] bool is_running() const noexcept { return running_.load(std::memory_order::seq_cst); }
+    [[nodiscard]] DaemonStatus get_status() const noexcept { return status_.load(std::memory_order::seq_cst); }
 
     [[nodiscard]] Response process_request(const Request& request);
     [[nodiscard]] bool send_command(const std::string& session_id, const std::string& command, const std::string& mode = "algebraic");
 
     [[nodiscard]] std::expected<std::string, std::error_code> create_session();
     [[nodiscard]] bool destroy_session(const std::string& session_id);
-    void get_active_sessions(FixedVector<std::string, 128>& out_sessions);
+    void get_active_sessions(FixedVector<std::string_view, 128>& out_sessions) noexcept;
 
-    [[nodiscard]] uint64_t get_total_requests() const noexcept { return total_requests_.load(std::memory_order_relaxed); }
-    [[nodiscard]] uint64_t get_rejected_requests() const noexcept { return rejected_requests_.load(std::memory_order_relaxed); }
-    [[nodiscard]] double get_avg_response_time() const noexcept { return avg_response_time_.load(std::memory_order_relaxed); }
+    [[nodiscard]] uint64_t get_total_requests() const noexcept { return total_requests_.load(std::memory_order::seq_cst); }
+    [[nodiscard]] uint64_t get_rejected_requests() const noexcept { return rejected_requests_.load(std::memory_order::seq_cst); }
+    [[nodiscard]] double get_avg_response_time() const noexcept { return avg_response_time_.load(std::memory_order::seq_cst); }
     [[nodiscard]] std::chrono::milliseconds get_uptime() const noexcept;
 
 private:
@@ -219,7 +199,6 @@ private:
     void update_metrics(double execution_time) noexcept;
 };
 
-// SessionContext: per-session state for daemon mode
 struct SessionContext {
     std::string session_id{};
     std::string current_mode{"algebraic"};

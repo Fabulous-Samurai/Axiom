@@ -15,8 +15,7 @@
 #include <atomic>
 #include <chrono>
 
-namespace AXIOM {
-namespace Sandbox {
+namespace AXIOM::Sandbox {
 
 struct SandboxResult {
     bool success = false;
@@ -65,5 +64,4 @@ private:
     // Future expansion: IPC handles (Shared Memory / Pipes)
 };
 
-} // namespace Sandbox
-} // namespace AXIOM
+} // namespace AXIOM::Sandbox

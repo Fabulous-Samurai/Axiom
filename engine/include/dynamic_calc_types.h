@@ -15,6 +15,7 @@
 #include <utility>
 #include <variant>
 #include "fixed_vector.h"
+#include "axiom_status.h"
 
 namespace AXIOM
 {
@@ -48,32 +49,7 @@ namespace AXIOM
         return std::get<std::complex<double>>(num);
     }
 
-    // --- 3. ERROR ENUMS ---
-    enum class CalcErr
-    {
-        None,
-        DivideByZero,
-        IndeterminateResult,
-        OperationNotFound,
-        ArgumentMismatch,
-        NegativeRoot,
-        DomainError,
-        ParseError,
-        NumericOverflow,
-        StackOverflow,
-        MemoryExhausted,
-        InfiniteLoop
-    };
-
-    enum class LinAlgErr
-    {
-        None,
-        NoSolution,
-        InfiniteSolutions,
-        MatrixMismatch,
-        ParseError
-    };
-
+    // --- 3. ERROR TYPES (Mapped to axiom_status.h) ---
     using EngineErrorResult = std::variant<CalcErr, LinAlgErr>;
 
     // --- 3b. CALCULATION MODE ENUM ---
@@ -140,8 +116,23 @@ namespace AXIOM
             else return std::nullopt; }, result.value());
         }
 
+        std::optional<Vector> GetVector() const noexcept
+        {
+            if (!result.has_value()) return std::nullopt;
+            if (auto* v = std::get_if<Vector>(&result.value())) return *v;
+            return std::nullopt;
+        }
+
+        std::optional<Matrix> GetMatrix() const noexcept
+        {
+            if (!result.has_value()) return std::nullopt;
+            if (auto* m = std::get_if<Matrix>(&result.value())) return *m;
+            return std::nullopt;
+        }
+
         bool HasResult() const noexcept { return result.has_value() && !error.has_value(); }
         bool HasErrors() const noexcept { return error.has_value(); }
+        bool HasValue() const noexcept { return result.has_value(); }
     };
 
     // --- 5. ZERO-COPY FACTORY FUNCTIONS ---
@@ -250,3 +241,5 @@ using AXIOM::CalculationMode;
 using AXIOM::Precedence;
 using AXIOM::CreateSuccessResult;
 using AXIOM::CreateErrorResult;
+using AXIOM::OperationComplexity;
+using AXIOM::ComputeEngine;

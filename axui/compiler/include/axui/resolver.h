@@ -55,7 +55,7 @@ public:
     double resolveNumber(const std::string& token) const;
     std::string resolveString(const std::string& token) const;
 
-    bool isToken(const std::string& value) const {
+    bool isToken(std::string_view value) const {
         // Support both "@category.key" and " @category.key" (with leading space)
         if (value.empty()) return false;
         if (value[0] == '@') return true;
@@ -75,7 +75,7 @@ private:
     size_t resolve_count_ = 0;
 
     void resolveNode(UINode& node);
-    void resolveProperties(std::vector<Property>& props);
+    void resolveProperties(AXIOM::FixedVector<Property, 32>& props);
     void resolveGlassDefaults(GlassParams& glass);
     void resolveHoverColors(HoverParams& hover);
 };

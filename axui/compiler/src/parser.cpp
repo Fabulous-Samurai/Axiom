@@ -5,7 +5,7 @@
 
 namespace axui {
 
-UINode* Parser::parse(const std::string& json_content, AXIOM::ArenaAllocator& arena) {
+UINode* Parser::parse(const std::string& json_content, AXIOM::ArenaAllocator<UINode>& arena) {
     errors_.clear();
 
     try {
@@ -15,7 +15,7 @@ UINode* Parser::parse(const std::string& json_content, AXIOM::ArenaAllocator& ar
         auto doc = sjparser.iterate(padded_json);
 
         auto root_obj = doc.get_object().value();
-        UINode* root = arena.allocate_type<UINode>();
+        UINode* root = arena.allocate(1);
         new (root) UINode(); // In-place construction
 
         auto root_field = root_obj.find_field("root");
@@ -39,7 +39,7 @@ UINode* Parser::parse(const std::string& json_content, AXIOM::ArenaAllocator& ar
     return nullptr;
 }
 
-void Parser::parseNodeInto(simdjson::ondemand::object& obj, UINode& node, AXIOM::ArenaAllocator& arena) {
+void Parser::parseNodeInto(simdjson::ondemand::object& obj, UINode& node, AXIOM::ArenaAllocator<UINode>& arena) {
     for (auto field : obj) {
         auto key = field.unescaped_key().value();
         
@@ -73,7 +73,7 @@ void Parser::parseNodeInto(simdjson::ondemand::object& obj, UINode& node, AXIOM:
             auto arr = field.value().get_array().value();
             for (auto child_val : arr) {
                 auto c_obj = child_val.get_object().value();
-                UINode* child = arena.allocate_type<UINode>();
+                UINode* child = arena.allocate(1);
                 new (child) UINode();
                 parseNodeInto(c_obj, *child, arena);
                 node.children.push_back(child);
@@ -120,7 +120,7 @@ LayoutParams Parser::parseLayout(simdjson::ondemand::object& obj) {
     return l;
 }
 
-void Parser::parsePropertiesInto(simdjson::ondemand::object& obj, UINode& node, AXIOM::ArenaAllocator& arena) {
+void Parser::parsePropertiesInto(simdjson::ondemand::object& obj, UINode& node, AXIOM::ArenaAllocator<UINode>& arena) {
     for (auto field : obj) {
         Property p;
         p.key = field.unescaped_key().value();

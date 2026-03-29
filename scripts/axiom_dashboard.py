@@ -16,32 +16,18 @@ def main():
 
     # Paths
     root_dir = Path(__file__).parent.parent.absolute()
-    build_dir = root_dir / "build" / "axui_dashboard"
+    build_dir = root_dir / "out" / "default-ninja"
     
     executable_name = "axiom_dashboard.exe" if sys.platform == "win32" else "axiom_dashboard"
-    executable_path = build_dir / "qml" / executable_name
+    # The dashboard is located in products/dashboard within the build tree
+    executable_path = build_dir / "products" / "dashboard" / executable_name
 
     if args.build or not executable_path.exists():
-        print("Building AXIOM Dashboard...")
-        os.makedirs(build_dir, exist_ok=True)
-        
-        cmake_cmd = [
-            "cmake",
-            "-S", str(root_dir / "axui"),
-            "-B", str(build_dir),
-            "-DCMAKE_BUILD_TYPE=Release",
-            "-DCMAKE_PREFIX_PATH=C:/msys64/ucrt64"
-        ]
-        
-        try:
-            subprocess.run(cmake_cmd, check=True)
-        except subprocess.CalledProcessError:
-            print("CMake configuration failed. Attempting a clean build...")
-            shutil.rmtree(build_dir, ignore_errors=True)
-            os.makedirs(build_dir, exist_ok=True)
-            subprocess.run(cmake_cmd, check=True)
+        print("AXIOM Dashboard binary not found in out/default-ninja.")
+        print("Please run 'cmake --build out/default-ninja' first or use the main build system.")
+        # Optional: could trigger main build here, but let's keep it separate for control
+        # sys.exit(1) if you want to force manual build
 
-        subprocess.run(["cmake", "--build", str(build_dir), "--config", "Release"], check=True)
 
     # Launch environment
     env = os.environ.copy()

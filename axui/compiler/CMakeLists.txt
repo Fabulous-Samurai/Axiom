@@ -27,10 +27,12 @@ set_property(TARGET axui_compiler PROPERTY CXX_STANDARD_REQUIRED ON)
 
 target_include_directories(axui_compiler PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../engine/include
 )
 
 target_link_libraries(axui_compiler PUBLIC
     simdjson
+    axiom_engine_core
 )
 
 # Test executable
@@ -43,6 +45,7 @@ add_executable(axui_tests
 
 target_link_libraries(axui_tests PRIVATE
     axui_compiler
+    axiom_engine_core
 )
 
 set_property(TARGET axui_tests PROPERTY CXX_STANDARD 20)
@@ -54,6 +57,7 @@ add_executable(axui_bench
 
 target_link_libraries(axui_bench PRIVATE
     axui_compiler
+    axiom_engine_core
 )
 
 set_property(TARGET axui_bench PROPERTY CXX_STANDARD 20)

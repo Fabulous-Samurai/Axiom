@@ -52,13 +52,13 @@ public:
     Spinlock& operator=(const Spinlock&) = delete;
     
     void lock() noexcept {
-        while (flag.test_and_set(std::memory_order_acquire)) {
-            AXIOM_YIELD_PROCESSOR;
+        while (flag.test_and_set(std::memory_order_seq_cst)) {
+            AXIOM_YIELD_PROCESSOR();
         }
     }
     
     void unlock() noexcept {
-        flag.clear(std::memory_order_release);
+        flag.clear(std::memory_order_seq_cst);
     }
 };
 
@@ -94,12 +94,7 @@ private:
     alignas(CACHE_LINE_SIZE) std::atomic<ArenaBlock*> spare_block_{nullptr};
     alignas(CACHE_LINE_SIZE) std::atomic<ArenaBlock*> pool_head_{nullptr};
 
-#if defined(__apple_build_version__)
-    std::thread maintenance_thread_;
-    std::atomic<bool> stop_requested_{false};
-#else
     std::jthread maintenance_thread_;
-#endif
     size_t block_size_;
     int numa_node_;
 
@@ -141,11 +136,8 @@ private:
     void recycle_spare_block(ArenaBlock* block) noexcept;
     [[nodiscard]] ArenaBlock* pop_pool() noexcept;
     [[nodiscard]] std::byte* switch_and_retry(size_t bytes) noexcept;
-#if defined(__apple_build_version__)
-    void maintenance_worker() noexcept;
-#else
+
     void maintenance_worker(std::stop_token stop_token) noexcept;
-#endif
 };
 
 /**
@@ -158,7 +150,7 @@ public:
     static constexpr size_t DEFAULT_ARENA_SIZE = 64 * 1024 * 1024;  // 64MB
     static constexpr size_t PAGE_SIZE = 4096;
     
-    struct ArenaStats {
+    struct alignas(64) ArenaStats {
         size_t total_size;
         size_t used_size;
         size_t free_size;
@@ -177,7 +169,7 @@ private:
     std::atomic<size_t> free_count_{0};
     
     // Free block management
-    struct FreeBlock {
+    struct alignas(64) FreeBlock {
         size_t size;
         FreeBlock* next;
     };
@@ -338,7 +330,7 @@ public:
         EMERGENCY   // Exhausted, emergency flush required
     };
 
-    struct SystemMemoryStats {
+    struct alignas(64) SystemMemoryStats {
         HealthStatus status;
         double fragmentation_avg;
         size_t total_reserved_bytes;
@@ -525,7 +517,7 @@ namespace EigenIntegration {
  */
 class MemoryProfiler {
 public:
-    struct AllocationProfile {
+    struct alignas(64) AllocationProfile {
         size_t size;
         size_t alignment;
         std::chrono::high_resolution_clock::time_point timestamp;
@@ -533,7 +525,7 @@ public:
         size_t pool_index;
     };
     
-    struct PerformanceMetrics {
+    struct alignas(64) PerformanceMetrics {
         double avg_allocation_time_ns;
         double avg_deallocation_time_ns;
         size_t cache_hits;

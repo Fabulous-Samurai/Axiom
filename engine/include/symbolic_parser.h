@@ -9,7 +9,7 @@ class SymbolicEngine;
 class SymbolicParser : public IParser {
 public:
     explicit SymbolicParser(SymbolicEngine* engine) noexcept : engine_(engine) {}
-    EngineResult ParseAndExecute(const std::string& input) override;
+    EngineResult ParseAndExecute(std::string_view input) noexcept override;
 private:
     SymbolicEngine* engine_;
 };

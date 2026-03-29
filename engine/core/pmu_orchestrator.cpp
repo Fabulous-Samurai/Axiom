@@ -21,7 +21,7 @@ static long perf_event_open(struct perf_event_attr* hw_event, pid_t pid, int cpu
 
 namespace AXIOM {
 
-PMUOrchestrator& PMUOrchestrator::instance() {
+PMUOrchestrator& PMUOrchestrator::instance() noexcept {
     static PMUOrchestrator inst;
     return inst;
 }
@@ -95,7 +95,7 @@ uint64_t PMUOrchestrator::ReadCounter(int idx) const noexcept {
     if (index == 0) return 0; // Hardware counter not available
 
     // [MANDATORY PATH]: AXIOM_LFENCE serialization BEFORE rdpmc
-    AXIOM_LFENCE;
+    AXIOM_LFENCE();
     
     // Index-1 because rdpmc uses 0-based indexing for hardware counters
     // but perf_event_mmap_page index is 1-based (0 is disabled).

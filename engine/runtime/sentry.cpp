@@ -31,16 +31,13 @@ bool Sentry::start() {
     last_core_heartbeat_.store(now);
     last_ui_heartbeat_.store(now);
 
-    monitor_thread_ = std::thread(&Sentry::monitor_loop, this);
+    monitor_thread_ = std::jthread(&Sentry::monitor_loop, this);
     AXIOM_CRASH_MARK(0x5E000001, "Sentry: Watchdog Started");
     return true;
 }
 
 void Sentry::stop() {
     is_running_.store(false);
-    if (monitor_thread_.joinable()) {
-        monitor_thread_.join();
-    }
     AXIOM_CRASH_MARK(0x5E000002, "Sentry: Watchdog Stopped");
 }
 

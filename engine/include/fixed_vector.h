@@ -53,6 +53,12 @@ public:
         }
     }
 
+    void resize(size_t new_size) {
+        if (new_size <= Capacity) {
+            size_ = new_size;
+        }
+    }
+
     void clear() { size_ = 0; }
     void reserve(size_t) { /* No-op for fixed capacity */ }
     
@@ -65,6 +71,11 @@ public:
 
     T& operator[](size_t index) { return data_[index]; }
     const T& operator[](size_t index) const { return data_[index]; }
+
+    T& front() { return data_[0]; }
+    const T& front() const { return data_[0]; }
+    T& back() { return data_[size_ > 0 ? size_ - 1 : 0]; }
+    const T& back() const { return data_[size_ > 0 ? size_ - 1 : 0]; }
     
     auto begin() { return data_; }
     auto end() { return data_ + size_; }

@@ -44,7 +44,7 @@ using AnyNode = std::variant<
     MatrixBinaryOpNode
 >;
 
-using NodePtr = AnyNode*;
+using NodePtr = const AnyNode*;
 
 struct EvalResult {
     std::optional<Number> value;
@@ -60,60 +60,60 @@ struct EvalResult {
     bool HasValue() const noexcept { return (value || vector || matrix) && error == CalcErr::None; }
 };
 
-// --- Node Structs (Non-virtual, Data-oriented) ---
+// --- Node Structs (Non-virtual, Data-oriented, Cache-aligned) ---
 
-struct NumberNode {
+struct alignas(64) NumberNode {
     double value;
-    explicit NumberNode(double v) noexcept : value(v) {}
+    explicit constexpr NumberNode(double v) noexcept : value(v) {}
 };
 
-struct VariableNode {
+struct alignas(64) VariableNode {
     std::string_view name;
-    explicit VariableNode(std::string_view n) noexcept : name(n) {}
+    explicit constexpr VariableNode(std::string_view n) noexcept : name(n) {}
 };
 
-struct BinaryOpNode {
+struct alignas(64) BinaryOpNode {
     char op;
     NodePtr left;
     NodePtr right;
-    BinaryOpNode(char o, NodePtr l, NodePtr r) noexcept : op(o), left(l), right(r) {}
+    constexpr BinaryOpNode(char o, NodePtr l, NodePtr r) noexcept : op(o), left(l), right(r) {}
 };
 
-struct UnaryOpNode {
+struct alignas(64) UnaryOpNode {
     std::string_view func;
     NodePtr operand;
-    UnaryOpNode(std::string_view f, NodePtr op) noexcept : func(f), operand(op) {}
+    constexpr UnaryOpNode(std::string_view f, NodePtr op) noexcept : func(f), operand(op) {}
 };
 
-struct MultiArgFunctionNode {
+struct alignas(64) MultiArgFunctionNode {
     std::string_view func;
     FixedVector<NodePtr, 16> args;
     MultiArgFunctionNode(std::string_view f, FixedVector<NodePtr, 16> a) noexcept : func(f), args(std::move(a)) {}
 };
 
-struct MatrixNode {
+struct alignas(64) MatrixNode {
     Matrix matrix;
     explicit MatrixNode(Matrix m) noexcept : matrix(std::move(m)) {}
 };
 
-struct MatrixBinaryOpNode {
+struct alignas(64) MatrixBinaryOpNode {
     char op;
     NodePtr left;
     NodePtr right;
-    MatrixBinaryOpNode(char o, NodePtr l, NodePtr r) noexcept : op(o), left(l), right(r) {}
+    constexpr MatrixBinaryOpNode(char o, NodePtr l, NodePtr r) noexcept : op(o), left(l), right(r) {}
 };
 
 // --- Static Dispatcher (The Core of VARIANT SHIFT) ---
 
 struct NodeDispatcher {
-    static EvalResult Evaluate(NodePtr node, const SymbolTable& vars) noexcept;
-    static std::string_view ToString(NodePtr node, Arena& arena, Precedence p = Precedence::None) noexcept;
-    static void CollectVariables(NodePtr node, SymbolTable& var_map) noexcept;
-    static NodePtr Derivative(NodePtr node, Arena& arena, std::string_view var) noexcept;
-    static NodePtr Simplify(NodePtr node, Arena& arena) noexcept;
+    static EvalResult Evaluate(const AnyNode* node, const SymbolTable& vars) noexcept;
+    static std::string_view ToString(const AnyNode* node, Arena& arena, Precedence p = Precedence::None) noexcept;
+    static void CollectVariables(const AnyNode* node, SymbolTable& var_map) noexcept;
+    static NodePtr Derivative(const AnyNode* node, Arena& arena, std::string_view var) noexcept;
+    static NodePtr Simplify(const AnyNode* node, Arena& arena) noexcept;
 
 #if defined(ASMJIT_BUILD_X86)
-    static bool CompileX86(NodePtr node, asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, const SymbolTable& var_map, asmjit::x86::Vec& out) noexcept;
+    static bool CompileX86(const AnyNode* node, asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, const SymbolTable& var_map, asmjit::x86::Vec& out) noexcept;
 #endif
 };
 

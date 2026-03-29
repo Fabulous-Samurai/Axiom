@@ -96,7 +96,7 @@ void CrashVault::record(uint32_t event_id, const char* msg) noexcept {
     
     CrashRecord& rec = records_[index % MAX_RECORDS];
     
-    rec.timestamp_rdtsc = AXIOM_RDTSC;
+    rec.timestamp_rdtsc = AXIOM_RDTSC();
     rec.event_id = event_id;
     // Simple thread ID retrieval
 #ifdef _WIN32

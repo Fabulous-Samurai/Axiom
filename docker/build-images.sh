@@ -1,27 +1,24 @@
 #!/bin/bash
-set -e
+# AXIOM Zenith - Professional Image Builder & Runner
 
-echo "════════════════════════════════════════════════════════"
-echo "  AXIOM — Building CI Docker Images"
-echo "════════════════════════════════════════════════════════"
+IMAGE_VERSION="3.1.2"
+REGISTRY="axiom-ci"
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+echo "--------------------------------------------------------"
+echo "  [AXIOM] DOCKER INFRASTRUCTURE BUILDER v${IMAGE_VERSION}"
+echo "--------------------------------------------------------"
 
-echo ""
-echo "[1/2] Building Ubuntu 22.04 image..."
-docker build \
-    -f "${SCRIPT_DIR}/Dockerfile.ubuntu" \
-    -t axiom-ci:ubuntu \
-    "${SCRIPT_DIR}"
+# 1. Build Ubuntu Base
+echo "[1/2] Building AXIOM Ubuntu (GCC 14 / C++23)..."
+docker build -t ${REGISTRY}:ubuntu-${IMAGE_VERSION} -f Dockerfile.ubuntu .
+docker tag ${REGISTRY}:ubuntu-${IMAGE_VERSION} ${REGISTRY}:ubuntu-latest
 
-echo ""
-echo "[2/2] Building Fedora 39 image..."
-docker build \
-    -f "${SCRIPT_DIR}/Dockerfile.fedora" \
-    -t axiom-ci:fedora \
-    "${SCRIPT_DIR}"
+# 2. Build Fedora Base
+echo "[2/2] Building AXIOM Fedora (Clang / Fedora 40)..."
+docker build -t ${REGISTRY}:fedora-${IMAGE_VERSION} -f Dockerfile.fedora .
+docker tag ${REGISTRY}:fedora-${IMAGE_VERSION} ${REGISTRY}:fedora-latest
 
-echo ""
-echo "✅ Images ready:"
-docker images | grep axiom-ci
-echo ""
+echo "--------------------------------------------------------"
+echo "  [SUCCESS] Images ready for Local CI usage."
+echo "  Usage: ./local-run.sh <os> (ubuntu/fedora)"
+echo "--------------------------------------------------------"

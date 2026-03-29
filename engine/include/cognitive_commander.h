@@ -14,29 +14,9 @@
 #include <atomic>
 #include "arena_allocator.h"
 #include "fixed_vector.h"
+#include "memory_pool.h"
 
 namespace AXIOM {
-
-/**
- * @brief Pinned memory pool for SLM weights and activations
- */
-class PinnedMemoryPool {
-    void* base_addr_{nullptr};
-    size_t size_{0};
-    std::atomic<size_t> offset_{0};
-
-public:
-    PinnedMemoryPool(size_t size) noexcept;
-    ~PinnedMemoryPool();
-
-    /**
-     * @brief Allocate from pinned pool (Zero-Allocation)
-     */
-    [[nodiscard]] void* allocate(size_t size) noexcept;
-    
-    [[nodiscard]] bool pin() noexcept;
-    void unpin() noexcept;
-};
 
 /**
  * @brief Cognitive Commander for Small Language Model (SLM) isolation

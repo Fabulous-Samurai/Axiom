@@ -3,12 +3,12 @@
 #include "string_helpers.h"
 
 #include <algorithm>
+#include <ranges>
 #include <cctype>
 #include <cmath>
-#include <limits>
-#include <map>
 #include <charconv>
 #include <utility>
+#include <system_error>
 #include "fixed_vector.h"
 
 namespace AXIOM {
@@ -192,14 +192,12 @@ EngineResult SymbolicEngine::Expand(std::string_view expression) noexcept {
 
     const std::string_view expr = TrimSV(expression);
     if (expr.size() >= 6 && expr.front() == '(' && expr.find(')') != std::string_view::npos && expr.back() >= '0' && expr.back() <= '9') {
-        const size_t close = expr.find(')');
-        if (close + 2 < expr.size() && expr[close + 1] == '^') {
+        if (const size_t close = expr.find(')'); close + 2 < expr.size() && expr[close + 1] == '^') {
             const std::string_view inside = expr.substr(1, close - 1);
             const std::string_view power_s = expr.substr(close + 2);
             double power_d = 0.0;
             if (ParseDoubleStrict(power_s, power_d) && IsIntegerValue(power_d)) {
-                const int n = static_cast<int>(std::round(power_d));
-                if (n >= 0 && n <= 16) {
+                if (const int n = static_cast<int>(std::round(power_d)); n >= 0 && n <= 16) {
                     size_t split = inside.find('+');
                     char op = '+';
                     if (split == std::string_view::npos) {
@@ -211,54 +209,11 @@ EngineResult SymbolicEngine::Expand(std::string_view expression) noexcept {
                         const std::string_view b_raw = TrimSV(inside.substr(split + 1));
                         
                         double b_num = 0.0;
-                        bool b_parsed = false;
-                        if (op == '-') {
-                            if (ParseDoubleStrict(b_raw, b_num)) {
-                                b_num = -b_num;
-                                b_parsed = true;
+                        if (ParseDoubleStrict(b_raw, b_num)) {
+                            if (op == '-') b_num = -b_num;
+                            if (!a.empty() && std::isalpha(static_cast<unsigned char>(a[0]))) {
+                                return CreateSuccessResult(ExpandBinomial(a, b_num, n));
                             }
-                        } else {
-                            if (ParseDoubleStrict(b_raw, b_num)) {
-                                b_parsed = true;
-                            }
-                        }
-
-                        bool a_is_var = !a.empty() && std::isalpha(static_cast<unsigned char>(a[0]));
-                        if (a_is_var && b_parsed) {
-                            AXIOM::FixedVector<char, 2048> out;
-                            bool first = true;
-                            for (int k = 0; k <= n; ++k) {
-                                const double coeff = BinomialCoeff(n, k) * std::pow(b_num, k);
-                                const int var_pow = n - k;
-                                if (std::abs(coeff) < 1e-12) {
-                                    continue;
-                                }
-
-                                if (!first) {
-                                    AppendToBuffer(out, coeff >= 0.0 ? " + " : " - ");
-                                } else if (coeff < 0.0) {
-                                    out.push_back('-');
-                                }
-
-                                const double abs_coeff = std::abs(coeff);
-                                const bool emit_coeff = (var_pow == 0) || std::abs(abs_coeff - 1.0) > 1e-12;
-                                if (emit_coeff) {
-                                    NumberToBuffer(abs_coeff, out);
-                                    if (var_pow > 0) {
-                                        out.push_back('*');
-                                    }
-                                }
-                                if (var_pow > 0) {
-                                    AppendToBuffer(out, a);
-                                    if (var_pow > 1) {
-                                        AppendToBuffer(out, "^");
-                                        NumberToBuffer(static_cast<double>(var_pow), out);
-                                    }
-                                }
-
-                                first = false;
-                            }
-                            return CreateSuccessResult(arena_.allocString(std::string_view(out.data(), out.size())));
                         }
                     }
                 }
@@ -285,12 +240,9 @@ EngineResult SymbolicEngine::Factor(std::string_view expression) noexcept {
     std::string_view candidate(candidate_buf.data(), candidate_buf.size());
 
     // Minimal integer-root factorization for x^2+bx+c.
-    size_t x2 = candidate.find("x^2");
-    if (x2 != std::string_view::npos) {
+    if (size_t x2 = candidate.find("x^2"); x2 != std::string_view::npos) {
         std::string_view tail = candidate.substr(x2 + 3);
-        // Expected format: [+|-]bx[+|-]c
-        size_t x_pos = tail.find('x');
-        if (x_pos != std::string_view::npos) {
+        if (size_t x_pos = tail.find('x'); x_pos != std::string_view::npos) {
             std::string_view b_str = tail.substr(0, x_pos);
             std::string_view c_str = tail.substr(x_pos + 1);
             if (b_str.empty() || b_str == "+") {
@@ -299,28 +251,8 @@ EngineResult SymbolicEngine::Factor(std::string_view expression) noexcept {
                 b_str = "-1";
             }
 
-            double b = 0.0;
-            double c = 0.0;
-            if (ParseDoubleStrict(b_str, b) && ParseDoubleStrict(c_str, c) && IsIntegerValue(b) && IsIntegerValue(c)) {
-                const int bi = static_cast<int>(std::round(b));
-                const int ci = static_cast<int>(std::round(c));
-                for (int p = -64; p <= 64; ++p) {
-                    if (p == 0 || ci % p != 0) {
-                        continue;
-                    }
-                    const int q = ci / p;
-                    if (p + q == bi) {
-                        AXIOM::FixedVector<char, 256> out;
-                        AppendToBuffer(out, "(x");
-                        if (p >= 0) AppendToBuffer(out, " + "); else AppendToBuffer(out, " - ");
-                        NumberToBuffer(std::abs(static_cast<double>(p)), out);
-                        AppendToBuffer(out, ")*(x");
-                        if (q >= 0) AppendToBuffer(out, " + "); else AppendToBuffer(out, " - ");
-                        NumberToBuffer(std::abs(static_cast<double>(q)), out);
-                        AppendToBuffer(out, ")");
-                        return CreateSuccessResult(arena_.allocString(std::string_view(out.data(), out.size())));
-                    }
-                }
+            if (std::string_view factored = FactorQuadratic(b_str, c_str); !factored.empty()) {
+                return CreateSuccessResult(factored);
             }
         }
     }
@@ -495,44 +427,12 @@ EngineResult SymbolicEngine::TaylorSeries(std::string_view expr, std::string_vie
     bool any_term = false;
 
     for (int k = 0; k <= order; ++k) {
-        AXIOM::SymbolTable context;
-        context.push_back({variable, AXIOM::Number(point)});
-        
-        auto res = current_ast->Evaluate(context);
-        if (res.HasValue()) {
-            const double coeff = GetReal(*res.value) / fact;
-            if (std::abs(coeff) > 1e-12) {
-                if (any_term) {
-                    AppendToBuffer(series, coeff >= 0.0 ? " + " : " - ");
-                } else if (coeff < 0.0) {
-                    series.push_back('-');
-                }
-                const double abs_coeff = std::abs(coeff);
-                if (k == 0) {
-                    NumberToBuffer(abs_coeff, series);
-                } else {
-                    if (std::abs(abs_coeff - 1.0) > 1e-12) {
-                        NumberToBuffer(abs_coeff, series);
-                        series.push_back('*');
-                    }
-                    series.push_back('(');
-                    AppendToBuffer(series, variable);
-                    AppendToBuffer(series, " - ");
-                    NumberToBuffer(point, series);
-                    series.push_back(')');
-                    if (k > 1) {
-                        series.push_back('^');
-                        NumberToBuffer(static_cast<double>(k), series);
-                    }
-                }
-                any_term = true;
-            }
-        }
+        CalculateTaylorTerm(series, variable, point, k, fact, current_ast, any_term);
 
         if (k < order) {
-            current_ast = current_ast->Derivative(parser.GetArena(), variable);
+            current_ast = NodeDispatcher::Derivative(current_ast, parser.GetArena(), variable);
             if (!current_ast) break;
-            current_ast = current_ast->Simplify(parser.GetArena());
+            current_ast = NodeDispatcher::Simplify(current_ast, parser.GetArena());
             fact *= static_cast<double>(k + 1);
         }
     }
@@ -550,19 +450,8 @@ EngineResult SymbolicEngine::SolveEquation(std::string_view equation, std::strin
     }
 
     const std::string_view var = TrimSV(variable);
-    const std::string_view eq = TrimSV(equation);
-    const size_t equal_pos = eq.find('=');
-    
     AXIOM::FixedVector<char, 2048> expr_buf;
-    if (equal_pos != std::string_view::npos) {
-        expr_buf.push_back('(');
-        AppendToBuffer(expr_buf, eq.substr(0, equal_pos));
-        AppendToBuffer(expr_buf, ")-(");
-        AppendToBuffer(expr_buf, eq.substr(equal_pos + 1));
-        expr_buf.push_back(')');
-    } else {
-        AppendToBuffer(expr_buf, eq);
-    }
+    BuildEquationExpression(expr_buf, TrimSV(equation));
     std::string_view expr(expr_buf.data(), expr_buf.size());
 
     AXIOM::FixedVector<double, 256> roots;
@@ -602,7 +491,7 @@ EngineResult SymbolicEngine::SolveEquation(std::string_view equation, std::strin
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
 
-    std::sort(roots.begin(), roots.end());
+    std::ranges::sort(roots);
     AXIOM::FixedVector<double, 256> unique_roots;
     for (double r : roots) {
         if (unique_roots.empty() || std::abs(unique_roots.back() - r) > 1e-5) {
@@ -718,7 +607,7 @@ EngineResult SymbolicEngine::FindRoots(std::string_view expr, std::string_view v
     if (roots.empty()) {
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
-    std::sort(roots.begin(), roots.end());
+    std::ranges::sort(roots);
     AXIOM::FixedVector<double, 256> unique_roots;
     for (double r : roots) {
         if (unique_roots.empty() || std::abs(unique_roots.back() - r) > 1e-5) {
@@ -726,6 +615,123 @@ EngineResult SymbolicEngine::FindRoots(std::string_view expr, std::string_view v
         }
     }
     return CreateSuccessResult(std::move(unique_roots));
+}
+
+std::string_view SymbolicEngine::ExpandBinomial(std::string_view var_name, double b_num, int n) noexcept {
+    AXIOM::FixedVector<char, 2048> out;
+    bool first = true;
+    for (int k = 0; k <= n; ++k) {
+        const double coeff = BinomialCoeff(n, k) * std::pow(b_num, k);
+        const int var_pow = n - k;
+        if (std::abs(coeff) < 1e-12) {
+            continue;
+        }
+
+        if (!first) {
+            AppendToBuffer(out, coeff >= 0.0 ? " + " : " - ");
+        } else if (coeff < 0.0) {
+            out.push_back('-');
+        }
+
+        const double abs_coeff = std::abs(coeff);
+        const bool emit_coeff = (var_pow == 0) || std::abs(abs_coeff - 1.0) > 1e-12;
+        if (emit_coeff) {
+            NumberToBuffer(abs_coeff, out);
+            if (var_pow > 0) {
+                out.push_back('*');
+            }
+        }
+        if (var_pow > 0) {
+            AppendToBuffer(out, var_name);
+            if (var_pow > 1) {
+                AppendToBuffer(out, "^");
+                NumberToBuffer(static_cast<double>(var_pow), out);
+            }
+        }
+
+        first = false;
+    }
+    return arena_.allocString(std::string_view(out.data(), out.size()));
+}
+
+std::string_view SymbolicEngine::FactorQuadratic(std::string_view b_str, std::string_view c_str) noexcept {
+    double b = 0.0, c = 0.0;
+    if (ParseDoubleStrict(b_str, b) && ParseDoubleStrict(c_str, c) && IsIntegerValue(b) && IsIntegerValue(c)) {
+        const int bi = static_cast<int>(std::round(b));
+        const int ci = static_cast<int>(std::round(c));
+        for (int p = -64; p <= 64; ++p) {
+            if (p == 0 || (ci != 0 && ci % p != 0)) continue;
+            const int q = (ci == 0) ? (bi - p) : (ci / p);
+            if (p + q == bi && p * q == ci) {
+                AXIOM::FixedVector<char, 256> out;
+                AppendToBuffer(out, "(x");
+                if (p >= 0) AppendToBuffer(out, " + "); else AppendToBuffer(out, " - ");
+                NumberToBuffer(std::abs(static_cast<double>(p)), out);
+                AppendToBuffer(out, ")*(x");
+                if (q >= 0) AppendToBuffer(out, " + "); else AppendToBuffer(out, " - ");
+                NumberToBuffer(std::abs(static_cast<double>(q)), out);
+                AppendToBuffer(out, ")");
+                return arena_.allocString(std::string_view(out.data(), out.size()));
+            }
+        }
+    }
+    return {};
+}
+
+bool SymbolicEngine::CalculateTaylorTerm(FixedVector<char, 2048>& series,
+                                        std::string_view variable,
+                                        double point,
+                                        int k,
+                                        double fact,
+                                        NodePtr ast,
+                                        bool& any_term) noexcept {
+    SymbolTable context;
+    context.push_back({std::string(variable), AXIOM::Number(point)});
+
+    auto res = NodeDispatcher::Evaluate(ast, context);
+    if (res.HasValue()) {
+        const double coeff = GetReal(*res.value) / fact;
+        if (std::abs(coeff) > 1e-12) {
+            if (any_term) {
+                AppendToBuffer(series, coeff >= 0.0 ? " + " : " - ");
+            } else if (coeff < 0.0) {
+                series.push_back('-');
+            }
+            const double abs_coeff = std::abs(coeff);
+            if (k == 0) {
+                NumberToBuffer(abs_coeff, series);
+            } else {
+                if (std::abs(abs_coeff - 1.0) > 1e-12) {
+                    NumberToBuffer(abs_coeff, series);
+                    series.push_back('*');
+                }
+                series.push_back('(');
+                AppendToBuffer(series, variable);
+                AppendToBuffer(series, " - ");
+                NumberToBuffer(point, series);
+                series.push_back(')');
+                if (k > 1) {
+                    series.push_back('^');
+                    NumberToBuffer(static_cast<double>(k), series);
+                }
+            }
+            any_term = true;
+            return true;
+        }
+    }
+    return false;
+}
+
+void SymbolicEngine::BuildEquationExpression(AXIOM::FixedVector<char, 2048>& buffer, std::string_view eq) noexcept {
+    if (const size_t equal_pos = eq.find('='); equal_pos != std::string_view::npos) {
+        buffer.push_back('(');
+        AppendToBuffer(buffer, eq.substr(0, equal_pos));
+        AppendToBuffer(buffer, ")-(");
+        AppendToBuffer(buffer, eq.substr(equal_pos + 1));
+        buffer.push_back(')');
+    } else {
+        AppendToBuffer(buffer, eq);
+    }
 }
 
 } // namespace AXIOM

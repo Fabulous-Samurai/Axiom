@@ -11,10 +11,10 @@ namespace AXIOM {
 class StatisticsParser : public IParser {
 public:
     explicit StatisticsParser(StatisticsEngine* engine) : engine_(engine) {}
-    EngineResult ParseAndExecute(const std::string& input) override;
+    EngineResult ParseAndExecute(std::string_view input) noexcept override;
 private:
     StatisticsEngine* engine_;
-    static std::vector<double> ParseVector(const std::string& s);
+    static AXIOM::FixedVector<double, 256> ParseVector(const std::string& s);
 };
 
 } // namespace AXIOM

@@ -21,7 +21,7 @@ void JitExecutionManager::compileExpression(const QString& expr) {
 
     // Use zero-allocation SymbolTable
     AXIOM::SymbolTable var_map;
-    node->CollectVariables(var_map);
+    AXIOM::NodeDispatcher::CollectVariables(node, var_map);
     
     auto fn = m_jit.Compile(node, var_map);
     if (!fn) {

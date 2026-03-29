@@ -1,43 +1,35 @@
 // [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
 #include "statistics_parser.h"
+#include "string_helpers.h"
 #include <algorithm>
 #include <cctype>
 
 namespace AXIOM {
 
-static std::string trim(const std::string& s) {
-    size_t b = s.find_first_not_of(" \t\n\r");
-    size_t e = s.find_last_not_of(" \t\n\r");
-    if (b == std::string::npos) return "";
-    return s.substr(b, e - b + 1);
-}
-
 AXIOM::FixedVector<double, 256> StatisticsParser::ParseVector(const std::string& s) {
     AXIOM::FixedVector<double, 256> out;
-    // Find outer brackets
     size_t lb = s.find('[');
     size_t rb = s.rfind(']');
     if (lb == std::string::npos || rb == std::string::npos || rb <= lb) return out;
+    
     std::string body = s.substr(lb + 1, rb - lb - 1);
-    // Split by comma or semicolon
-    std::string token;
-    for (char c : body) {
-        if (c == ',' || c == ';') {
-            if (!token.empty()) {
-                out.push_back(std::stod(trim(token)));
-                token.clear();
+    size_t pos = 0;
+    while (pos < body.size()) {
+        size_t next = body.find_first_of(",;", pos);
+        std::string_view token = Utils::Trim(std::string_view(body).substr(pos, next == std::string::npos ? std::string_view::npos : next - pos));
+        if (!token.empty()) {
+            if (auto val = Utils::FastParseDouble(token)) {
+                out.push_back(*val);
             }
-        } else {
-            token.push_back(c);
         }
+        if (next == std::string::npos) break;
+        pos = next + 1;
     }
-    if (!token.empty()) out.push_back(std::stod(trim(token)));
     return out;
 }
 
-EngineResult StatisticsParser::ParseAndExecute(const std::string& input) {
-    std::string s = input;
-    // Lowercase for command detection
+EngineResult StatisticsParser::ParseAndExecute(std::string_view input) noexcept {
+    std::string s = std::string(input);
     std::string lower;
     lower.reserve(s.size());
     for (char c : s) lower.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
@@ -52,20 +44,17 @@ EngineResult StatisticsParser::ParseAndExecute(const std::string& input) {
         return engine_->StandardDeviation(ParseVector(s));
     }
     if (lower.find("median") == 0 || lower.find("statsmedian") == 0) {
-        auto vec = ParseVector(s);
-        return engine_->Median(vec);
+        return engine_->Median(ParseVector(s));
     }
     if (lower.find("mode") == 0 || lower.find("statsmode") == 0) {
         return engine_->Mode(ParseVector(s));
     }
 
-    // correlation([x],[y])
     if (lower.find("correlation(") == 0 || lower.find("statscorrelation(") == 0) {
         size_t lp = s.find('(');
         size_t rp = s.rfind(')');
         if (lp != std::string::npos && rp != std::string::npos && rp > lp) {
             std::string args = s.substr(lp + 1, rp - lp - 1);
-            // Split on '],' boundary
             size_t mid = args.find("],[");
             if (mid != std::string::npos) {
                 std::string xpart = args.substr(0, mid + 1);
@@ -73,15 +62,10 @@ EngineResult StatisticsParser::ParseAndExecute(const std::string& input) {
                 return engine_->Correlation(ParseVector(xpart), ParseVector(ypart));
             }
         }
-        EngineResult res;
-        res.error = EngineErrorResult{CalcErr::ArgumentMismatch};
-        return res;
+        return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
 
-    EngineResult res;
-    res.error = EngineErrorResult{CalcErr::OperationNotFound};
-    return res;
+    return CreateErrorResult(CalcErr::OperationNotFound);
 }
 
 } // namespace AXIOM
-

@@ -14,10 +14,10 @@ endmacro()
 # ─── AXIOM Engine Core (Pure Utilities) ────────────────────────────
 add_library(axiom_engine_core STATIC
     core/arena_allocator.cpp
+    core/memory_pool.cpp
     core/pmu_orchestrator.cpp
     core/pluto_controller.cpp
     core/crash_dump.cpp
-    core/dynamic_calc.cpp
     core/unit_manager.cpp
     core/string_helpers.cpp
     core/cpu_optimization.cpp
@@ -95,8 +95,10 @@ endif()
 
 # ─── AXIOM Engine API ──────────────────────────────────────────────
 add_library(axiom_engine_api STATIC
+    core/dynamic_calc.cpp
     api/algebraic_parser.cpp
-    api/linear_system_parser.cpp
+    compute/node_dispatcher.cpp
+    api/axiom_bridge.cpp
     api/symbolic_parser.cpp
     api/statistics_parser.cpp
     api/plot_parser.cpp
@@ -111,6 +113,12 @@ add_library(axiom_engine_api STATIC
     dispatch/execution_orchestrator_capi.cpp
 )
 enforce_zenith_pillars(axiom_engine_api)
+
+# [EXCEPTION]: nanobind requires RTTI and Exceptions to function correctly
+set_source_files_properties(api/python_bindings.cpp api/nanobind_interface.cpp PROPERTIES COMPILE_FLAGS "-fexceptions -frtti")
+if(MSVC)
+    set_source_files_properties(api/python_bindings.cpp api/nanobind_interface.cpp PROPERTIES COMPILE_FLAGS "/EHsc /GR")
+endif()
 
 target_link_libraries(axiom_engine_api PUBLIC
     axiom_engine_core

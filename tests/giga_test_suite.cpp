@@ -619,7 +619,7 @@ void TestHarmonicArena(TestRunner& runner) {
         constexpr int thread_count = 4;
         constexpr int allocs_per_thread = 2000;
 
-        std::vector<std::thread> workers;
+        std::vector<std::jthread> workers;
         workers.reserve(thread_count);
         for (int t = 0; t < thread_count; ++t) {
             workers.emplace_back([&arena, &ok_count]() {
@@ -630,10 +630,6 @@ void TestHarmonicArena(TestRunner& runner) {
                     }
                 }
             });
-        }
-
-        for (auto& w : workers) {
-            w.join();
         }
 
         return ok_count.load(std::memory_order_relaxed) == (thread_count * allocs_per_thread);
@@ -699,12 +695,11 @@ void TestAdversarialSuite(TestRunner& runner) {
             }
         };
 
-        std::vector<std::thread> threads;
+        std::vector<std::jthread> threads;
         for(int i = 0; i < 8; ++i) threads.emplace_back(worker);
         
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         stop.store(true);
-        for(auto& t : threads) t.join();
         
         return true;
     });

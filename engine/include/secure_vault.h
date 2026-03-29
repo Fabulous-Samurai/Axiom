@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include <vector>
 #include <memory>
 #include <cstdint>
 #include "arena_allocator.h"
@@ -36,17 +35,17 @@ public:
     /**
      * @brief Seal the state machine into encrypted memory
      */
-    bool seal(const void* src, size_t size);
+    bool seal(const void* src, size_t size) noexcept;
 
     /**
      * @brief Unseal the state machine into a protected buffer
      */
-    bool unseal(void* dst, size_t size);
+    bool unseal(void* dst, size_t size) noexcept;
 
     /**
      * @brief Perform a secure computation transition (Enclave ECALL)
      */
-    void secure_transition();
+    void secure_transition() noexcept;
 };
 
 } // namespace AXIOM

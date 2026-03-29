@@ -599,7 +599,7 @@ TEST(AxiomEngine, Test_ConcurrencyStress) {
     
     const int num_threads = 16;
     const int iterations_per_thread = 500;
-    std::vector<std::thread> workers;
+    std::vector<std::jthread> workers;
     std::atomic<int> success_count{0};
     
     auto worker_task = [&success_count, iterations_per_thread]() {
@@ -617,10 +617,6 @@ TEST(AxiomEngine, Test_ConcurrencyStress) {
     
     for(int i = 0; i < num_threads; i++) {
         workers.emplace_back(worker_task);
-    }
-    
-    for(auto& t : workers) {
-        t.join();
     }
     
     EXPECT_EQ(success_count.load(), num_threads * iterations_per_thread);

@@ -9,7 +9,6 @@ ThemeResolver::TokenParts ThemeResolver::parseToken(const std::string& token) {
     if (token.empty()) return parts;
 
     size_t start = 0;
-    // Strip leading spaces
     while (start < token.size() && token[start] == ' ') start++;
     
     if (start >= token.size() || token[start] != '@') return parts;
@@ -32,7 +31,6 @@ void ThemeResolver::loadTheme(const std::string& theme_json) {
 
     simdjson::ondemand::parser parser;
     try {
-        // Padded string is required for simdjson on-demand
         std::string padded_json = theme_json + std::string(simdjson::SIMDJSON_PADDING, ' ');
         auto doc = parser.iterate(padded_json);
         auto root = doc.get_object().value();
@@ -110,9 +108,7 @@ void ThemeResolver::loadTheme(const std::string& theme_json) {
                 }
             }
         }
-
         loaded_ = true;
-
     } catch (simdjson::simdjson_error& e) {
         std::cerr << "simdjson error in loadTheme: " << e.what() << std::endl;
         loaded_ = false;
@@ -130,7 +126,6 @@ Color ThemeResolver::resolveColor(const std::string& token) const {
 
 double ThemeResolver::resolveNumber(const std::string& token) const {
     auto parts = parseToken(token);
-
     if (parts.category == "typography") {
         auto it = theme_.typography.find(parts.key);
         if (it != theme_.typography.end()) return it->second;
@@ -154,7 +149,6 @@ double ThemeResolver::resolveNumber(const std::string& token) const {
         if (parts.key == "defaultBorderOpacity") return theme_.glass.defaultBorderOpacity;
         if (parts.key == "defaultNoiseStrength") return theme_.glass.defaultNoiseStrength;
     }
-
     return 0.0;
 }
 
@@ -187,8 +181,8 @@ void ThemeResolver::resolveNode(UINode& node) {
     resolveGlassDefaults(node.glass);
     resolveHoverColors(node.hover);
 
-    for (auto& child : node.children) {
-        resolveNode(child);
+    for (auto* child : node.children) {
+        if (child) resolveNode(*child);
     }
 }
 
@@ -197,19 +191,19 @@ static bool isThemeCategory(const std::string& cat) {
            cat == "radius" || cat == "animation" || cat == "glass";
 }
 
-void ThemeResolver::resolveProperties(std::vector<Property>& props) {
+void ThemeResolver::resolveProperties(AXIOM::FixedVector<Property, 32>& props) {
     for (auto& prop : props) {
         std::string token_str;
         bool is_token = false;
 
-        if (auto* str = std::get_if<std::string>(&prop.value)) {
-            if (isToken(*str)) {
-                token_str = *str;
+        if (auto* sv = std::get_if<std::string_view>(&prop.value)) {
+            if (isToken(*sv)) {
+                token_str = std::string(*sv);
                 is_token = true;
             }
         } else if (auto* binding = std::get_if<Binding>(&prop.value)) {
             if (isToken(binding->path)) {
-                token_str = binding->path;
+                token_str = std::string(binding->path);
                 is_token = true;
             }
         }
@@ -228,7 +222,7 @@ void ThemeResolver::resolveProperties(std::vector<Property>& props) {
                     } else {
                         auto str_it = theme_.typographyStrings.find(parts.key);
                         if (str_it != theme_.typographyStrings.end()) {
-                            prop.value = str_it->second;
+                            prop.value = std::string_view(str_it->second); // Note: lifetime must be managed
                             resolve_count_++;
                         }
                     }
@@ -246,31 +240,18 @@ void ThemeResolver::resolveProperties(std::vector<Property>& props) {
 
 void ThemeResolver::resolveGlassDefaults(GlassParams& glass) {
     if (glass.enabled && loaded_) {
-        // Only override if they are the default values from parser
-        if (glass.blur_radius == 32.0f) {
-            glass.blur_radius = static_cast<float>(theme_.glass.defaultBlur);
-        }
-        if (glass.bg_opacity == 0.1f) {
-            glass.bg_opacity = static_cast<float>(theme_.glass.defaultOpacity);
-        }
-        if (glass.border_opacity == 0.2f) {
-            glass.border_opacity = static_cast<float>(theme_.glass.defaultBorderOpacity);
-        }
-        if (glass.noise_strength == 0.015f) {
-            glass.noise_strength = static_cast<float>(theme_.glass.defaultNoiseStrength);
-        }
+        if (glass.blur_radius == 32.0f) glass.blur_radius = static_cast<float>(theme_.glass.defaultBlur);
+        if (glass.bg_opacity == 0.1f) glass.bg_opacity = static_cast<float>(theme_.glass.defaultOpacity);
+        if (glass.border_opacity == 0.2f) glass.border_opacity = static_cast<float>(theme_.glass.defaultBorderOpacity);
+        if (glass.noise_strength == 0.015f) glass.noise_strength = static_cast<float>(theme_.glass.defaultNoiseStrength);
     }
 }
 
-void ThemeResolver::resolveHoverColors(HoverParams& hover) {
-    // Implement if needed
-}
+void ThemeResolver::resolveHoverColors(HoverParams& hover) {}
 
 void ThemeResolver::swapTheme(UINode& root, const std::string& new_theme_json) {
     loadTheme(new_theme_json);
-    if (loaded_) {
-        resolve(root);
-    }
+    if (loaded_) resolve(root);
 }
 
 } // namespace axui

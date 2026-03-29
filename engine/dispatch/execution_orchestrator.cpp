@@ -27,7 +27,7 @@ struct ExecutionOrchestrator::Impl {
         double time_ms;
     } metrics_;
 
-    Impl() {
+    explicit Impl() {
         engine_availability_.push_back({ComputeEngine::Native, true});
         engine_availability_.push_back({ComputeEngine::Vulkan, false}); // To be enabled in Phase 7
     }
@@ -64,12 +64,10 @@ EngineResult ExecutionOrchestrator::DispatchOperation(std::string_view operation
     }
 
     // Build operation string in a fixed buffer (Zero-Allocation)
-    char buffer[2048];
-    size_t offset = 0;
+    AXIOM::FixedVector<char, 2048> buffer;
     auto append = [&](std::string_view sv) {
-        if (offset + sv.size() < sizeof(buffer)) {
-            std::memcpy(buffer + offset, sv.data(), sv.size());
-            offset += sv.size();
+        for (char c : sv) {
+            buffer.push_back(c);
         }
     };
 
@@ -79,7 +77,7 @@ EngineResult ExecutionOrchestrator::DispatchOperation(std::string_view operation
         append(arg);
     }
     
-    std::string_view full_expr(buffer, offset);
+    std::string_view full_expr(buffer.data(), buffer.size());
     
     thread_local DynamicCalc native;
     auto result = native.Evaluate(full_expr);
@@ -111,13 +109,14 @@ uint64_t ExecutionOrchestrator::OffloadToGPU(const ComputeTask& task, const void
 }
 
 std::string_view ExecutionOrchestrator::GetPerformanceReport() const {
-    static char report_buffer[512];
-    int len = std::snprintf(report_buffer, sizeof(report_buffer),
+    static AXIOM::FixedVector<char, 512> report_buffer;
+    int len = std::snprintf(report_buffer.data(), report_buffer.capacity(),
         "Last: %.*s | Engine: %d | Time: %.4fms",
         (int)pimpl_->metrics_.last_op.size(), pimpl_->metrics_.last_op.data(),
         (int)pimpl_->metrics_.engine,
         pimpl_->metrics_.time_ms);
-    return std::string_view(report_buffer, len > 0 ? len : 0);
+    if (len > 0) report_buffer.resize(static_cast<size_t>(len));
+    return std::string_view(report_buffer.data(), report_buffer.size());
 }
 
 } // namespace AXIOM

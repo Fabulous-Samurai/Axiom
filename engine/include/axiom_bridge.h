@@ -25,6 +25,8 @@ extern "C" {
 
 /**
  * @brief Calculation Result Schema for UI Integration
+ * [SONAR WAVE 1]: Kept char[] for error_msg to maintain C-ABI compatibility.
+ * Internal hot-paths utilize AXIOM::FixedVector.
  */
 typedef struct AXIOM_C_ALIGN(64) {
     double value;

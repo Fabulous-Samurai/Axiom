@@ -12,19 +12,19 @@ public:
     explicit PythonParser(PythonEngine* engine, PythonMode mode = PythonMode::Interactive);
     ~PythonParser() = default;
 
-    EngineResult ParseAndExecute(const std::string& input) override;
+    EngineResult ParseAndExecute(std::string_view input) noexcept override;
 
 private:
     PythonEngine* python_engine_;
     PythonMode mode_;
 
     // Mode-specific handlers
-    std::string HandleInteractiveMode(const std::string& input);
-    std::string HandleNumPyMode(const std::string& input);
-    std::string HandleSciPyMode(const std::string& input);
-    std::string HandleMatplotlibMode(const std::string& input);
-    std::string HandlePandasMode(const std::string& input);
-    std::string HandleSymPyMode(const std::string& input);
+    std::string HandleInteractiveMode(std::string_view input);
+    std::string HandleNumPyMode(std::string_view input);
+    std::string HandleSciPyMode(std::string_view input);
+    std::string HandleMatplotlibMode(std::string_view input);
+    std::string HandlePandasMode(std::string_view input);
+    std::string HandleSymPyMode(std::string_view input);
 };
 
 } // namespace AXIOM

@@ -16,7 +16,7 @@ namespace AXIOM {
 
 class AXIOM_EXPORT SymbolicEngine {
 private:
-    Arena arena_;
+    alignas(64) Arena arena_;
 public:
     SymbolicEngine() noexcept : arena_(1024 * 512) {}
 
@@ -40,6 +40,18 @@ public:
     // Advanced features
     EngineResult FindLimits(std::string_view expr, std::string_view var, double approach_point) noexcept;
     EngineResult FindRoots(std::string_view expr, std::string_view var, double range_min, double range_max) noexcept;
+
+private:
+    std::string_view ExpandBinomial(std::string_view var_name, double b_num, int n) noexcept;
+    std::string_view FactorQuadratic(std::string_view b_str, std::string_view c_str) noexcept;
+    bool CalculateTaylorTerm(FixedVector<char, 2048>& series,
+                            std::string_view variable,
+                            double point,
+                            int k,
+                            double fact,
+                            NodePtr ast,
+                            bool& any_term) noexcept;
+    void BuildEquationExpression(AXIOM::FixedVector<char, 2048>& buffer, std::string_view eq) noexcept;
 };
 
 } // namespace AXIOM

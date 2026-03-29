@@ -73,7 +73,7 @@ private:
     std::atomic<State>    current_state_{State::NORMAL};
     std::atomic<bool>     is_running_{false};
 
-    std::thread monitor_thread_;
+    std::jthread monitor_thread_;
 
     // Thresholds
     static constexpr uint64_t SUSPICION_THRESHOLD_MS = 50;  // 50ms without UI heartbeat = Suspicious

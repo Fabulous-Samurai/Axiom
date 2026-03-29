@@ -3,8 +3,15 @@
 > **PROTOCOL:** Agents must check this file at the start of every session. Update your status here upon completion.
 
 ## 🚨 SYSTEM STABILITY CHECKPOINT (MANDATORY)
-**STATUS:** `ACTIVE_AUDIT / REPAIRING`
-**GOAL:** Ensure system integrity before Phase 7 Compute Offloading.
+**STATUS:** `ACTIVE_AUDIT / QUALITY_PURGE`
+**GOAL:** Eliminate Critical Sonar Issues and Technical Debt before Phase 7.
+
+### [URGENT] SONAR QUALITY PURGE: WAVE 1 (Determinism & Safety)
+**STATUS:** `COMPLETED`
+- [x] **Fix Atomic Memory Ordering:** Standardize `std::memory_order` to `seq_cst` in `DashboardManager` and `PoolManager` to ensure Pillar 3 compliance.
+- [x] **Enforce Explicit Constructors:** Audit and apply `explicit` keyword to all constructors in `AlgebraicParser` and `ExecutionOrchestrator` to prevent accidental type conversions.
+- [x] **C-Style Array Removal:** Replace legacy `char[]` buffers with `std::string_view` or `FixedVector<char>` across core API boundaries.
+- [x] **noexcept Audit:** Ensure all hot-path functions are marked `noexcept` as flagged by Sonar.
 
 ### [AUDIT_A] - ARCHITECT (Compliance & Static)
 **STATUS:** `CRITICAL_REPAIR`

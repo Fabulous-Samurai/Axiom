@@ -22,9 +22,6 @@
 
 namespace AXIOM {
 
-enum class ComputeEngine { Native, Eigen, Python, Vulkan, Auto };
-enum class OperationComplexity { Simple, Medium, Complex, VeryComplex };
-
 /**
  * @brief Represents a compute task that can be executed on CPU or GPU.
  */
@@ -37,7 +34,7 @@ struct ComputeTask {
 
 class ExecutionOrchestrator {
 public:
-    ExecutionOrchestrator();
+    explicit ExecutionOrchestrator();
     ~ExecutionOrchestrator();
 
     // Prevent copying

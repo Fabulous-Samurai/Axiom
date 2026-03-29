@@ -9,9 +9,9 @@ CompileResult Compiler::compile(const std::string& axui_json) {
     auto start = std::chrono::high_resolution_clock::now();
     CompileResult result;
 
-    result.root = parser_.parse(axui_json);
+    result.root = parser_.parse(axui_json, allocator_);
 
-    if (parser_.hasErrors()) {
+    if (parser_.hasErrors() || !result.root) {
         result.success = false;
         for (const auto& err : parser_.errors()) {
             result.errors.push_back(err.message);
@@ -20,7 +20,7 @@ CompileResult Compiler::compile(const std::string& axui_json) {
     }
 
     result.success = true;
-    result.node_count = result.root.totalNodeCount();
+    result.node_count = result.root->totalNodeCount();
 
     auto end = std::chrono::high_resolution_clock::now();
     result.compile_time_ms = std::chrono::duration_cast<
@@ -46,8 +46,8 @@ CompileResult Compiler::compile(
 
     auto result = compile(axui_json);
 
-    if (result.success) {
-        resolver_.resolve(result.root);
+    if (result.success && result.root) {
+        resolver_.resolve(*result.root);
     }
 
     auto end = std::chrono::high_resolution_clock::now();

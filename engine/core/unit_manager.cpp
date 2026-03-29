@@ -1,6 +1,5 @@
 // [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
 #include "unit_manager.h"
-#include <cmath>
 #include <numbers>
 #include <algorithm>
 
@@ -43,9 +42,7 @@ UnitManager::UnitManager() {
     RegisterUnit("grad", UnitType::Angle, std::numbers::pi/200.0, "gradian");
 
     // Sort for binary search
-    std::sort(units_.begin(), units_.end(), [](const Unit& a, const Unit& b) {
-        return a.symbol < b.symbol;
-    });
+    std::ranges::sort(units_, {}, &Unit::symbol);
 }
 
 void UnitManager::RegisterUnit(std::string_view symbol, UnitType type, double scale, std::string_view name) noexcept {
@@ -53,13 +50,8 @@ void UnitManager::RegisterUnit(std::string_view symbol, UnitType type, double sc
 }
 
 EngineResult UnitManager::ConvertUnit(double value, std::string_view from_unit, std::string_view to_unit) noexcept {
-    auto from_it = std::lower_bound(units_.begin(), units_.end(), from_unit, [](const Unit& u, std::string_view s) {
-        return u.symbol < s;
-    });
-    
-    auto to_it = std::lower_bound(units_.begin(), units_.end(), to_unit, [](const Unit& u, std::string_view s) {
-        return u.symbol < s;
-    });
+    auto from_it = std::ranges::lower_bound(units_, from_unit, {}, &Unit::symbol);
+    auto to_it = std::ranges::lower_bound(units_, to_unit, {}, &Unit::symbol);
 
     if (from_it == units_.end() || from_it->symbol != from_unit || 
         to_it == units_.end() || to_it->symbol != to_unit) {
@@ -111,13 +103,8 @@ AXIOM::EngineResult UnitManager::ConvertTemperature(double value, std::string_vi
 }
 
 bool UnitManager::AreCompatible(std::string_view unit1, std::string_view unit2) noexcept {
-    auto u1_it = std::lower_bound(units_.begin(), units_.end(), unit1, [](const Unit& u, std::string_view s) {
-        return u.symbol < s;
-    });
-    
-    auto u2_it = std::lower_bound(units_.begin(), units_.end(), unit2, [](const Unit& u, std::string_view s) {
-        return u.symbol < s;
-    });
+    auto u1_it = std::ranges::lower_bound(units_, unit1, {}, &Unit::symbol);
+    auto u2_it = std::ranges::lower_bound(units_, unit2, {}, &Unit::symbol);
 
     return (u1_it != units_.end() && u1_it->symbol == unit1 && 
             u2_it != units_.end() && u2_it->symbol == unit2 && 
@@ -137,9 +124,9 @@ std::string_view UnitManager::GetCanonicalUnit(UnitType type) noexcept {
 
 AXIOM::FixedVector<std::string_view, 256> UnitManager::GetUnitsOfType(UnitType type) noexcept {
     AXIOM::FixedVector<std::string_view, 256> result;
-    for (const auto& unit : units_) {
-        if (unit.type == type) {
-            result.push_back(unit.symbol);
+    for (const auto& [u_type, scale, symbol, name] : units_) {
+        if (u_type == type) {
+            result.push_back(symbol);
         }
     }
     return result;
