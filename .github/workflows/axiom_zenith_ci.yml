@@ -58,7 +58,7 @@ jobs:
           python-version: '3.12'
       - name: "Install System Dependencies"
         run: |
-          sudo apt-get update && sudo apt-get install -y ninja-build python3-dev libnuma-dev valgrind
+          sudo apt-get update && sudo apt-get install -y ninja-build python3-dev libnuma-dev valgrind libvulkan-dev qt6-base-dev qt6-declarative-dev
           python -m pip install nanobind pytest numpy matplotlib
       - name: "Install build-wrapper"
         run: |
