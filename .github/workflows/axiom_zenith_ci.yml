@@ -58,7 +58,7 @@ jobs:
           python-version: '3.12'
       - name: "Install System Dependencies"
         run: |
-          sudo apt-get update && sudo apt-get install -y ninja-build python3-dev libnuma-dev valgrind
+          sudo apt-get update && sudo apt-get install -y ninja-build python3-dev libnuma-dev valgrind libvulkan-dev qt6-base-dev qt6-declarative-dev
           python -m pip install nanobind pytest numpy matplotlib
       - name: "Install build-wrapper"
         run: |
@@ -137,6 +137,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: "Setup Vulkan"
+        uses: humbleui/setup-vulkan@v1.0.4
+      - name: "Setup Qt"
+        uses: jurplel/install-qt-action@v4
       - name: "Install Ninja & Dependencies"
         run: |
           choco install ninja
@@ -179,6 +183,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: "Setup Vulkan"
+        uses: humbleui/setup-vulkan@v1.0.4
+      - name: "Setup Qt"
+        uses: jurplel/install-qt-action@v4
       - name: "Install Dependencies"
         run: |
           brew install ninja
