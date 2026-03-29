@@ -77,20 +77,20 @@ def get_modified_files():
         # Get list of tracked modified files
         result = subprocess.run(
             ['git', 'diff', '--name-only', '--cached'],
-            capture_output=True, text=True, check=True
+            capture_output=True, text=True, check=True, shell=False
         )
         staged_files = set(result.stdout.strip().split('\n'))
 
         result2 = subprocess.run(
             ['git', 'diff', '--name-only'],
-            capture_output=True, text=True, check=True
+            capture_output=True, text=True, check=True, shell=False
         )
         unstaged_files = set(result2.stdout.strip().split('\n'))
 
         # Get untracked files
         result3 = subprocess.run(
             ['git', 'ls-files', '--others', '--exclude-standard'],
-            capture_output=True, text=True, check=True
+            capture_output=True, text=True, check=True, shell=False
         )
         untracked_files = set(result3.stdout.strip().split('\n'))
 
@@ -105,7 +105,7 @@ def get_modified_files():
         try:
             result = subprocess.run(
                 ['git', 'diff', '--name-only', 'HEAD'],
-                capture_output=True, text=True, check=True
+                capture_output=True, text=True, check=True, shell=False
             )
             return {f for f in result.stdout.strip().split('\n') if f}
         except Exception:
@@ -116,7 +116,7 @@ def get_modified_files():
             # This relies on actions/checkout having fetched the origin
             result = subprocess.run(
                 ['git', 'diff', '--name-only', 'origin/main...HEAD'],
-                capture_output=True, text=True, check=True
+                capture_output=True, text=True, check=True, shell=False
             )
             files = {f for f in result.stdout.strip().split('\n') if f}
             if files:
