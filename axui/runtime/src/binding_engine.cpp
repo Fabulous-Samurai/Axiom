@@ -33,6 +33,9 @@ void BindingEngine::updateSource(const std::string& path, BindingValue value) {
         }
     }
 
+    // 2b. QML Sinyali fırlat
+    Q_EMIT sourceUpdated(QString::fromStdString(path), value);
+
     // 3. İstatistik
     auto end = std::chrono::high_resolution_clock::now();
     double ns = static_cast<double>(

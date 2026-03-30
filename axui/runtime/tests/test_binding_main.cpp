@@ -1,6 +1,7 @@
 #include <iostream>
 #include <functional>
 #include <string>
+#include <QCoreApplication>
 
 // Forward declarations
 void test_binding_single_update();
@@ -20,7 +21,11 @@ void test_binding_rapid_updates();
 void test_binding_thread_safety();
 void test_binding_singleton();
 
-int main() {
+int main(int argc, char* argv[]) {
+    std::cout << "[INFO] AXUI Binding Test Process Starting..." << std::endl;
+    // [MANDATORY]: Qt based tests require a QCoreApplication to handle signals/slots
+    QCoreApplication app(argc, argv);
+
     std::cout << "\n═══ AXUI Phase 3: Data Binding Tests ═══\n\n";
 
     int passed = 0;

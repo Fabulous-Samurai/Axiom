@@ -43,11 +43,11 @@ private:
 public:
     // Constructors
     SymbolicExpression();
-    SymbolicExpression(const std::string& expression_str);
-    SymbolicExpression(double value);
-    SymbolicExpression(int value);
-    SymbolicExpression(const std::complex<double>& value);
-    SymbolicExpression(std::shared_ptr<SymEngine::Basic> expr);
+    explicit SymbolicExpression(const std::string& expression_str);
+    explicit SymbolicExpression(double value);
+    explicit SymbolicExpression(int value);
+    explicit SymbolicExpression(const std::complex<double>& value);
+    explicit SymbolicExpression(std::shared_ptr<SymEngine::Basic> expr);
     
     // Copy and move constructors
     SymbolicExpression(const SymbolicExpression& other);

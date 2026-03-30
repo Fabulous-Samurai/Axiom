@@ -14,7 +14,9 @@ static void BM_MathThroughput(benchmark::State& state) {
     // Complex mathematical expression for high-throughput calculation
     std::string expr = "sin(x) * cos(y) + tan(x) / (x * x + y * y + 1.0)";
     NodePtr root = parser.ParseExpression(expr);
-    std::unordered_map<std::string, int> var_map = {{"x", 0}, {"y", 1}};
+    SymbolTable var_map;
+    var_map.push_back({"x", 0.0});
+    var_map.push_back({"y", 0.0});
     JiffedFunc fn = jit.Compile(root, var_map);
     
     double vars[2] = {0.5, 1.2};
@@ -34,7 +36,8 @@ static void BM_MatrixSIMDMath(benchmark::State& state) {
     
     std::string expr = "sin(M) + M * 2.0";
     NodePtr root = parser.ParseExpression(expr);
-    std::unordered_map<std::string, int> var_map = {{"M", 0}};
+    SymbolTable var_map;
+    var_map.push_back({"M", 0.0});
     JiffedMatrixFunc fn = jit.CompileMatrix(root, var_map);
     
     double flat_matrix[16] = {

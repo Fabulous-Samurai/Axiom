@@ -4,7 +4,6 @@
 #include "string_helpers.h"
 #include "telemetry.h"
 #include <cmath>
-#include <algorithm>
 #include "arena_allocator.h"
 #include "fixed_vector.h"
 #include <cctype>
@@ -308,11 +307,25 @@ EngineResult AlgebraicParser::ParseAndExecuteWithContext(std::string_view input,
 }
 
 EngineResult AlgebraicParser::HandleDerivative(std::string_view input) noexcept {
+    // [FIX]: Use a transient (temporary) arena for this symbolic operation
+    // to prevent dangling pointers from nodes created during simplification.
+    Arena transient_arena(1 * 1024 * 1024); // 1MB arena for this operation only
+
     std::string_view target = input; if (target.rfind("derive ", 0) == 0) target = target.substr(7);
-    auto root = ParseExpression(target); if (!root) return CreateErrorResult(CalcErr::ParseError);
-    auto deriv = NodeDispatcher::Derivative(root, arena_, "x"); if (!deriv) return CreateErrorResult(CalcErr::OperationNotFound);
-    auto simplified = NodeDispatcher::Simplify(deriv, arena_); 
-    return CreateSuccessResult(NodeDispatcher::ToString(simplified, arena_));
+    
+    // Parse expression using the transient arena
+    ParserState state{target, 0, transient_arena};
+    auto root = parse_expression(state); 
+    if (!root) return CreateErrorResult(CalcErr::ParseError);
+
+    // Perform symbolic operations on the transient arena
+    auto deriv = NodeDispatcher::Derivative(root, transient_arena, "x"); 
+    if (!deriv) return CreateErrorResult(CalcErr::OperationNotFound);
+    
+    auto simplified = NodeDispatcher::Simplify(deriv, transient_arena); 
+    
+    // The final result is a string, which is safe to return as it's copied.
+    return CreateSuccessResult(NodeDispatcher::ToString(simplified, transient_arena));
 }
 
 EngineResult AlgebraicParser::HandleQuadratic(std::string_view input) noexcept { return CreateErrorResult(CalcErr::OperationNotFound); }

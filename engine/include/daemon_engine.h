@@ -7,16 +7,15 @@
 #pragma once
 
 #include "fixed_vector.h"
-#include <string>
 #include <memory>
 #include <atomic>
 #include <thread>
 #include <mutex>
-#include <unordered_map>
 #include <chrono>
 #include <array>
 #include <expected>
 #include <system_error>
+#include <string_view>
 
 #ifdef _WIN32
     #ifndef WIN32_LEAN_AND_MEAN
@@ -67,9 +66,9 @@ public:
 class DaemonEngine {
 public:
     struct Request {
-        std::string session_id{};
-        std::string command{};
-        std::string mode{"algebraic"};
+        std::array<char, 64> session_id{};
+        std::array<char, 1024> command{};
+        std::array<char, 32> mode{"algebraic"};
         std::chrono::steady_clock::time_point timestamp{};
         uint64_t request_id{0};
     };
@@ -77,10 +76,10 @@ public:
     struct Response {
         uint64_t request_id{0};
         bool success{false};
-        std::string result{};
-        std::string error{};
+        std::array<char, 1024> result{};
+        std::array<char, 256> error{};
         double execution_time_ms{0.0};
-        std::string session_id{};
+        std::array<char, 64> session_id{};
         std::chrono::steady_clock::time_point timestamp{};
     };
 
@@ -95,9 +94,9 @@ private:
         alignas(64) std::atomic<size_t> head_{0};
         alignas(64) std::atomic<size_t> tail_{0};
 
-        std::array<std::string, Capacity> session_ids_{};
-        std::array<std::string, Capacity> commands_{};
-        std::array<std::string, Capacity> modes_{};
+        std::array<std::array<char, 64>, Capacity> session_ids_{};
+        std::array<std::array<char, 1024>, Capacity> commands_{};
+        std::array<std::array<char, 32>, Capacity> modes_{};
         std::array<std::chrono::steady_clock::time_point, Capacity> timestamps_{};
         std::array<uint64_t, Capacity> request_ids_{};
 
@@ -125,9 +124,9 @@ private:
             if (current_head == current_tail) [[unlikely]] return false;
 
             const size_t idx = current_tail & (Capacity - 1);
-            item.session_id = std::move(session_ids_[idx]);
-            item.command = std::move(commands_[idx]);
-            item.mode = std::move(modes_[idx]);
+            item.session_id = session_ids_[idx];
+            item.command = commands_[idx];
+            item.mode = modes_[idx];
             item.timestamp = timestamps_[idx];
             item.request_id = request_ids_[idx];
             tail_.store(current_tail + 1, std::memory_order::seq_cst);
@@ -139,13 +138,13 @@ private:
     std::atomic<bool> running_{false};
     std::atomic<uint64_t> next_request_id_{1};
     
-    std::string pipe_name_;
+    std::array<char, 256> pipe_name_{};
     std::jthread daemon_thread_;
     std::jthread request_processor_;
     
     RequestQueueSoA<1024> request_queue_;
     
-    std::unordered_map<std::string, std::unique_ptr<struct SessionContext>> sessions_;
+    AXIOM::FixedVector<std::pair<std::string_view, std::unique_ptr<struct SessionContext>>, 128> sessions_;
     std::mutex sessions_mutex_; 
     
     std::atomic<uint64_t> total_requests_{0};
@@ -164,22 +163,22 @@ private:
 #endif
 
 public:
-    explicit DaemonEngine(const std::string& pipe_name = "axiom_daemon");
+    explicit DaemonEngine(std::string_view pipe_name = "axiom_daemon") noexcept;
     ~DaemonEngine() noexcept;
 
     DaemonEngine(const DaemonEngine&) = delete;
     DaemonEngine& operator=(const DaemonEngine&) = delete;
 
-    [[nodiscard]] std::expected<void, DaemonStatus> start();
+    [[nodiscard]] std::expected<void, DaemonStatus> start() noexcept;
     void stop() noexcept;
     [[nodiscard]] bool is_running() const noexcept { return running_.load(std::memory_order::seq_cst); }
     [[nodiscard]] DaemonStatus get_status() const noexcept { return status_.load(std::memory_order::seq_cst); }
 
-    [[nodiscard]] Response process_request(const Request& request);
-    [[nodiscard]] bool send_command(const std::string& session_id, const std::string& command, const std::string& mode = "algebraic");
+    [[nodiscard]] Response process_request(const Request& request) noexcept;
+    [[nodiscard]] bool send_command(std::string_view session_id, std::string_view command, std::string_view mode = "algebraic") noexcept;
 
-    [[nodiscard]] std::expected<std::string, std::error_code> create_session();
-    [[nodiscard]] bool destroy_session(const std::string& session_id);
+    [[nodiscard]] std::expected<std::string_view, std::error_code> create_session() noexcept;
+    [[nodiscard]] bool destroy_session(std::string_view session_id) noexcept;
     void get_active_sessions(FixedVector<std::string_view, 128>& out_sessions) noexcept;
 
     [[nodiscard]] uint64_t get_total_requests() const noexcept { return total_requests_.load(std::memory_order::seq_cst); }
@@ -188,20 +187,20 @@ public:
     [[nodiscard]] std::chrono::milliseconds get_uptime() const noexcept;
 
 private:
-    void daemon_loop();
-    void process_windows_pipe();
-    void process_posix_pipe();
-    void request_processor_loop();
-    [[nodiscard]] std::expected<void, PipeError> setup_pipe();
-    void cleanup_pipe();
+    void daemon_loop() noexcept;
+    void process_windows_pipe() noexcept;
+    void process_posix_pipe() noexcept;
+    void request_processor_loop() noexcept;
+    [[nodiscard]] std::expected<void, PipeError> setup_pipe() noexcept;
+    void cleanup_pipe() noexcept;
     static const char* pipe_error_to_string(PipeError error) noexcept;
-    [[nodiscard]] Response execute_command(const Request& request);
+    [[nodiscard]] Response execute_command(const Request& request) noexcept;
     void update_metrics(double execution_time) noexcept;
 };
 
 struct SessionContext {
-    std::string session_id{};
-    std::string current_mode{"algebraic"};
+    std::array<char, 64> session_id{};
+    std::array<char, 32> current_mode{"algebraic"};
     std::chrono::steady_clock::time_point created_at{};
     uint64_t request_count{0};
 };

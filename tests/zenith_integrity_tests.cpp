@@ -88,7 +88,7 @@ TEST(ZenithIntegrity, TerminatorWatchdog) {
     // Test Case 4: Null Context Bombardment
     EXPECT_NO_THROW({
         // Passing an empty/null context to the parser
-        AXIOM::StringMap<AXIOM::Number> empty_context;
+        AXIOM::SymbolTable empty_context;
         auto res = parser.ParseAndExecuteWithContext("x + y", empty_context);
         EXPECT_FALSE(res.HasResult());
     });

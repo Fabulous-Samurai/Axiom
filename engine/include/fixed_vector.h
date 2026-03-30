@@ -63,8 +63,19 @@ public:
     void reserve(size_t) { /* No-op for fixed capacity */ }
     
     bool empty() const { return size_ == 0; }
+    bool full() const noexcept { return size_ >= Capacity; }
     size_t size() const { return size_; }
     size_t capacity() const { return Capacity; }
+
+    auto erase(T* it) {
+        if (it < begin() || it >= end()) return end();
+        size_t index = it - begin();
+        for (size_t i = index; i < size_ - 1; ++i) {
+            data_[i] = std::move(data_[i + 1]);
+        }
+        size_--;
+        return begin() + index;
+    }
 
     T* data() { return data_; }
     const T* data() const { return data_; }

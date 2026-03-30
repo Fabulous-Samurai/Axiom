@@ -5,12 +5,11 @@
  */
 
 #include "../include/secure_vault.h"
-#include <iostream>
 #include <cstring>
 
 namespace AXIOM {
 
-bool SecureMantisVault::initialize_enclave() {
+bool SecureMantisVault::initialize_enclave() noexcept {
     // [PRODUCTION PATH]: Integrated with Intel SGX / ARM TrustZone
     // On non-SGX hardware, this initiates a software-level isolation fallback.
     
@@ -20,7 +19,6 @@ bool SecureMantisVault::initialize_enclave() {
     #endif
 
     enclave_active_ = true;
-    std::cout << "[AXIOM SECURITY] Hardware-Enforced Enclave (TEE) initialized." << std::endl;
     return true;
 }
 
@@ -41,7 +39,6 @@ bool SecureMantisVault::seal(const void* src, size_t size) noexcept {
         std::memcpy(encrypted_storage_.get(), src, size); 
     #endif
     
-    std::cout << "[AXIOM SECURITY] Mantis State Machine SEALED (Hardware-Isolated)." << std::endl;
     return true;
 }
 
@@ -57,7 +54,6 @@ bool SecureMantisVault::unseal(void* dst, size_t size) noexcept {
         std::memcpy(dst, encrypted_storage_.get(), size);
     #endif
     
-    std::cout << "[AXIOM SECURITY] Mantis State Machine UNSEALED via Secure Proxy." << std::endl;
     return true;
 }
 

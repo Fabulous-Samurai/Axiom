@@ -39,14 +39,15 @@ static void BM_TypedFastPath(benchmark::State& state) {
 BENCHMARK(BM_TypedFastPath);
 
 static void BM_ZeroCopyVector(benchmark::State& state) {
-    size_t vector_size = state.range(0);
     for (auto _ : state) {
-        std::vector<double> large_vec(vector_size, 1.0);
+        AXIOM::Vector large_vec;
+        // Fill up to capacity (256)
+        for(size_t i=0; i<256; ++i) large_vec.push_back(1.0);
         auto res = CreateSuccessResult(std::move(large_vec));
         benchmark::DoNotOptimize(res);
     }
 }
-BENCHMARK(BM_ZeroCopyVector)->RangeMultiplier(2)->Range(1024, 8192);
+BENCHMARK(BM_ZeroCopyVector);
 
 #include "../include/lock_free_ring_buffer.h"
 
@@ -58,7 +59,10 @@ static void BM_LockFreeQueueIPC(benchmark::State& state) {
     for (auto _ : state) {
         DaemonEngine::Request req;
         req.request_id = i++;
-        req.command = "benchmark_cmd";
+        const std::string_view cmd = "benchmark_cmd";
+        size_t len = std::min(sizeof(req.command) - 1, cmd.size());
+        std::memcpy(req.command.data(), cmd.data(), len);
+        req.command[len] = '\0';
         while (!queue.push(req)) std::this_thread::yield();
 
         DaemonEngine::Request popped_req;

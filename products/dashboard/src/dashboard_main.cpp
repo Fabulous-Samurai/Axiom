@@ -42,8 +42,7 @@ int main(int argc, char *argv[]) {
     // Initialize Dashboard Manager
     axui::DashboardManager manager;
     
-    // Default to mock data for initial verification
-    manager.startMockData();
+    // [ZENITH]: Data collection starts automatically via QTimer in Manager ctor
 
     // Expose manager to QML
     engine.rootContext()->setContextProperty("dashboardManager", &manager);

@@ -6,7 +6,6 @@
  * Provides an interface for hardware-protected memory (SGX/TrustZone)
  * to encrypt/decrypt the Mantis state machine memory.
  */
-
 #pragma once
 
 #include <memory>
@@ -30,7 +29,7 @@ public:
     /**
      * @brief Initialize hardware enclave (SGX/TrustZone)
      */
-    bool initialize_enclave();
+    bool initialize_enclave() noexcept;
 
     /**
      * @brief Seal the state machine into encrypted memory

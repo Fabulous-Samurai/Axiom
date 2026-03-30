@@ -30,12 +30,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 
     // If it parsed successfully, try to compile it
-    std::unordered_map<std::string, int> var_map;
-    // Extract variables naively from AST or just assume some variables
-    var_map["x"] = 0;
-    var_map["y"] = 1;
-    var_map["z"] = 2;
-    var_map["M"] = 0; // For matrix
+    SymbolTable var_map;
+    var_map.push_back({"x", 0.0});
+    var_map.push_back({"y", 0.0});
+    var_map.push_back({"z", 0.0});
+    var_map.push_back({"M", 0.0});
 
     // Fuzz Scalar Compilation
     JiffedFunc fn = jit.Compile(root, var_map);
@@ -55,3 +54,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     return 0;
 }
+
+#ifdef _WIN32
+int main() {
+    // Dummy main for Windows stabilization
+    return 0;
+}
+#endif

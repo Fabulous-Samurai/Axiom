@@ -6,17 +6,18 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 
 #include "expressway/axiom_expressway_node.h"
 #include "axui/dashboard_manager.h"
-#include "axui/zenith_manager.h"
+#include "axui/jit_execution_manager.h"
 #include "telemetry.h"
 #include "throughput_node.h"
 #include "pluto_navigator.h"
-#include <QQmlContext>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
-
+#include "cpu_optimization.h"
+#include "pluto_controller.h"
 
 // Simulated Engine Thread
 void run_engine_simulation(std::atomic<bool>& running) {
@@ -49,15 +50,12 @@ void run_engine_simulation(std::atomic<bool>& running) {
 }
 
 int main(int argc, char *argv[]) {
-    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-    QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
-
-    std::cout << "[Studio] Initializing AXIOM Studio Suite..." << std::endl;
-
     QGuiApplication app(argc, argv);
     app.setApplicationName("AXIOM Studio");
     app.setOrganizationName("AXIOM");
     app.setApplicationVersion("1.0.0");
+
+    std::cout << "[Studio] Initializing AXIOM Studio Suite..." << std::endl;
 
     QCommandLineParser parser;
     parser.setApplicationDescription("AXIOM Studio | Integrated Development Environment");
@@ -74,10 +72,10 @@ int main(int argc, char *argv[]) {
 
     // Start Engine Simulator
     std::atomic<bool> engine_running{true};
-    std::jthread engine_thread;
+    std::thread engine_thread;
     
     if (!parser.isSet(noSimOption)) {
-        engine_thread = std::jthread(run_engine_simulation, std::ref(engine_running));
+        engine_thread = std::thread(run_engine_simulation, std::ref(engine_running));
     } else {
         std::cout << "[Studio] Engine simulation disabled via CLI." << std::endl;
     }
@@ -86,35 +84,34 @@ int main(int argc, char *argv[]) {
     qmlRegisterType<AXIOM::AxiomThroughputItem>("Axiom.UI", 1, 0, "ThroughputGraph");
     qmlRegisterType<AXIOM::PlutoSwarmNavigator>("Axiom.UI", 1, 0, "PlutoNavigator");
 
+    QQmlApplicationEngine qml_engine;
 
-    #include "axui/jit_execution_manager.h"
-    ...
-        // Managers
-        static axui::DashboardManager dashboardManager;
-        static axui::JitExecutionManager jitExecutionManager;
-        engine.rootContext()->setContextProperty("dashboardManager", &dashboardManager);
-        engine.rootContext()->setContextProperty("jitExecutionManager", &jitExecutionManager);
+    // Managers
+    static axui::DashboardManager dashboardManager;
+    static axui::JitExecutionManager jitExecutionManager;
+    qml_engine.rootContext()->setContextProperty("dashboardManager", &dashboardManager);
+    qml_engine.rootContext()->setContextProperty("jitExecutionManager", &jitExecutionManager);
 
     const QUrl mainUrl(QStringLiteral("qrc:/ui/main.qml"));
     const QUrl recoveryUrl(QStringLiteral("qrc:/ui/Recovery.qml"));
 
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
-                     &app, [mainUrl, recoveryUrl, &engine](QObject *obj, const QUrl &objUrl) {
-        if (!obj && objUrl == mainUrl) engine.load(recoveryUrl);
+    QObject::connect(&qml_engine, &QQmlApplicationEngine::objectCreated,
+                     &app, [mainUrl, recoveryUrl, &qml_engine](QObject *obj, const QUrl &objUrl) {
+        if (!obj && objUrl == mainUrl) qml_engine.load(recoveryUrl);
     }, Qt::QueuedConnection);
 
     if (parser.isSet(recoveryOption)) {
         std::cout << "[Studio] Forcing recovery mode via CLI." << std::endl;
-        engine.load(recoveryUrl);
+        qml_engine.load(recoveryUrl);
     } else {
-        engine.load(mainUrl);
+        qml_engine.load(mainUrl);
     }
-
 
     int result = app.exec();
     
     // Cleanup
     engine_running = false;
+    if (engine_thread.joinable()) engine_thread.join();
     
     return result;
 }

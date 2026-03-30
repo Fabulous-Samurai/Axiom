@@ -53,3 +53,13 @@ BENCHMARK_F(StylePipelineBenchmark, EndToEndProcessing)(benchmark::State& state)
     }
 }
 BENCHMARK_REGISTER_F(StylePipelineBenchmark, EndToEndProcessing)->Range(8, 64);
+
+int main(int argc, char** argv) {
+    QCoreApplication qapp(argc, argv);
+    app = &qapp;
+    ::benchmark::Initialize(&argc, argv);
+    if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
+    ::benchmark::RunSpecifiedBenchmarks();
+    ::benchmark::Shutdown();
+    return 0;
+}
