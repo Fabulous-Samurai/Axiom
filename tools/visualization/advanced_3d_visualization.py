@@ -12,6 +12,67 @@ from matplotlib.widgets import Slider
 import tkinter as tk
 from tkinter import ttk, messagebox
 import time
+import ast
+import operator
+
+class SafeMathEvaluator:
+    """Safe evaluation of mathematical expressions using AST."""
+    def __init__(self, safe_dict=None):
+        self.safe_dict = safe_dict or {}
+        self.allowed_operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+    def evaluate(self, expr_str, local_dict=None):
+        env = self.safe_dict.copy()
+        if local_dict:
+            env.update(local_dict)
+
+        try:
+            tree = ast.parse(expr_str, mode='eval')
+            return self._eval(tree.body, env)
+        except SyntaxError as e:
+            raise ValueError(f"Syntax error in expression: {e}")
+
+    def _eval(self, node, env):
+        # Prevent Attribute access completely (sandbox escape risk)
+        if isinstance(node, ast.Attribute):
+            raise ValueError(f"Attribute access is not allowed: {node.attr}")
+
+        if isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.Name):
+            if node.id in env:
+                return env[node.id]
+            raise NameError(f"Name '{node.id}' is not defined")
+        elif isinstance(node, ast.BinOp):
+            left = self._eval(node.left, env)
+            right = self._eval(node.right, env)
+            if type(node.op) in self.allowed_operators:
+                return self.allowed_operators[type(node.op)](left, right)
+            raise ValueError(f"Unsupported operator: {type(node.op).__name__}")
+        elif isinstance(node, ast.UnaryOp):
+            operand = self._eval(node.operand, env)
+            if type(node.op) in self.allowed_operators:
+                return self.allowed_operators[type(node.op)](operand)
+            raise ValueError(f"Unsupported unary operator: {type(node.op).__name__}")
+        elif isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name):
+                func_name = node.func.id
+                if func_name in env and callable(env[func_name]):
+                    args = [self._eval(arg, env) for arg in node.args]
+                    return env[func_name](*args)
+            raise ValueError("Only whitelisted functions can be called")
+        elif isinstance(node, ast.Tuple):
+            return tuple(self._eval(el, env) for el in node.elts)
+        else:
+            raise ValueError(f"Unsupported syntax node: {type(node).__name__}")
 
 # Constants for default function strings
 DEFAULT_SURFACE_FUNC = "sin(sqrt(x**2 + y**2))"
@@ -45,7 +106,8 @@ class Advanced3DVisualization:
                 'x': X, 'y': Y, 'X': X, 'Y': Y
             }
             
-            Z = eval(func_str, {"__builtins__": {}}, safe_dict)
+            evaluator = SafeMathEvaluator(safe_dict)
+            Z = evaluator.evaluate(func_str)
             
             # Create 3D plot
             fig = plt.figure(figsize=(14, 10))
@@ -111,9 +173,10 @@ class Advanced3DVisualization:
             }
             
             # Evaluate parametric equations
-            x = eval(x_func, {"__builtins__": {}}, safe_dict)
-            y = eval(y_func, {"__builtins__": {}}, safe_dict)
-            z = eval(z_func, {"__builtins__": {}}, safe_dict)
+            evaluator = SafeMathEvaluator(safe_dict)
+            x = evaluator.evaluate(x_func)
+            y = evaluator.evaluate(y_func)
+            z = evaluator.evaluate(z_func)
             
             # Create 3D plot
             fig = plt.figure(figsize=(12, 8))
@@ -202,8 +265,9 @@ class Advanced3DVisualization:
                 'x': X, 'y': Y, 't': t
             }
             
-            z_base = eval(base_func, {"__builtins__": {}}, safe_dict)
-            time_mod = eval(time_modulation, {"__builtins__": {}}, safe_dict)
+            evaluator = SafeMathEvaluator(safe_dict)
+            z_base = evaluator.evaluate(base_func)
+            time_mod = evaluator.evaluate(time_modulation)
             Z = z_base * time_mod
             
             _ = ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
@@ -219,8 +283,9 @@ class Advanced3DVisualization:
                 t = frame * 0.1
                 safe_dict['t'] = t
                 
-                z_base = eval(base_func, {"__builtins__": {}}, safe_dict)
-                time_mod = eval(time_modulation, {"__builtins__": {}}, safe_dict)
+                evaluator = SafeMathEvaluator(safe_dict)
+                z_base = evaluator.evaluate(base_func)
+                time_mod = evaluator.evaluate(time_modulation)
                 Z = z_base * time_mod
                 
                 surface = ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
@@ -355,7 +420,8 @@ class Advanced3DVisualization:
                     'x': X * frequency, 'y': Y * frequency, 'A': amplitude
                 }
                 
-                Z = amplitude * eval(func_str, {"__builtins__": {}}, safe_dict)
+                evaluator = SafeMathEvaluator(safe_dict)
+                Z = amplitude * evaluator.evaluate(func_str)
                 return Z
             
             # Initial surface
@@ -509,7 +575,12 @@ class Advanced3DVisualization:
                 t_range_str = t_range_var.get()
                 
                 # Parse t range
-                t_min, t_max = eval(f"({t_range_str})", {"pi": np.pi})
+                t_evaluator = SafeMathEvaluator({"pi": np.pi})
+                t_range_val = t_evaluator.evaluate(f"({t_range_str})")
+                if isinstance(t_range_val, tuple) and len(t_range_val) == 2:
+                    t_min, t_max = t_range_val
+                else:
+                    raise ValueError("t Range must be a tuple of two numbers")
                 t_range = (t_min, t_max)
                 
                 self.parametric_3d_plot(x_func, y_func, z_func, t_range)

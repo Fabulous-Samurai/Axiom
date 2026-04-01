@@ -1,0 +1,4 @@
+## 2024-05-24 - [CRITICAL] Fix command injection in 3D Visualization tool
+**Vulnerability:** Python `eval()` was used to parse user-provided mathematical formulas in `tools/visualization/advanced_3d_visualization.py`. Even with `{"__builtins__": {}}` passed, this allows arbitrary command execution via sandbox escape techniques (e.g., accessing `__subclasses__` on base types).
+**Learning:** Emptying `__builtins__` in Python's `eval()` is insufficient for security against malicious input in data visualization contexts. The `__class__.__bases__` resolution chain provides access to the underlying OS.
+**Prevention:** Use an AST-based parser (`ast.parse`) with an explicit whitelist of allowed nodes (e.g., `ast.Add`, `ast.Call`, `ast.Name`, `ast.Constant`) and strictly reject `ast.Attribute` access to mitigate all introspection-based sandbox escapes.
