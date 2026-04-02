@@ -36,7 +36,7 @@ EngineResult StatisticsEngine::Mode(const Vector& data) {
     // Copy data to a local Vector (stack-allocated via FixedVector) and sort it
     // to find the mode without heap allocations (replacing std::map)
     Vector sorted_data = data;
-    std::ranges::sort(sorted_data);
+    std::sort(sorted_data.begin(), sorted_data.end());
 
     double mode_val = sorted_data[0];
     int max_count = 1;
