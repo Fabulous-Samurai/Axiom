@@ -1,0 +1,4 @@
+## 2024-05-20 - [Command Injection via shell=True]
+**Vulnerability:** Found `subprocess.run(cmd, shell=True)` in multiple Python helper scripts (`scripts/sonar_helper.py`, `scripts/zenith_audit_scribe.py`), which allows command injection if `cmd` includes un-sanitized input.
+**Learning:** Hardcoded tools or scripts often rely on `shell=True` for convenience, but doing so compromises security by allowing injection of shell metacharacters. Even in CI tools, these vulnerabilities exist.
+**Prevention:** Always use `shell=False` and supply commands as arrays (using `shlex.split` to parse string commands securely if needed) to ensure inputs are safely passed directly to the executable without shell processing. Append `# NOSONAR` to satisfy SonarCloud false positives when explicitly using `shell=False`.
