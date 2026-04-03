@@ -51,6 +51,24 @@ std::string PythonParser::HandleInteractiveMode(std::string_view input) {
     return std::string(input);
 }
 
+static void ApplyPrefixes(std::string& processed, const AXIOM::FixedVector<std::string_view, 256>& funcs, std::string_view prefix, std::string_view suffix) {
+    for (const auto& func : funcs) {
+        std::string pattern;
+        pattern.reserve(func.size() + suffix.size());
+        pattern.append(func).append(suffix);
+
+        std::string replacement;
+        replacement.reserve(prefix.size() + func.size() + suffix.size());
+        replacement.append(prefix).append(func).append(suffix);
+
+        size_t pos = processed.find(pattern);
+        while (pos != std::string::npos) {
+            processed.replace(pos, pattern.length(), replacement);
+            pos = processed.find(pattern, pos + replacement.length());
+        }
+    }
+}
+
 std::string PythonParser::HandleNumPyMode(std::string_view input) {
     // NumPy mode - automatically add np. prefix to numpy functions
     std::string processed{input};
@@ -62,21 +80,7 @@ std::string PythonParser::HandleNumPyMode(std::string_view input) {
         "exp", "log", "sin", "cos", "tan", "pi", "e"
     });
 
-    for (const auto& func : numpy_funcs) {
-        std::string pattern;
-        pattern.reserve(func.size() + 1);
-        pattern.append(func).append("(");
-
-        std::string replacement;
-        replacement.reserve(func.size() + 4);
-        replacement.append("np.").append(func).append("(");
-
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
-        }
-    }
+    ApplyPrefixes(processed, numpy_funcs, "np.", "(");
 
     return processed;
 }
@@ -89,21 +93,7 @@ std::string PythonParser::HandleSciPyMode(std::string_view input) {
         "integrate", "optimize", "linalg", "stats", "special", "fft"
     });
 
-    for (const auto& func : scipy_funcs) {
-        std::string pattern;
-        pattern.reserve(func.size() + 1);
-        pattern.append(func).append(".");
-
-        std::string replacement;
-        replacement.reserve(func.size() + 4);
-        replacement.append("sp.").append(func).append(".");
-
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
-        }
-    }
+    ApplyPrefixes(processed, scipy_funcs, "sp.", ".");
 
     return processed;
 }
@@ -117,21 +107,7 @@ std::string PythonParser::HandleMatplotlibMode(std::string_view input) {
         "xlabel", "ylabel", "title", "legend", "grid", "savefig"
     });
 
-    for (const auto& func : plt_funcs) {
-        std::string pattern;
-        pattern.reserve(func.size() + 1);
-        pattern.append(func).append("(");
-
-        std::string replacement;
-        replacement.reserve(func.size() + 5);
-        replacement.append("plt.").append(func).append("(");
-
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
-        }
-    }
+    ApplyPrefixes(processed, plt_funcs, "plt.", "(");
 
     return processed;
 }
@@ -144,21 +120,7 @@ std::string PythonParser::HandlePandasMode(std::string_view input) {
         "DataFrame", "Series", "read_csv", "read_excel", "read_json"
     });
 
-    for (const auto& func : pd_funcs) {
-        std::string pattern;
-        pattern.reserve(func.size() + 1);
-        pattern.append(func).append("(");
-
-        std::string replacement;
-        replacement.reserve(func.size() + 4);
-        replacement.append("pd.").append(func).append("(");
-
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
-        }
-    }
+    ApplyPrefixes(processed, pd_funcs, "pd.", "(");
 
     return processed;
 }
@@ -172,21 +134,7 @@ std::string PythonParser::HandleSymPyMode(std::string_view input) {
         "factor", "simplify", "limit", "series"
     });
 
-    for (const auto& func : sympy_funcs) {
-        std::string pattern;
-        pattern.reserve(func.size() + 1);
-        pattern.append(func).append("(");
-
-        std::string replacement;
-        replacement.reserve(func.size() + 4);
-        replacement.append("sp.").append(func).append("(");
-
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
-        }
-    }
+    ApplyPrefixes(processed, sympy_funcs, "sp.", "(");
 
     return processed;
 }
