@@ -4,6 +4,7 @@
 Advanced 3D plotting and visualization capabilities
 """
 
+import ast
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -12,6 +13,27 @@ from matplotlib.widgets import Slider
 import tkinter as tk
 from tkinter import ttk, messagebox
 import time
+
+class SafeMathEvaluator:
+    ALLOWED_NODES = {
+        'Expression', 'Call', 'Name', 'Load', 'Constant', 'Num', 'Str',
+        'BinOp', 'UnaryOp', 'Subscript', 'Index', 'Slice', 'ExtSlice',
+        'Tuple', 'List', 'Dict', 'Set', 'Add', 'Sub', 'Mult', 'Div',
+        'FloorDiv', 'Mod', 'Pow', 'UAdd', 'USub', 'BitAnd', 'BitOr',
+        'BitXor', 'Invert', 'LShift', 'RShift', 'Eq', 'NotEq', 'Lt',
+        'LtE', 'Gt', 'GtE', 'Is', 'IsNot', 'In', 'NotIn', 'And', 'Or',
+        'Not', 'BoolOp', 'NameConstant'
+    }
+
+    @classmethod
+    def evaluate(cls, expr, safe_dict):
+        tree = ast.parse(expr, mode='eval')
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute):
+                raise ValueError("Attribute access is explicitly disallowed")
+            if type(node).__name__ not in cls.ALLOWED_NODES:
+                raise ValueError(f"Node type {type(node).__name__} is not allowed")
+        return eval(compile(tree, '<ast>', 'eval'), {"__builtins__": {}}, safe_dict)
 
 # Constants for default function strings
 DEFAULT_SURFACE_FUNC = "sin(sqrt(x**2 + y**2))"
@@ -45,7 +67,7 @@ class Advanced3DVisualization:
                 'x': X, 'y': Y, 'X': X, 'Y': Y
             }
             
-            Z = eval(func_str, {"__builtins__": {}}, safe_dict)
+            Z = SafeMathEvaluator.evaluate(func_str, safe_dict)
             
             # Create 3D plot
             fig = plt.figure(figsize=(14, 10))
@@ -111,9 +133,9 @@ class Advanced3DVisualization:
             }
             
             # Evaluate parametric equations
-            x = eval(x_func, {"__builtins__": {}}, safe_dict)
-            y = eval(y_func, {"__builtins__": {}}, safe_dict)
-            z = eval(z_func, {"__builtins__": {}}, safe_dict)
+            x = SafeMathEvaluator.evaluate(x_func, safe_dict)
+            y = SafeMathEvaluator.evaluate(y_func, safe_dict)
+            z = SafeMathEvaluator.evaluate(z_func, safe_dict)
             
             # Create 3D plot
             fig = plt.figure(figsize=(12, 8))
@@ -202,8 +224,8 @@ class Advanced3DVisualization:
                 'x': X, 'y': Y, 't': t
             }
             
-            z_base = eval(base_func, {"__builtins__": {}}, safe_dict)
-            time_mod = eval(time_modulation, {"__builtins__": {}}, safe_dict)
+            z_base = SafeMathEvaluator.evaluate(base_func, safe_dict)
+            time_mod = SafeMathEvaluator.evaluate(time_modulation, safe_dict)
             Z = z_base * time_mod
             
             _ = ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
@@ -219,8 +241,8 @@ class Advanced3DVisualization:
                 t = frame * 0.1
                 safe_dict['t'] = t
                 
-                z_base = eval(base_func, {"__builtins__": {}}, safe_dict)
-                time_mod = eval(time_modulation, {"__builtins__": {}}, safe_dict)
+                z_base = SafeMathEvaluator.evaluate(base_func, safe_dict)
+                time_mod = SafeMathEvaluator.evaluate(time_modulation, safe_dict)
                 Z = z_base * time_mod
                 
                 surface = ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
@@ -355,7 +377,7 @@ class Advanced3DVisualization:
                     'x': X * frequency, 'y': Y * frequency, 'A': amplitude
                 }
                 
-                Z = amplitude * eval(func_str, {"__builtins__": {}}, safe_dict)
+                Z = amplitude * SafeMathEvaluator.evaluate(func_str, safe_dict)
                 return Z
             
             # Initial surface
@@ -509,7 +531,7 @@ class Advanced3DVisualization:
                 t_range_str = t_range_var.get()
                 
                 # Parse t range
-                t_min, t_max = eval(f"({t_range_str})", {"pi": np.pi})
+                t_min, t_max = SafeMathEvaluator.evaluate(f"({t_range_str})", {"pi": np.pi})
                 t_range = (t_min, t_max)
                 
                 self.parametric_3d_plot(x_func, y_func, z_func, t_range)
