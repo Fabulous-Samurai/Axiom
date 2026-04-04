@@ -1,4 +1,0 @@
-## 2024-05-24 - [CRITICAL] Code Injection in eval() bypasses __builtins__ omission
-**Vulnerability:** The mathematical evaluation in 3D visualization tools used Python's `eval()` function, passing `{"__builtins__": {}}` and a `safe_dict` to isolate execution. However, an attacker could still access dangerous attributes via properties like `__class__` and `__subclasses__` on allowed object types, leading to code injection and sandbox escape.
-**Learning:** Omission of `__builtins__` in Python's `eval()` is insufficient to prevent code injection. Object attribute access within Python allows traversing to arbitrary modules unless stringently blocked.
-**Prevention:** Implement an Abstract Syntax Tree (AST) validation step utilizing `ast.parse` before evaluating any string payload. Explicitly whitelist safe AST nodes (like `ast.Expression`, `ast.BinOp`, `ast.Constant`) and explicitly ban `ast.Attribute` to prevent object traversal and potential escalation.
