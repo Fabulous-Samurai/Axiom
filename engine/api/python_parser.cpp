@@ -67,7 +67,6 @@ std::string PythonParser::HandleNumPyMode(std::string_view input) {
 
         size_t pos = processed.find(pattern);
         if (pos != std::string::npos) {
-            // Lazy allocation of replacement string only if pattern is found
             std::string replacement = "np." + std::string(func) + "(";
 
             do {
