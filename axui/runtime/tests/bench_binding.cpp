@@ -26,7 +26,7 @@ void bench_single_update() {
         engine.updateSource("test.path", static_cast<double>(i));
     }
     auto end = std::chrono::high_resolution_clock::now();
-    
+
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
     std::cout << "Single update (10k ops): " << duration << "us (" << (duration/10000.0) << "us/op)" << std::endl;
 }

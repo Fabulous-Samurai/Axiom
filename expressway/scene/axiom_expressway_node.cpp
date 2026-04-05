@@ -11,7 +11,7 @@ public:
         // [TRICK]: Symbiotic Hybrid Rendering
         // Here we obtain the native Vulkan command buffer from Qt's RHI
         // and inject our custom Dirac pipeline.
-        
+
         // For Phase 7 prototype: Visual feedback via console and clear color
         static int frames = 0;
         if (++frames % 60 == 0) {
@@ -72,12 +72,12 @@ QSGNode* AxiomExpresswayNode::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeD
     }
 
     node->setRect(boundingRect());
-    
+
     // Trigger window update for continuous rendering (Visual Feast)
     if (window()) {
         window()->update();
     }
-    
+
     return node;
 }
 

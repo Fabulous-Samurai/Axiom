@@ -35,7 +35,7 @@ struct AXIOM_EXPORT PlutoState {
         p3_done.store(other.p3_done.load(std::memory_order_relaxed));
         p4_available.store(other.p4_available.load(std::memory_order_relaxed));
     }
-    
+
     PlutoState& operator=(const PlutoState& other) noexcept {
         if (this != &other) {
             p1_queue.store(other.p1_queue.load(std::memory_order_relaxed));
@@ -103,11 +103,11 @@ private:
     std::mutex config_mutex_; // Only for non-hotpath configuration
     PlutoState current_state_;
     std::atomic<uint32_t> num_experts_{10};
-    
+
     // Lock-free queue for streaming tree nodes to UI
     SPSCQueue<Mantis::AStarNode, Mantis::kMaxNodes> tree_queue_;
     Mantis::IDAStarSolver solver_;
-    
+
     // Internal scratchpad for solver (Zenith Pillar: Zero-allocation)
     std::array<Mantis::AStarNode, Mantis::kMaxNodes> scratch_nodes_{};
 };

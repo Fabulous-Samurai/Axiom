@@ -101,6 +101,3 @@ namespace AXIOM
     };
 
 } // namespace AXIOM
-
-
-

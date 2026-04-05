@@ -14,14 +14,14 @@
 #include "fixed_vector.h"
 
 namespace Utils {
-    
+
     // Fast string-to-double conversion using std::from_chars (C++17)
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
-        
+
         // Handle edge cases that std::from_chars might not handle well
         std::string str(sv);
-        
+
         // Handle leading decimal point (e.g., ".5" -> "0.5")
         if (str.front() == '.') {
             str = "0" + str;
@@ -30,7 +30,7 @@ namespace Utils {
         else if (str.back() == '.') {
             str += "0";
         }
-        
+
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
@@ -51,7 +51,7 @@ namespace Utils {
 
     // Helper to trim strings (removes whitespace from both ends)
     AXIOM_EXPORT std::string Trim(std::string_view str);
-    
+
     // Helper to split string by delimiter
     AXIOM_EXPORT AXIOM::FixedVector<std::string, 256> Split(std::string_view s, char delimiter);
 
@@ -60,7 +60,7 @@ namespace Utils {
         if (str.empty()) return false;
         return FastParseDouble(str).has_value();
     }
-    
+
     // Helper for ReplaceAns logic (Moved from main.cpp)
     inline std::string ReplaceAns(std::string input, double last_val) {
         const std::string search = "Ans";

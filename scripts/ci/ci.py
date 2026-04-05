@@ -91,7 +91,7 @@ def main():
     parser.add_argument("--platforms", action="store_true", help="List platforms")
     parser.add_argument("--stage", help="Specific stage (ignored for now)")
     parser.add_argument("--json", action="store_true", help="JSON output")
-    
+
     args = parser.parse_args()
     if args.platforms:
         list_platforms()

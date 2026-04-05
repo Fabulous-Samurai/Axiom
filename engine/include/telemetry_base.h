@@ -43,5 +43,5 @@ static_assert(sizeof(TelemetryRecord) == 64, "TelemetryRecord alignment failure!
 
 // Stub macro for core-level use. Implementation is linked in higher layers.
 #ifndef AXIOM_TELEMETRY_MARK
-#define AXIOM_TELEMETRY_MARK(type, id) 
+#define AXIOM_TELEMETRY_MARK(type, id)
 #endif

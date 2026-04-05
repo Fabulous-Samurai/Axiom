@@ -31,17 +31,17 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 
 int main(int argc, char *argv[]) {
     qInstallMessageHandler(myMessageOutput);
-    
+
     std::cout << "[Dashboard] Process started. Initializing QGuiApplication..." << std::endl;
     QGuiApplication app(argc, argv);
     app.setApplicationName("AXIOM Dashboard");
     app.setOrganizationName("AXIOM");
 
     QQmlApplicationEngine engine;
-    
+
     // Initialize Dashboard Manager
     axui::DashboardManager manager;
-    
+
     // [ZENITH]: Data collection starts automatically via QTimer in Manager ctor
 
     // Expose manager to QML
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
     // Load main QML
     const QUrl url(QStringLiteral("qrc:/ui/AxiomDashboard.qml"));
     std::cout << "[Dashboard] Loading QML from: " << url.toString().toStdString() << "..." << std::endl;
-    
+
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl) {
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
             QCoreApplication::exit(-1);
         }
     }, Qt::QueuedConnection);
-    
+
     engine.load(url);
     if (engine.rootObjects().isEmpty()) {
         std::cerr << "[Dashboard] ERROR: Root objects are empty!" << std::endl;

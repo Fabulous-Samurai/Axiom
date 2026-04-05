@@ -174,20 +174,20 @@ public:
 
         SearchResult result{};
         float threshold = Heuristic(nodes[start_id]);
-        
+
         // Use a persistent neighbor buffer to avoid thread_local overhead in recursion
         std::array<uint32_t, 64> neighbor_buf{};
 
         while (true) {
             ++result.iterations;
-            
+
             // Reset node visit states for this DFS pass
             for (uint32_t i = 0; i < num_nodes; ++i) {
                 nodes[i].in_closed = false;
             }
 
             float next_threshold = std::numeric_limits<float>::max();
-            bool found = search(nodes, start_id, goal_id, 0.0f, threshold, 
+            bool found = search(nodes, start_id, goal_id, 0.0f, threshold,
                                 next_threshold, result, get_neighbors, num_nodes, neighbor_buf);
 
             if (found) {
@@ -200,9 +200,9 @@ public:
             if (next_threshold == std::numeric_limits<float>::max()) {
                 return result; // No path exists
             }
-            
+
             threshold = next_threshold;
-            
+
             // Safety break to prevent infinite loops in malformed graphs
             if (result.iterations > 1024) break;
         }
@@ -242,10 +242,10 @@ private:
 
         nodes[current_id].in_closed = true;
 
-        // Note: neighbor_buf is shared across recursion levels, so we need to copy locally 
+        // Note: neighbor_buf is shared across recursion levels, so we need to copy locally
         // if we want to iterate after recursive calls.
         // For IDA*, we can iterate and recurse immediately.
-        
+
         uint32_t local_neighbors[64];
         const uint32_t n_count = get_neighbors(
             current_id, local_neighbors, 64);
@@ -255,7 +255,7 @@ private:
             if (neighbor >= num_nodes || nodes[neighbor].in_closed) continue;
 
             // IDA* depth-first branch
-            if (search(nodes, neighbor, goal_id, g_cost + 1.0f, threshold, 
+            if (search(nodes, neighbor, goal_id, g_cost + 1.0f, threshold,
                        next_threshold, result, get_neighbors, num_nodes, neighbor_buf)) {
                 nodes[neighbor].parent_id = current_id;
                 return true;

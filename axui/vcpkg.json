@@ -5,7 +5,7 @@
   "description": "AXUI Compiler - JSON to Native UI with QML Rendering",
   "homepage": "https://github.com/Fabulous-Samurai/Axiom",
   "license": "GPL-3.0",
-  
+
   "dependencies": [
     {
       "name": "simdjson",
@@ -23,6 +23,6 @@
       ]
     }
   ],
-  
+
   "builtin-baseline": "latest"
 }

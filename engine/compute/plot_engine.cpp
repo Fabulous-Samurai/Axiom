@@ -46,10 +46,10 @@ char PlotEngine::GetCharForValue(double value, double min_val, double max_val) n
     if (!std::isfinite(value)) return ' ';
     if (value <= min_val) return intensity[0];
     if (value >= max_val) return intensity[num_levels - 1];
-    
+
     const double range = max_val - min_val;
     if (std::abs(range) < 1e-12) return intensity[num_levels / 2];
-    
+
     const int level = static_cast<int>((value - min_val) / range * (num_levels - 1));
     return intensity[std::clamp(level, 0, num_levels - 1)];
 }
@@ -57,7 +57,7 @@ char PlotEngine::GetCharForValue(double value, double min_val, double max_val) n
 std::pair<int, int> PlotEngine::MapToScreen(double x, double y, const PlotConfig& config) noexcept {
     const double x_range = config.x_max - config.x_min;
     const double y_range = config.y_max - config.y_min;
-    
+
     // Arithmetic traps: handle zero range to avoid division by zero
     const double safe_x_range = (std::abs(x_range) < 1e-12) ? 1.0 : x_range;
     const double safe_y_range = (std::abs(y_range) < 1e-12) ? 1.0 : y_range;
@@ -67,7 +67,7 @@ std::pair<int, int> PlotEngine::MapToScreen(double x, double y, const PlotConfig
 
     const int screen_x = static_cast<int>((x - config.x_min) / safe_x_range * (w - 1));
     const int screen_y = static_cast<int>((config.y_max - y) / safe_y_range * (h - 1));
-    
+
     return {screen_x, screen_y};
 }
 
@@ -78,14 +78,14 @@ std::string_view PlotEngine::PlotFunction(std::string_view expression, const Plo
     const int height = std::clamp(config.height, 1, 256);
 
     // Stack-allocated grid buffer (Zenith Pillar 1)
-    char grid[65536]; 
+    char grid[65536];
     std::memset(grid, ' ', static_cast<size_t>(width) * height);
 
     const double x_min = config.x_min;
     const double x_max = config.x_max;
     const double y_min = config.y_min;
     const double y_max = config.y_max;
-    
+
     const double x_range = x_max - x_min;
     const double x_step = (std::abs(x_range) > 1e-12) ? (x_range / (width - 1)) : 0.0;
 
@@ -138,7 +138,7 @@ std::string_view PlotEngine::PlotFunction(std::string_view expression, const Plo
     return arena_.allocString(std::string_view(result_buffer.data(), result_buffer.size()));
 }
 
-std::string_view PlotEngine::PlotParametric(std::string_view x_expr, std::string_view y_expr, 
+std::string_view PlotEngine::PlotParametric(std::string_view x_expr, std::string_view y_expr,
                                            double t_min, double t_max, const PlotConfig& config) noexcept {
     arena_.reset();
     AlgebraicParser parser;
@@ -159,7 +159,7 @@ std::string_view PlotEngine::PlotParametric(std::string_view x_expr, std::string
 
         const auto res_x = parser.ParseAndExecuteWithContext(x_expr, context);
         const auto res_y = parser.ParseAndExecuteWithContext(y_expr, context);
-        
+
         if (const auto x_opt = res_x.GetDouble(); x_opt) {
             if (const auto y_opt = res_y.GetDouble(); y_opt) {
                 const double x = *x_opt;
@@ -231,11 +231,11 @@ std::string_view PlotEngine::PlotData(const Vector& x_data, const Vector& y_data
     for (size_t i = 0; i < x_data.size(); ++i) {
         const double x = x_data[i];
         const double y = y_data[i];
-        
-        if (std::isfinite(x) && std::isfinite(y) && 
+
+        if (std::isfinite(x) && std::isfinite(y) &&
             x >= config.x_min && x <= config.x_max &&
             y >= config.y_min && y <= config.y_max) {
-            
+
             const auto [screen_x, screen_y] = MapToScreen(x, y, config);
             if (screen_x >= 0 && screen_x < width && screen_y >= 0 && screen_y < height) {
                 grid[screen_y * width + screen_x] = config.plot_char;
@@ -256,50 +256,50 @@ std::string_view PlotEngine::Histogram(const Vector& data, int bins, const PlotC
     if (data.empty() || bins <= 0) {
         return arena_.allocString("Error: Data must be non-empty and bins > 0\n");
     }
-    
+
     double data_min = data[0];
     double data_max = data[0];
     for (size_t i = 1; i < data.size(); ++i) {
         if (data[i] < data_min) data_min = data[i];
         if (data[i] > data_max) data_max = data[i];
     }
-    
+
     if (std::abs(data_max - data_min) < 1e-12) {
         return arena_.allocString("Error: All data points are identical\n");
     }
-    
+
     const int actual_bins = std::clamp(bins, 1, 256);
     FixedVector<int, 256> hist;
     hist.assign(actual_bins, 0);
     const double bin_width = (data_max - data_min) / actual_bins;
-    
+
     for (const double val : data) {
         int bin = static_cast<int>((val - data_min) / bin_width);
         if (bin >= actual_bins) bin = actual_bins - 1;
         if (bin < 0) bin = 0;
         hist[bin]++;
     }
-    
+
     int max_freq = 0;
     for (int i = 0; i < actual_bins; ++i) {
         if (hist[i] > max_freq) max_freq = hist[i];
     }
-    
+
     if (max_freq == 0) return arena_.allocString("Error: No valid data\n");
-    
+
     FixedVector<char, 32768> result_buffer;
     FormatChars(result_buffer, "Histogram (%zu points, %d bins):\n", data.size(), actual_bins);
-    
+
     for (int i = actual_bins - 1; i >= 0; --i) {
         const double bin_start = data_min + i * bin_width;
         const double bin_end = bin_start + bin_width;
         const int bar_length = static_cast<int>((static_cast<double>(hist[i]) * config.width) / max_freq);
-        
+
         FormatChars(result_buffer, "[%7.2f - %7.2f) ", bin_start, bin_end);
         for (int j = 0; j < bar_length; ++j) result_buffer.push_back(config.plot_char);
         FormatChars(result_buffer, " (%d)\n", hist[i]);
     }
-    
+
     return arena_.allocString(std::string_view(result_buffer.data(), result_buffer.size()));
 }
 
@@ -347,13 +347,13 @@ std::string_view PlotEngine::PlotSurface(std::string_view expression, const Plot
     AlgebraicParser parser;
     const int width = std::clamp(config.width, 1, 256);
     const int height = std::clamp(config.height, 1, 256);
-    
+
     char grid[65536];
     const double x_min = config.x_min;
     const double x_max = config.x_max;
     const double y_min = config.x_min; // Use symmetric domain for y input if not specified
     const double y_max = config.x_max;
-    
+
     const double x_step = (width > 1) ? (x_max - x_min) / (width - 1) : 0;
     const double y_step = (height > 1) ? (y_max - y_min) / (height - 1) : 0;
 
@@ -364,7 +364,7 @@ std::string_view PlotEngine::PlotSurface(std::string_view expression, const Plot
             SymbolTable context;
             context.push_back({"x", Number(x)});
             context.push_back({"y", Number(y)});
-            
+
             const auto res = parser.ParseAndExecuteWithContext(expression, context);
             if (const auto z_opt = res.GetDouble(); z_opt) {
                 grid[r * width + c] = GetCharForValue(*z_opt, config.y_min, config.y_max);
@@ -373,7 +373,7 @@ std::string_view PlotEngine::PlotSurface(std::string_view expression, const Plot
             }
         }
     }
-    
+
     FixedVector<char, 70000> result_buffer;
     for (int row = 0; row < height; ++row) {
         for (int col = 0; col < width; ++col) result_buffer.push_back(grid[row * width + col]);
@@ -392,25 +392,25 @@ std::string_view PlotEngine::PolarPlot(std::string_view r_expression, const Plot
     AlgebraicParser parser;
     const int width = std::clamp(config.width, 1, 256);
     const int height = std::clamp(config.height, 1, 256);
-    
+
     char grid[65536];
     std::memset(grid, ' ', static_cast<size_t>(width) * height);
-    
+
     const int samples = 720;
     const double theta_step = 2.0 * M_PI / samples;
-    
+
     for (int i = 0; i < samples; ++i) {
         const double theta = i * theta_step;
         SymbolTable context;
         context.push_back({"theta", Number(theta)});
         context.push_back({"t", Number(theta)});
-        
+
         const auto res = parser.ParseAndExecuteWithContext(r_expression, context);
         if (const auto r_opt = res.GetDouble(); r_opt) {
             const double r = *r_opt;
             const double x = r * std::cos(theta);
             const double y = r * std::sin(theta);
-            
+
             if (std::isfinite(x) && std::isfinite(y) &&
                 x >= config.x_min && x <= config.x_max &&
                 y >= config.y_min && y <= config.y_max) {
@@ -421,7 +421,7 @@ std::string_view PlotEngine::PolarPlot(std::string_view r_expression, const Plot
             }
         }
     }
-    
+
     if (config.show_axes) {
         const auto [ax, ay] = MapToScreen(0, 0, config);
         if (ax >= 0 && ax < width) for (int r = 0; r < height; ++r) if (grid[r * width + ax] == ' ') grid[r * width + ax] = '|';

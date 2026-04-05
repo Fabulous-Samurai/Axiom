@@ -25,9 +25,9 @@ public:
 
 BENCHMARK_F(StylePipelineBenchmark, PushLatency)(benchmark::State& state) {
     axui::StylePipeline pipeline;
-    
+
     std::string sample_json = R"({"color": "#ff0000", "padding": 10, "margin": {"top": 5, "bottom": 5}})";
-    
+
     for (auto _ : state) {
         bool success = pipeline.pushUpdate(sample_json);
         benchmark::DoNotOptimize(success);
@@ -36,18 +36,18 @@ BENCHMARK_F(StylePipelineBenchmark, PushLatency)(benchmark::State& state) {
 
 BENCHMARK_F(StylePipelineBenchmark, EndToEndProcessing)(benchmark::State& state) {
     axui::StylePipeline pipeline;
-    
+
     std::string sample_json = R"({"color": "#ff0000", "padding": 10, "margin": {"top": 5, "bottom": 5}})";
     int num_items = state.range(0);
-    
+
     for (auto _ : state) {
         // Producer: push items
         for (int i = 0; i < num_items; ++i) {
             pipeline.pushUpdate(sample_json);
         }
-        
+
         // Consumer: process items manually since we're not running the event loop
-        // StylePipeline uses QMetaObject::invokeMethod or direct call in tests ideally, 
+        // StylePipeline uses QMetaObject::invokeMethod or direct call in tests ideally,
         // but its processQueue is private slot. We can process events to trigger it.
         app->processEvents();
     }

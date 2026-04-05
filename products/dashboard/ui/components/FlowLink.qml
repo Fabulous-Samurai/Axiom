@@ -2,7 +2,7 @@ import QtQuick 2.15
 
 /*
  * FlowLink — Animated data path between pipeline nodes
- * 
+ *
  * Pulsing glow particles flow from source to target.
  * Speed/density correlates to throughput ratio.
  */
@@ -129,7 +129,7 @@ Item {
             // Glow effect (simplified for Qt 6 compatibility)
             border.color: Qt.rgba(currentColor.r, currentColor.g, currentColor.b, 0.5)
             border.width: backpressure ? 3 : 2
-            
+
             // Jitter for backpressure
             NumberAnimation on x {
                 running: backpressure
@@ -143,7 +143,7 @@ Item {
                 running: active
                 loops: Animation.Infinite
                 duration: particleSpeed
-                
+
                 // Stagger start time per particle
                 Component.onCompleted: {
                     if (active) {

@@ -18,7 +18,7 @@ namespace AXIOM {
 
 /**
  * @brief AxiomThroughputNode: GPU-bound high-frequency line renderer.
- * 
+ *
  * DESIGN RATIONALE:
  * 1. ZERO-COPY: Reads directly from TelemetryScribe's lock-free ring buffer.
  * 2. L1/L2 CACHE OPTIMIZED: Vertex updates are performed in a contiguous memory block
@@ -29,7 +29,7 @@ namespace AXIOM {
 class AxiomThroughputNode : public QSGGeometryNode {
 public:
     AxiomThroughputNode();
-    
+
     /**
      * @brief Polls the telemetry system and updates GPU vertex data.
      * @param rect The bounding area of the widget.
@@ -40,7 +40,7 @@ public:
 private:
     QSGGeometry m_geometry;
     QSGFlatColorMaterial m_material;
-    
+
     // Internal cache for historical throughput calculation
     // Aligned to 64 bytes to prevent bank conflicts during high-frequency updates.
     struct alignas(64) ThroughputPoint {
@@ -61,10 +61,10 @@ class AxiomThroughputItem : public QQuickItem {
 
 public:
     explicit AxiomThroughputItem(QQuickItem* parent = nullptr);
-    
+
     QColor color() const { return m_color; }
     void setColor(const QColor& c) { if (m_color != c) { m_color = c; Q_EMIT colorChanged(); update(); } }
-    
+
     int maxPoints() const { return m_max_points; }
     void setMaxPoints(int p) { if (m_max_points != p) { m_max_points = p; Q_EMIT maxPointsChanged(); update(); } }
 

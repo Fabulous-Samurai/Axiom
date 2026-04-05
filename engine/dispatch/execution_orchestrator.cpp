@@ -1,7 +1,7 @@
 /**
  * @file execution_orchestrator.cpp
  * @brief Implementation of the Unified ExecutionOrchestrator.
- * 
+ *
  * Synchronized with Zenith-Pure core types (FixedVector, string_view).
  */
 
@@ -17,10 +17,10 @@ namespace AXIOM {
 struct ExecutionOrchestrator::Impl {
     ComputeEngine preferred_engine_{ComputeEngine::Auto};
     bool fallback_enabled_{true};
-    
+
     struct EngineStatus { ComputeEngine engine; bool available; };
     AXIOM::FixedVector<EngineStatus, 8> engine_availability_;
-    
+
     struct {
         std::string_view last_op;
         ComputeEngine engine;
@@ -55,7 +55,7 @@ EngineResult ExecutionOrchestrator::DispatchOperation(std::string_view operation
                                                    const AXIOM::FixedVector<std::string_view, 16>& args,
                                                    ComputeEngine preferred_engine) {
     const auto start = std::chrono::high_resolution_clock::now();
-    
+
     ComputeEngine engine = (preferred_engine == ComputeEngine::Auto)
         ? pimpl_->preferred_engine_ : preferred_engine;
 
@@ -76,9 +76,9 @@ EngineResult ExecutionOrchestrator::DispatchOperation(std::string_view operation
         append(" ");
         append(arg);
     }
-    
+
     std::string_view full_expr(buffer.data(), buffer.size());
-    
+
     thread_local DynamicCalc native;
     auto result = native.Evaluate(full_expr);
 
@@ -99,7 +99,7 @@ EngineResult ExecutionOrchestrator::DispatchMatrixOperation(std::string_view ope
 
 uint64_t ExecutionOrchestrator::OffloadToGPU(const ComputeTask& task, const void* data, size_t size) {
     if (!pimpl_->IsAvailable(ComputeEngine::Vulkan)) return 0;
-    
+
     // [PHASE 7]: Initiate Vulkan Compute Pipeline
     // 1. Acquire SSBO from Pool
     // 2. Map data (Zero-Copy)

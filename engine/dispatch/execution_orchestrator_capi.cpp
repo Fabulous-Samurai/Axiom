@@ -24,12 +24,12 @@ AXIOM_EXPORT void AxiomExecution_Destroy(AxiomExecutionHandle handle) {
     }
 }
 
-AXIOM_EXPORT int AxiomExecution_DispatchMatrix(AxiomExecutionHandle handle, 
-                                              const char* operation_name, 
-                                              const double* raw_data, 
-                                              size_t rows, 
+AXIOM_EXPORT int AxiomExecution_DispatchMatrix(AxiomExecutionHandle handle,
+                                              const char* operation_name,
+                                              const double* raw_data,
+                                              size_t rows,
                                               size_t cols) {
-                             
+
     if (!handle || !operation_name || !raw_data) return -1;
 
     // Sanity check for matrix dimensions
