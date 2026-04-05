@@ -1,0 +1,3 @@
+## 2024-04-05 - [Statistics Engine: Replace Full Sort with nth_element]
+**Learning:** For statistical algorithms like Median and Percentile that only require finding the k-th element, full array sorting (`std::ranges::sort`, O(N log N)) is an unnecessary bottleneck. In the context of `AXIOM::FixedVector` aliases and standard engine computations, copying the vector from a `const Vector&` and using `std::nth_element` provides expected O(N) performance, drastically reducing cycles on large datasets.
+**Action:** Always verify if a full sort is required when querying distributions, quantiles, or medians; default to `std::nth_element` (and `std::max_element`/`std::min_element` for interpolation) to avoid O(N log N) processing.
