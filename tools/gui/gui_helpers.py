@@ -17,7 +17,7 @@ class CppEngineInterface:
         self.process = None
         self.lock = threading.Lock()
         self.use_persistent = bool(executable_path)
-        
+
         # Start persistent engine
         if self.use_persistent:
             self._start_persistent_engine()
@@ -50,7 +50,7 @@ class CppEngineInterface:
         """Start persistent C++ engine subprocess."""
         if not self.executable_path:
             return
-        
+
         try:
             startupinfo = None
             creationflags = 0
@@ -59,7 +59,7 @@ class CppEngineInterface:
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                 startupinfo.wShowWindow = subprocess.SW_HIDE
                 creationflags = subprocess.CREATE_NO_WINDOW
-            
+
             # Start engine in interactive mode
             self.process = subprocess.Popen(
                 [self.executable_path, "--interactive"],
@@ -163,7 +163,7 @@ class CppEngineInterface:
         with self.lock:
             try:
                 start_time = time.time()
-                
+
                 # Send mode change if needed
                 mode = self.current_mode.lower()
                 if mode and mode != "algebraic":
@@ -175,11 +175,11 @@ class CppEngineInterface:
                     mode_err = self._check_result_errors(mode_ack)
                     if mode_err:
                         return mode_err
-                
+
                 # Send command
                 self.process.stdin.write(command + "\n")
                 self.process.stdin.flush()
-                
+
                 result_text = self._read_until_end(3.0)
                 execution_time = (time.time() - start_time) * 1000
 
@@ -191,9 +191,9 @@ class CppEngineInterface:
                     if error_response:
                         return error_response
                     return self._build_success_response(result_text, execution_time)
-                
+
                 return {"success": False, "error": "Empty result", "fallback_needed": True}
-                
+
             except Exception as e:
                 print(f"Persistent engine error: {e}")
                 # Mark for restart
@@ -261,7 +261,7 @@ class CppEngineInterface:
                 response = self._build_success_response(result_text, execution_time)
                 response["persistent"] = False
                 return response
-            
+
             return {"success": False, "error": "Empty result from engine", "fallback_needed": True}
 
         except subprocess.TimeoutExpired:

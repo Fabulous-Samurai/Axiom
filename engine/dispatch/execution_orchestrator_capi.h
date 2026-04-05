@@ -1,7 +1,7 @@
 /**
  * @file execution_orchestrator_capi.h
  * @brief C Application Binary Interface (ABI) for AXIOM Execution Orchestrator
- * 
+ *
  * Renamed from selective_dispatcher_capi.h for architectural consistency.
  */
 
@@ -12,6 +12,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 #include "axiom_export.h"
 
 #ifdef __cplusplus
@@ -26,14 +27,13 @@ AXIOM_EXPORT AxiomExecutionHandle AxiomExecution_Create();
 AXIOM_EXPORT void AxiomExecution_Destroy(AxiomExecutionHandle handle);
 
 // --- ZERO-COPY DATA BRIDGE ---
-AXIOM_EXPORT int AxiomExecution_DispatchMatrix(AxiomExecutionHandle handle, 
-                                              const char* operation_name, 
-                                              const double* raw_data, 
-                                              size_t rows, 
-                                              size_t cols);
+AXIOM_EXPORT int AxiomExecution_DispatchMatrix(AxiomExecutionHandle handle,
+                                               const char* operation_name,
+                                               const double* raw_data,
+                                               size_t rows, size_t cols);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // EXECUTION_ORCHESTRATOR_CAPI_H
+#endif  // EXECUTION_ORCHESTRATOR_CAPI_H
