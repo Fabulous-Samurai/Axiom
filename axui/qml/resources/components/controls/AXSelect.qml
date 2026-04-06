@@ -5,9 +5,9 @@ ComboBox {
     id: root
     property bool searchable: false
     property var options: []
-    
+
     model: options
-    
+
     contentItem: Text {
         leftPadding: 12
         rightPadding: root.indicator.width + root.spacing

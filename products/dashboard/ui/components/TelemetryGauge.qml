@@ -3,7 +3,7 @@ import QtQuick.Layouts 1.15
 
 /*
  * TelemetryGauge — Inline horizontal gauge for system metrics
- * 
+ *
  * CPU ████████░░░░ 78%
  */
 

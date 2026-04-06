@@ -96,7 +96,7 @@ ApplicationWindow {
             Item {
                 id: topologyContainer
                 anchors.fill: parent
-                
+
                 // Links (Drawn first to be behind nodes)
                 Repeater {
                     model: dashboardManager.stages.length > 1 ? dashboardManager.stages.length - 1 : 0
@@ -118,7 +118,7 @@ ApplicationWindow {
                         throughput: modelData.throughput
                         latency: modelData.latency
                         queueSaturation: modelData.queueSaturation
-                        
+
                         onXChanged: if (selectedNode && selectedNode.stageId === stageId) updateHistory()
                         onClicked: {
                             window.selectedNode = modelData
@@ -189,7 +189,7 @@ ApplicationWindow {
         radius: 8
         border.color: "#3B82F6"
         border.width: 1
-        
+
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 12

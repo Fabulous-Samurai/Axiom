@@ -5,17 +5,17 @@ def cleanup():
     obsolete_files = [
         # Bridge/API Obsolete
         "axiom-master/engine/api/kensui_bridge.cpp",
-        
+
         # Dispatcher Obsolete
         "axiom-master/engine/dispatch/selective_dispatcher.h",
         "axiom-master/engine/dispatch/selective_dispatcher.cpp",
         "axiom-master/engine/dispatch/selective_dispatcher_capi.h",
         "axiom-master/engine/dispatch/selective_dispatcher_capi.cpp",
-        
+
         # UI Obsolete
         "axiom-master/axui/runtime/src/zenith_manager.cpp",
         "axiom-master/axui/runtime/include/axui/zenith_manager.h",
-        
+
         # Core Obsolete (Moved to runtime)
         "axiom-master/engine/core/daemon_engine.cpp",
         "axiom-master/engine/core/secure_vault.cpp",

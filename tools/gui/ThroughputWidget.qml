@@ -6,7 +6,7 @@ import QtQuick.Effects
 // DESIGN SPECIFICATION: DIRAC / PREMIUM DESKTOP UI
 // -------------------------------------------------------------------------
 // This component implements the "Hardware-Bound" visualization layer.
-// It bypasses the Python GIL by utilizing the C++ SceneGraph node 
+// It bypasses the Python GIL by utilizing the C++ SceneGraph node
 // 'AxiomThroughputItem' for multimillion-point line rendering.
 // -------------------------------------------------------------------------
 
@@ -28,8 +28,8 @@ Rectangle {
         anchors.margins: 20
         color: "#00F2FF"
         maxPoints: 1024
-        
-        // Z-order logic: chart is below the glass top layer but 
+
+        // Z-order logic: chart is below the glass top layer but
         // above the dark background.
         z: 1
     }
@@ -74,7 +74,7 @@ Rectangle {
 
         Row {
             spacing: 8
-            
+
             Text {
                 id: opsText
                 text: (root.currentOps / 1000000).toFixed(2)
