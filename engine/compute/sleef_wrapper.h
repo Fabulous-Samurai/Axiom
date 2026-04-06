@@ -1,5 +1,4 @@
-// [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO
-// .agents/workflows/agent_must_obey.md
+// [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
 #pragma once
 
 #include "axiom_export.h"
@@ -25,4 +24,4 @@ AXIOM_EXPORT double axiom_sleef_log_d1(double in);
 AXIOM_EXPORT double axiom_sleef_log10_d1(double in);
 AXIOM_EXPORT double axiom_sleef_exp_d1(double in);
 
-}  // extern "C"
+} // extern "C"
