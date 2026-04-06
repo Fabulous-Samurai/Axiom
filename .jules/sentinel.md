@@ -1,0 +1,4 @@
+## 2025-04-06 - [CRITICAL] Fix command injection in visualization tool
+**Vulnerability:** The `tools/visualization/advanced_3d_visualization.py` script utilized the unsafe `eval()` function to parse mathematical expressions directly from user input strings, creating a command injection / arbitrary code execution vulnerability.
+**Learning:** Even with an empty `__builtins__` dictionary and restricted `safe_dict`, `eval()` in Python can often be bypassed to execute arbitrary code (e.g. using `__class__`, `__subclasses__` on allowed object types). It should never be used on untrusted user input, especially for evaluating complex math expressions.
+**Prevention:** Replace all `eval()` calls for math expressions with an explicit Abstract Syntax Tree (AST) parser (like Python's `ast.parse`), restricting evaluation strictly to math operations (`ast.Constant`, `ast.BinOp`, `ast.UnaryOp`, etc.) and explicitly forbidding `ast.Attribute` access to avoid sandbox escapes.
