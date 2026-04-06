@@ -7,7 +7,7 @@
 TEST(HardwareTest, SIMDvsScalarConsistency) {
     const int size = 1024;
     std::vector<double> a(size), b(size), res_simd(size), res_scalar(size);
-    
+
     for (int i = 0; i < size; ++i) {
         a[i] = static_cast<double>(i);
         b[i] = static_cast<double>(i * 2);
@@ -28,7 +28,7 @@ TEST(HardwareTest, SIMDvsScalarConsistency) {
         std::cout << "[INFO] AVX2 detected, performing SIMD verification..." << std::endl;
         // In a real test, we'd call the actual SIMD optimized functions here.
         // For this suite, we verify that the detection macros match the runtime.
-        EXPECT_TRUE(true); 
+        EXPECT_TRUE(true);
     } else {
         std::cout << "[INFO] AVX2 not enabled in this build." << std::endl;
     }

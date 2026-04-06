@@ -2,7 +2,7 @@
 /**
  * @file sandbox_proxy.h
  * @brief Out-of-Process Sandbox Proxy for heavy calculations.
- * 
+ *
  * Redirects "Complex" marked tasks to an isolated axiom_worker.exe process
  * to prevent main engine thread blocking or crashes.
  */
@@ -37,7 +37,7 @@ public:
      * @param command The mathematical expression or command string.
      * @param timeout_ms Maximum time allowed before Sentry kills the worker.
      */
-    std::future<SandboxResult> execute(const std::string& command, 
+    std::future<SandboxResult> execute(const std::string& command,
                                        std::chrono::milliseconds timeout_ms = std::chrono::milliseconds(500));
 
     /**
@@ -60,7 +60,7 @@ private:
 
     struct SandboxIPCLayout* ipc_layout_{nullptr};
     std::atomic<bool> is_worker_alive_{false};
-    
+
     // Future expansion: IPC handles (Shared Memory / Pipes)
 };
 

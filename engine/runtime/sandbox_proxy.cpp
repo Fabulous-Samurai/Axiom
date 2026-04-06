@@ -60,12 +60,12 @@ std::future<SandboxResult> ProcessProxy::execute(const std::string& command, std
         }
 
         auto t_start = std::chrono::high_resolution_clock::now();
-        
+
         // Mock IPC logic for compilation stabilization
         SandboxResponse res;
         res.success = true;
         std::snprintf(res.result.data(), res.result.size(), "Result for %s", command.c_str());
-        
+
         auto t_end = std::chrono::high_resolution_clock::now();
         double elapsed = std::chrono::duration<double, std::milli>(t_end - t_start).count();
 

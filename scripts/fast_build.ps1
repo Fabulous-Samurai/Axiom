@@ -50,7 +50,7 @@ $ConfigArgs = @(
     "-B", $BUILD_DIR,
     "-DCMAKE_BUILD_TYPE=$BuildType",
     "-DENABLE_FAST_BUILD=ON",
-    "-DENABLE_PARALLEL_BUILD=ON", 
+    "-DENABLE_PARALLEL_BUILD=ON",
     "-DENABLE_ADVANCED_FEATURES=ON",
     "-DENABLE_LTO=ON",
     "-DCMAKE_BUILD_PARALLEL_LEVEL=$CPU_COUNT",
@@ -116,7 +116,7 @@ Write-Host "Build Type:    $BuildType" -ForegroundColor White
 if ($BuildTime.TotalSeconds -lt 30) {
     Write-Host "🏎️ SENNA SPEED: Lightning fast build! (<30s)" -ForegroundColor Green
 } elseif ($BuildTime.TotalSeconds -lt 60) {
-    Write-Host "🏁 Formula 1 Speed: Very fast! (<60s)" -ForegroundColor Yellow  
+    Write-Host "🏁 Formula 1 Speed: Very fast! (<60s)" -ForegroundColor Yellow
 } elseif ($BuildTime.TotalSeconds -lt 120) {
     Write-Host "🚗 Racing Speed: Fast! (<2m)" -ForegroundColor Orange
 } else {

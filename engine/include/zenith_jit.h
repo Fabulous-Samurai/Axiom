@@ -44,14 +44,14 @@ private:
     FixedVector<char, 32768> last_disassembly_;
     double last_compile_time_ms_ = 0.0;
     static double global_last_compile_time_ms_;
-    
+
 #if defined(ASMJIT_BUILD_X86)
-    void CompileNodeX86(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, NodePtr node, 
+    void CompileNodeX86(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_ptr, NodePtr node,
                      const SymbolTable& var_map, ::asmjit::x86::Vec& out) noexcept;
 #endif
 
 #if defined(ASMJIT_BUILD_AARCH64)
-    void CompileNodeAArch64(asmjit::aarch64::Compiler& cc, asmjit::aarch64::Gp vars_ptr, NodePtr node, 
+    void CompileNodeAArch64(asmjit::aarch64::Compiler& cc, asmjit::aarch64::Gp vars_ptr, NodePtr node,
                      const SymbolTable& var_map, asmjit::aarch64::Vec& out) noexcept;
 #endif
 };

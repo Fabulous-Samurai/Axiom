@@ -19,7 +19,7 @@ AXIOM_EXPORT Axiom_CalculationResult Axiom_Execute(const char* expression, const
     }
 
     thread_local DynamicCalc engine;
-    
+
     // Set mode
     std::string_view m(mode ? mode : "algebraic");
     if (m == "linear") engine.SetMode(CalculationMode::LINEAR_SYSTEM);
@@ -61,7 +61,7 @@ AXIOM_EXPORT uintptr_t AxiomJit_GetDisassembly(const uint8_t* code_ptr, size_t s
 AXIOM_EXPORT size_t AxiomMantis_StreamSearchTree(Axiom_MantisNode* out_nodes, size_t max_count) {
     if (!out_nodes || max_count == 0) return 0;
     // Implementation details...
-    return 0; 
+    return 0;
 }
 
 } // namespace AXIOM

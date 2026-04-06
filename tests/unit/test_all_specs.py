@@ -18,13 +18,13 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 class TestCppEngine(unittest.TestCase):
     """Test C++ Engine Direct Communication"""
-    
+
     def setUp(self):
         """Setup test environment"""
         self.current_dir = Path(__file__).parent
         self.executable_path = self.find_cpp_executable()
         self.temp_dir = tempfile.mkdtemp()
-        
+
     def find_cpp_executable(self):
         """Find the C++ executable"""
         possible_paths = [
@@ -34,25 +34,25 @@ class TestCppEngine(unittest.TestCase):
             self.current_dir / "build" / "Debug" / "cpp_dynamic_calc.exe",
             self.current_dir / "cmake-build-debug" / "cpp_dynamic_calc.exe",
         ]
-        
+
         for path in possible_paths:
             if path.exists():
                 return str(path)
         return None
-    
+
     def execute_cpp_command_fast(self, command, timeout=2):
         """Fast C++ command execution with optimized communication"""
         if not self.executable_path:
             self.skipTest("C++ executable not found")
-        
+
         try:
             # Create a batch file for faster execution
             batch_content = f"{command}\nexit\n"
             batch_file = os.path.join(self.temp_dir, "input.txt")
-            
+
             with open(batch_file, 'w') as f:
                 f.write(batch_content)
-            
+
             # Use input redirection for faster communication
             result = subprocess.run(
                 [self.executable_path],
@@ -64,15 +64,15 @@ class TestCppEngine(unittest.TestCase):
                 errors='ignore',
                 creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
             )
-            
+
             if result.returncode == 0:
                 # Quick parse - just get the last meaningful line
                 lines = [line.strip() for line in result.stdout.split('\n') if line.strip()]
                 # Filter out UI elements
-                result_lines = [line for line in lines if 
-                              not any(ui_element in line for ui_element in 
+                result_lines = [line for line in lines if
+                              not any(ui_element in line for ui_element in
                                     ['AXIOM', '═', '│', 'Welcome', 'Mode:', 'Input:', 'Result:', 'Enter', 'exit', 'quit'])]
-                
+
                 return {
                     'success': True,
                     'result': result_lines[-1] if result_lines else 'OK',
@@ -84,7 +84,7 @@ class TestCppEngine(unittest.TestCase):
                     'error': result.stderr or 'Unknown error',
                     'raw_output': result.stdout
                 }
-                
+
         except subprocess.TimeoutExpired:
             return {
                 'success': False,
@@ -95,7 +95,7 @@ class TestCppEngine(unittest.TestCase):
                 'success': False,
                 'error': str(e)
             }
-    
+
     def test_basic_arithmetic(self):
         """Test basic arithmetic operations"""
         test_cases = [
@@ -107,19 +107,19 @@ class TestCppEngine(unittest.TestCase):
             ("2^3", "8"),
             ("(2 + 3) * 4", "20")
         ]
-        
+
         for expression, expected in test_cases:
             with self.subTest(expression=expression):
                 result = self.execute_cpp_command_fast(expression)
                 self.assertTrue(result['success'], f"Failed to execute: {expression}")
                 # Just check if we got a numerical result, not exact match due to formatting
                 self.assertIsNotNone(result.get('result'))
-    
+
     def test_mathematical_functions(self):
         """Test mathematical functions"""
         test_cases = [
             "sqrt(16)",
-            "sin(0)", 
+            "sin(0)",
             "cos(0)",
             "tan(0)",
             "log(1)",
@@ -127,7 +127,7 @@ class TestCppEngine(unittest.TestCase):
             "abs(-5)",
             "factorial(4)"
         ]
-        
+
         for expression in test_cases:
             with self.subTest(expression=expression):
                 result = self.execute_cpp_command_fast(expression)
@@ -135,7 +135,7 @@ class TestCppEngine(unittest.TestCase):
 
 class TestPythonFallback(unittest.TestCase):
     """Test Python Fallback Mathematical Evaluation"""
-    
+
     def setUp(self):
         """Setup Python evaluation environment"""
         import math
@@ -146,7 +146,7 @@ class TestPythonFallback(unittest.TestCase):
             'sqrt': math.sqrt, 'pi': math.pi, 'e': math.e,
             'log': math.log, 'exp': math.exp, 'factorial': math.factorial
         }
-    
+
     def python_eval(self, expression):
         """Safe Python evaluation"""
         try:
@@ -154,7 +154,7 @@ class TestPythonFallback(unittest.TestCase):
             return {'success': True, 'result': str(result)}
         except Exception as e:
             return {'success': False, 'error': str(e)}
-    
+
     def test_basic_arithmetic_fallback(self):
         """Test basic arithmetic with Python fallback"""
         test_cases = [
@@ -166,13 +166,13 @@ class TestPythonFallback(unittest.TestCase):
             ("2**3", "8"),  # Python power operator
             ("(2 + 3) * 4", "20")
         ]
-        
+
         for expression, expected in test_cases:
             with self.subTest(expression=expression):
                 result = self.python_eval(expression)
                 self.assertTrue(result['success'])
                 self.assertEqual(result['result'], expected)
-    
+
     def test_mathematical_functions_fallback(self):
         """Test mathematical functions with Python fallback"""
         test_cases = [
@@ -183,7 +183,7 @@ class TestPythonFallback(unittest.TestCase):
             ("factorial(4)", 24),
             ("round(3.14159, 2)", 3.14)
         ]
-        
+
         for expression, expected in test_cases:
             with self.subTest(expression=expression):
                 result = self.python_eval(expression)
@@ -192,7 +192,7 @@ class TestPythonFallback(unittest.TestCase):
 
 class TestScientificPackages(unittest.TestCase):
     """Test Scientific Package Integration"""
-    
+
     def test_numpy_availability(self):
         """Test NumPy package availability"""
         try:
@@ -203,7 +203,7 @@ class TestScientificPackages(unittest.TestCase):
             self.assertEqual(mean_val, 3.0)
         except ImportError:
             self.skipTest("NumPy not installed")
-    
+
     def test_scipy_availability(self):
         """Test SciPy package availability"""
         try:
@@ -214,7 +214,7 @@ class TestScientificPackages(unittest.TestCase):
             self.assertAlmostEqual(gamma_val, 1.0, places=5)
         except ImportError:
             self.skipTest("SciPy not installed")
-    
+
     def test_matplotlib_availability(self):
         """Test Matplotlib package availability"""
         try:
@@ -225,7 +225,7 @@ class TestScientificPackages(unittest.TestCase):
             self.assertIsNotNone(plt)
         except ImportError:
             self.skipTest("Matplotlib not installed")
-    
+
     def test_pandas_availability(self):
         """Test Pandas package availability"""
         try:
@@ -235,7 +235,7 @@ class TestScientificPackages(unittest.TestCase):
             self.assertEqual(len(df), 3)
         except ImportError:
             self.skipTest("Pandas not installed")
-    
+
     def test_sympy_availability(self):
         """Test SymPy package availability"""
         try:
@@ -250,7 +250,7 @@ class TestScientificPackages(unittest.TestCase):
 
 class TestCalculatorModes(unittest.TestCase):
     """Test Different Calculator Modes"""
-    
+
     def test_algebraic_mode(self):
         """Test algebraic mode calculations"""
         # This would test the algebraic parser
@@ -260,12 +260,12 @@ class TestCalculatorModes(unittest.TestCase):
             "sin(2*pi*x)",
             "log(e^x)"
         ]
-        
+
         for expr in test_expressions:
             with self.subTest(expression=expr):
                 # In a real implementation, this would use the algebraic parser
                 self.assertIsNotNone(expr)
-    
+
     def test_linear_system_mode(self):
         """Test linear system solving"""
         # This would test matrix operations and system solving
@@ -274,57 +274,57 @@ class TestCalculatorModes(unittest.TestCase):
             "3x + 2y = 12; x + 4y = 10",
             "x + y + z = 6; 2x - y + z = 3; x + 2y - z = 1"
         ]
-        
+
         for system in systems:
             with self.subTest(system=system):
                 # In a real implementation, this would solve the linear system
                 self.assertIsNotNone(system)
-    
+
     def test_statistics_mode(self):
         """Test statistical calculations"""
         try:
             import numpy as np
             data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-            
+
             # Test basic statistical functions
             mean_val = np.mean(data)
             std_val = np.std(data)
             var_val = np.var(data)
-            
+
             self.assertAlmostEqual(mean_val, 5.5, places=1)
             self.assertGreater(std_val, 0)
             self.assertGreater(var_val, 0)
-            
+
         except ImportError:
             self.skipTest("NumPy not available for statistics")
-    
+
     def test_plotting_mode(self):
         """Test plotting capabilities"""
         try:
             import matplotlib.pyplot as plt
             import numpy as np
-            
+
             # Test basic plot creation (without displaying)
             x = np.linspace(0, 2*np.pi, 100)
             y = np.sin(x)
-            
+
             fig, ax = plt.subplots()
             ax.plot(x, y)
-            
+
             # Check if plot was created
             self.assertEqual(len(ax.lines), 1)
             plt.close(fig)
-            
+
         except ImportError:
             self.skipTest("Matplotlib not available for plotting")
 
 class TestGUIComponents(unittest.TestCase):
     """Test GUI Component Functionality"""
-    
+
     def test_package_detection(self):
         """Test package availability detection"""
         packages_to_check = ['numpy', 'scipy', 'matplotlib', 'pandas', 'sympy']
-        
+
         for package in packages_to_check:
             with self.subTest(package=package):
                 try:
@@ -332,17 +332,17 @@ class TestGUIComponents(unittest.TestCase):
                     available = True
                 except ImportError:
                     available = False
-                
+
                 # Just verify the check mechanism works
                 self.assertIsInstance(available, bool)
-    
+
     def test_mode_validation(self):
         """Test calculator mode validation"""
         valid_modes = [
             'algebraic', 'linear', 'stats', 'symbolic', 'plot', 'units',
             'python', 'numpy', 'scipy', 'matplotlib', 'pandas', 'sympy'
         ]
-        
+
         mode_map = {
             'algebraic': 'ALGEBRAIC',
             'linear': 'LINEAR SYSTEM',
@@ -357,7 +357,7 @@ class TestGUIComponents(unittest.TestCase):
             'pandas': 'PANDAS',
             'sympy': 'SYMPY'
         }
-        
+
         for mode in valid_modes:
             with self.subTest(mode=mode):
                 self.assertIn(mode, mode_map)
@@ -365,45 +365,45 @@ class TestGUIComponents(unittest.TestCase):
 
 class TestPerformanceOptimizations(unittest.TestCase):
     """Test Performance and Optimization Features"""
-    
+
     def test_fast_arithmetic(self):
         """Test fast arithmetic operations"""
         start_time = time.time()
-        
+
         # Simple arithmetic that should be very fast
         expressions = ["1+1", "2*3", "10/2", "5-2", "3**2"] * 10
-        
+
         for expr in expressions:
             try:
                 result = eval(expr)
                 self.assertIsNotNone(result)
             except Exception:
                 pass
-        
+
         end_time = time.time()
         execution_time = end_time - start_time
-        
+
         # Should complete 50 simple operations in under 1 second
         self.assertLess(execution_time, 1.0, "Arithmetic operations too slow")
-    
+
     def test_memory_efficiency(self):
         """Test memory usage efficiency"""
         import sys
-        
+
         # Create some test data
         test_data = list(range(1000))
         initial_size = sys.getsizeof(test_data)
-        
+
         # Process the data
         processed_data = [x * 2 for x in test_data]
         processed_size = sys.getsizeof(processed_data)
-        
+
         # Memory usage should be reasonable
         self.assertLess(processed_size, initial_size * 3, "Memory usage too high")
 
 class TestErrorHandling(unittest.TestCase):
     """Test Error Handling and Edge Cases"""
-    
+
     def test_division_by_zero(self):
         """Test division by zero handling"""
         try:
@@ -411,18 +411,18 @@ class TestErrorHandling(unittest.TestCase):
             self.fail("Should have raised ZeroDivisionError")
         except ZeroDivisionError:
             pass  # Expected behavior
-    
+
     def test_invalid_syntax(self):
         """Test invalid syntax handling"""
         invalid_expressions = [
-            "2 +", 
+            "2 +",
             "* 3",
             "((2 + 3)",
             "2 ++ 3",
             "sin()",
             "log(-1)"
         ]
-        
+
         for expr in invalid_expressions:
             with self.subTest(expression=expr):
                 try:
@@ -431,7 +431,7 @@ class TestErrorHandling(unittest.TestCase):
                 except Exception:
                     # Expected behavior - error was handled
                     pass
-    
+
     def test_large_numbers(self):
         """Test handling of large numbers"""
         large_number_tests = [
@@ -439,10 +439,10 @@ class TestErrorHandling(unittest.TestCase):
             "factorial(20)" if 'factorial' in dir(__builtins__) else "20*19*18*17*16*15*14*13*12*11*10*9*8*7*6*5*4*3*2*1",
             "2**64"
         ]
-        
+
         import math
         safe_dict = {'factorial': math.factorial}
-        
+
         for expr in large_number_tests:
             with self.subTest(expression=expr):
                 try:
@@ -479,10 +479,10 @@ def run_all_tests():
     """Run all test suites"""
     print("🧮 AXIOM Comprehensive Test Suite")
     print("=" * 50)
-    
+
     # Create test suite
     test_suite = unittest.TestSuite()
-    
+
     # Add all test classes
     test_classes = [
         TestCppEngine,
@@ -493,15 +493,15 @@ def run_all_tests():
         TestPerformanceOptimizations,
         TestErrorHandling
     ]
-    
+
     for test_class in test_classes:
         tests = unittest.TestLoader().loadTestsFromTestCase(test_class)
         test_suite.addTests(tests)
-    
+
     # Run tests with detailed output
     runner = unittest.TextTestRunner(verbosity=2, buffer=True)
     result = runner.run(test_suite)
-    
+
     # Summary
     print("\n" + "=" * 50)
     print("📊 TEST SUMMARY")
@@ -511,15 +511,15 @@ def run_all_tests():
     print(f"Failures: {len(result.failures)}")
     print(f"Errors: {len(result.errors)}")
     print(f"Skipped: {len(result.skipped)}")
-    
+
     print_failures(result.failures)
     print_errors(result.errors)
     print_skipped(result.skipped)
-    
-    success_rate = ((result.testsRun - len(result.failures) - len(result.errors)) / 
+
+    success_rate = ((result.testsRun - len(result.failures) - len(result.errors)) /
                     result.testsRun * 100) if result.testsRun > 0 else 0
     print(f"\n🎯 Success Rate: {success_rate:.1f}%")
-    
+
     return result.wasSuccessful()
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ NB_MODULE(axiom_core, m) {
     // 1. DynamicCalc Interface
     nb::class_<AXIOM::DynamicCalc>(m, "DynamicCalc")
         .def(nb::init<>())
-        .def("evaluate", &AXIOM::DynamicCalc::Evaluate, "input"_a, 
+        .def("evaluate", &AXIOM::DynamicCalc::Evaluate, "input"_a,
              "Evaluates an expression with nanosecond precision.")
         .def("evaluate_fast", &AXIOM::DynamicCalc::EvaluateFast, "lhs"_a, "rhs"_a, "op"_a,
              "High-velocity arithmetic dispatch path.");
@@ -43,4 +43,3 @@ NB_MODULE(axiom_core, m) {
         .value("DIVIDE", AXIOM::FastArithmeticOp::Divide)
         .export_values();
 }
-

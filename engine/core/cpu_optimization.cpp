@@ -50,7 +50,7 @@ bool CPUOptimization::DetectSSE() {
 }
 
 bool CPUOptimization::DetectAVX() {
-    return true;  // Simplified detection  
+    return true;  // Simplified detection
 }
 
 bool CPUOptimization::DetectAVX2() {

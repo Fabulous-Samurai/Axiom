@@ -35,7 +35,7 @@ signals:
 protected:
     // SceneGraph integration
     QSGNode* updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data) override;
-    
+
     // Geometry/Size changes
     void itemChange(ItemChange change, const ItemChangeData& data) override;
 

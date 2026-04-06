@@ -21,17 +21,17 @@ TEST_F(DifferentialTest, RandomExpressionConsistency) {
     // A list of operations to build random expressions
     std::vector<std::string> ops = {"+", "-", "*", "/"};
     std::vector<std::string> funcs = {"sin", "cos", "exp", "abs"};
-    
+
     for (int i = 0; i < 50; ++i) {
         double v1 = 1.0 + AXIOM::SecureRandom::uniform() * 9.0;
         double v2 = 1.0 + AXIOM::SecureRandom::uniform() * 9.0;
-        
+
         int op_idx = AXIOM::SecureRandom::range(0, (int)ops.size() - 1);
         int func_idx = AXIOM::SecureRandom::range(0, (int)funcs.size() - 1);
-        
+
         // Construct a simple expression: func(v1) op v2
         std::string expr = funcs[func_idx] + "(" + std::to_string(v1) + ") " + ops[op_idx] + " " + std::to_string(v2);
-        
+
         // 1. Interpreted Result
         auto res_interp = parser.ParseAndExecute(expr);
         if (!res_interp.HasResult()) continue;
@@ -65,7 +65,7 @@ TEST_F(DifferentialTest, RandomExpressionConsistency) {
 TEST_F(DifferentialTest, MatrixSIMDConsistency) {
     // Test JIT-compiled Matrix multiplication vs standard Library path
     std::string_view expr = "[[1, 2], [3, 4]] * [[5, 6], [7, 8]]";
-    
+
     // 1. Interpreted/Library Result
     auto res_interp = parser.ParseAndExecute(expr);
     ASSERT_TRUE(res_interp.HasResult());
@@ -75,7 +75,7 @@ TEST_F(DifferentialTest, MatrixSIMDConsistency) {
     // 2. JIT Result
     auto root = parser.ParseExpression(expr);
     ASSERT_TRUE(root != nullptr);
-    
+
     SymbolTable empty_map;
     auto jit_fn = jit.Compile(root, empty_map);
     if (jit_fn) {

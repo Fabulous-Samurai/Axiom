@@ -7,19 +7,19 @@ Rectangle {
     property string message: ""
     property string type: "info"
     property int duration: 3000
-    
+
     implicitWidth: messageText.implicitWidth + 48
     implicitHeight: 48
     radius: 8
     color: "#1e293b"
     border.color: "#334155"
     border.width: 1
-    
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: 12
         spacing: 8
-        
+
         Text {
             id: messageText
             text: root.message

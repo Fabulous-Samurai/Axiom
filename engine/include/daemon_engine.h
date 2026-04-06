@@ -32,33 +32,33 @@ namespace AXIOM {
 template<typename T, size_t Capacity>
 class LockFreeRingBuffer {
     static_assert((Capacity & (Capacity - 1)) == 0, "Capacity must be a power of 2");
-    
+
     T buffer_[Capacity];
-    alignas(64) std::atomic<size_t> head_{0}; 
-    alignas(64) std::atomic<size_t> tail_{0}; 
+    alignas(64) std::atomic<size_t> head_{0};
+    alignas(64) std::atomic<size_t> tail_{0};
 
 public:
     bool push(T item) noexcept {
         const size_t current_tail = tail_.load(std::memory_order::seq_cst);
         const size_t current_head = head_.load(std::memory_order::seq_cst);
-        
-        if (current_head - current_tail >= Capacity) [[unlikely]] return false; 
-        
+
+        if (current_head - current_tail >= Capacity) [[unlikely]] return false;
+
         buffer_[current_head & (Capacity - 1)] = std::move(item);
         head_.store(current_head + 1, std::memory_order::seq_cst);
-        
+
         return true;
     }
 
     bool pop(T& item) noexcept {
         const size_t current_head = head_.load(std::memory_order::seq_cst);
         const size_t current_tail = tail_.load(std::memory_order::seq_cst);
-        
-        if (current_head == current_tail) [[unlikely]] return false; 
-        
+
+        if (current_head == current_tail) [[unlikely]] return false;
+
         item = std::move(buffer_[current_tail & (Capacity - 1)]);
         tail_.store(current_tail + 1, std::memory_order::seq_cst);
-        
+
         return true;
     }
 };
@@ -137,16 +137,16 @@ private:
     std::atomic<DaemonStatus> status_{DaemonStatus::STARTING};
     std::atomic<bool> running_{false};
     std::atomic<uint64_t> next_request_id_{1};
-    
+
     std::array<char, 256> pipe_name_{};
     std::jthread daemon_thread_;
     std::jthread request_processor_;
-    
+
     RequestQueueSoA<1024> request_queue_;
-    
+
     AXIOM::FixedVector<std::pair<std::string_view, std::unique_ptr<struct SessionContext>>, 128> sessions_;
-    std::mutex sessions_mutex_; 
-    
+    std::mutex sessions_mutex_;
+
     std::atomic<uint64_t> total_requests_{0};
     std::atomic<uint64_t> rejected_requests_{0};
     std::atomic<double> avg_response_time_{0.0};

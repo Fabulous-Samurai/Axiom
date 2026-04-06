@@ -4,7 +4,7 @@ import QtQuick.Controls 2.15
 Button {
     id: root
     property string variant: "primary"
-    
+
     contentItem: Text {
         text: root.text
         font: root.font

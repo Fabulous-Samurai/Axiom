@@ -10,7 +10,7 @@ using namespace AXIOM;
 static void BM_MathThroughput(benchmark::State& state) {
     AlgebraicParser parser;
     ZenithJIT jit;
-    
+
     // Complex mathematical expression for high-throughput calculation
     std::string expr = "sin(x) * cos(y) + tan(x) / (x * x + y * y + 1.0)";
     NodePtr root = parser.ParseExpression(expr);
@@ -18,7 +18,7 @@ static void BM_MathThroughput(benchmark::State& state) {
     var_map.push_back({"x", 0.0});
     var_map.push_back({"y", 0.0});
     JiffedFunc fn = jit.Compile(root, var_map);
-    
+
     double vars[2] = {0.5, 1.2};
     for (auto _ : state) {
         vars[0] += 0.001;
@@ -33,13 +33,13 @@ BENCHMARK(BM_MathThroughput);
 static void BM_MatrixSIMDMath(benchmark::State& state) {
     AlgebraicParser parser;
     ZenithJIT jit;
-    
+
     std::string expr = "sin(M) + M * 2.0";
     NodePtr root = parser.ParseExpression(expr);
     SymbolTable var_map;
     var_map.push_back({"M", 0.0});
     JiffedMatrixFunc fn = jit.CompileMatrix(root, var_map);
-    
+
     double flat_matrix[16] = {
         0.1, 0.2, 0.3, 0.4,
         0.5, 0.6, 0.7, 0.8,
@@ -47,7 +47,7 @@ static void BM_MatrixSIMDMath(benchmark::State& state) {
         1.3, 1.4, 1.5, 1.6
     };
     double results[16] = {0};
-    
+
     for (auto _ : state) {
         fn(flat_matrix, results);
         benchmark::DoNotOptimize(results);

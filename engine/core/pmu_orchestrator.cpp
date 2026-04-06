@@ -47,7 +47,7 @@ bool PMUOrchestrator::Initialize() noexcept {
     for (int i = 0; i < 4; ++i) {
         pe.type = PERF_TYPE_HARDWARE;
         pe.config = configs[i];
-        
+
         int fd = perf_event_open(&pe, 0, -1, -1, 0);
         if (fd == -1) {
             std::cerr << "[PMU] Failed to open perf_event " << i << std::endl;
@@ -68,7 +68,7 @@ bool PMUOrchestrator::Initialize() noexcept {
     return true;
 #else
     // Windows/Other: Unsupported for direct rdpmc via perf_event_open
-    return false; 
+    return false;
 #endif
 }
 
@@ -87,7 +87,7 @@ void PMUOrchestrator::Shutdown() noexcept {
 uint64_t PMUOrchestrator::ReadCounter(int idx) const noexcept {
 #if defined(__linux__)
     if (!initialized_) return 0;
-    
+
     // [MANDATORY PATH]: Read metadata page to get hardware index
     auto* pc = static_cast<struct perf_event_mmap_page*>(pages_[idx].mmap_base);
     uint32_t index = pc->index;
@@ -96,7 +96,7 @@ uint64_t PMUOrchestrator::ReadCounter(int idx) const noexcept {
 
     // [MANDATORY PATH]: AXIOM_LFENCE serialization BEFORE rdpmc
     AXIOM_LFENCE();
-    
+
     // Index-1 because rdpmc uses 0-based indexing for hardware counters
     // but perf_event_mmap_page index is 1-based (0 is disabled).
     return (uint64_t)__builtin_ia32_rdpmc(index - 1);
@@ -106,4 +106,3 @@ uint64_t PMUOrchestrator::ReadCounter(int idx) const noexcept {
 }
 
 } // namespace AXIOM
-

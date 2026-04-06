@@ -25,7 +25,7 @@ EngineResult LinearSystemParser::ParseAndExecute(std::string_view input) noexcep
     if (input.starts_with("qr(")) return HandleQR(input);
     if (input.starts_with("eigen(")) return HandleEigen(input);
     if (input.starts_with("solve(")) return HandleSolve(input);
-    
+
     // Use correct StatusCode from axiom_status.h
     return CreateErrorResult(StatusCode::OperationNotFound);
 }
@@ -34,7 +34,7 @@ EngineResult LinearSystemParser::HandleQR(std::string_view input) const noexcept
 {
     Matrix A = ParseMatrixString(input);
     auto [Q, R] = GramSchmidt(A);
-    return CreateSuccessResult(std::move(Q)); 
+    return CreateSuccessResult(std::move(Q));
 }
 
 EngineResult LinearSystemParser::HandleEigen(std::string_view input) const noexcept
@@ -62,7 +62,7 @@ Vector LinearSystemParser::solve_linear_system(const Matrix& A, const Vector& b)
 
 bool LinearSystemParser::ParseLinearSystem(std::string_view input, Matrix &A, Vector &b) const noexcept {
     (void)input; (void)A; (void)b;
-    return false; 
+    return false;
 }
 
 Matrix LinearSystemParser::ParseMatrixString(std::string_view input) const noexcept {
