@@ -2,10 +2,12 @@ import subprocess
 import json
 import os
 import time
+import shlex
 
 def run_cmd(cmd):
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+        cmd_list = shlex.split(cmd, posix=(os.name != 'nt'))
+        result = subprocess.run(cmd_list, shell=False, capture_output=True, text=True, timeout=300)  # NOSONAR
         return {
             "cmd": cmd,
             "success": result.returncode == 0,
@@ -37,7 +39,7 @@ def main():
         "python scripts/verify_zenith_pillars.py",
         
         # C++ Tests
-        "build\\run_tests.exe",
+        os.path.join("build", "run_tests.exe"),
         
         # Python Packaging
         "python -m build --wheel"
