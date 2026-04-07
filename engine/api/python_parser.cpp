@@ -64,8 +64,11 @@ std::string PythonParser::HandleNumPyMode(std::string_view input) {
 
     for (const auto& func : numpy_funcs) {
         if (processed.find(func) != std::string::npos) {
-            std::string pattern = std::string(func) + "(";
-            std::string replacement = "np." + std::string(func) + "(";
+            std::string pattern = std::string(func);
+            pattern += '(';
+            std::string replacement = "np.";
+            replacement += std::string(func);
+            replacement += '(';
             size_t pos = processed.find(pattern);
             while (pos != std::string::npos) {
                 processed.replace(pos, pattern.length(), replacement);
@@ -87,8 +90,11 @@ std::string PythonParser::HandleSciPyMode(std::string_view input) {
 
     for (const auto& func : scipy_funcs) {
         if (processed.find(func) != std::string::npos) {
-            std::string pattern = std::string(func) + ".";
-            std::string replacement = "sp." + std::string(func) + ".";
+            std::string pattern = std::string(func);
+            pattern += '.';
+            std::string replacement = "sp.";
+            replacement += std::string(func);
+            replacement += '.';
             size_t pos = processed.find(pattern);
             while (pos != std::string::npos) {
                 processed.replace(pos, pattern.length(), replacement);
@@ -111,8 +117,11 @@ std::string PythonParser::HandleMatplotlibMode(std::string_view input) {
 
     for (const auto& func : plt_funcs) {
         if (processed.find(func) != std::string::npos) {
-            std::string pattern = std::string(func) + "(";
-            std::string replacement = "plt." + std::string(func) + "(";
+            std::string pattern = std::string(func);
+            pattern += '(';
+            std::string replacement = "plt.";
+            replacement += std::string(func);
+            replacement += '(';
             size_t pos = processed.find(pattern);
             while (pos != std::string::npos) {
                 processed.replace(pos, pattern.length(), replacement);
@@ -134,8 +143,11 @@ std::string PythonParser::HandlePandasMode(std::string_view input) {
 
     for (const auto& func : pd_funcs) {
         if (processed.find(func) != std::string::npos) {
-            std::string pattern = std::string(func) + "(";
-            std::string replacement = "pd." + std::string(func) + "(";
+            std::string pattern = std::string(func);
+            pattern += '(';
+            std::string replacement = "pd.";
+            replacement += std::string(func);
+            replacement += '(';
             size_t pos = processed.find(pattern);
             while (pos != std::string::npos) {
                 processed.replace(pos, pattern.length(), replacement);
@@ -158,8 +170,11 @@ std::string PythonParser::HandleSymPyMode(std::string_view input) {
 
     for (const auto& func : sympy_funcs) {
         if (processed.find(func) != std::string::npos) {
-            std::string pattern = std::string(func) + "(";
-            std::string replacement = "sp." + std::string(func) + "(";
+            std::string pattern = std::string(func);
+            pattern += '(';
+            std::string replacement = "sp.";
+            replacement += std::string(func);
+            replacement += '(';
             size_t pos = processed.find(pattern);
             while (pos != std::string::npos) {
                 processed.replace(pos, pattern.length(), replacement);
