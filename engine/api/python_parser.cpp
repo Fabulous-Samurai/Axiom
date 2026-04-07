@@ -63,12 +63,14 @@ std::string PythonParser::HandleNumPyMode(std::string_view input) {
     });
 
     for (const auto& func : numpy_funcs) {
-        std::string pattern = std::string(func) + "(";
-        std::string replacement = "np." + std::string(func) + "(";
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
+        if (processed.find(func) != std::string::npos) {
+            std::string pattern = std::string(func) + "(";
+            std::string replacement = "np." + std::string(func) + "(";
+            size_t pos = processed.find(pattern);
+            while (pos != std::string::npos) {
+                processed.replace(pos, pattern.length(), replacement);
+                pos = processed.find(pattern, pos + replacement.length());
+            }
         }
     }
 
@@ -84,12 +86,14 @@ std::string PythonParser::HandleSciPyMode(std::string_view input) {
     });
 
     for (const auto& func : scipy_funcs) {
-        std::string pattern = std::string(func) + ".";
-        std::string replacement = "sp." + std::string(func) + ".";
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
+        if (processed.find(func) != std::string::npos) {
+            std::string pattern = std::string(func) + ".";
+            std::string replacement = "sp." + std::string(func) + ".";
+            size_t pos = processed.find(pattern);
+            while (pos != std::string::npos) {
+                processed.replace(pos, pattern.length(), replacement);
+                pos = processed.find(pattern, pos + replacement.length());
+            }
         }
     }
 
@@ -106,12 +110,14 @@ std::string PythonParser::HandleMatplotlibMode(std::string_view input) {
     });
 
     for (const auto& func : plt_funcs) {
-        std::string pattern = std::string(func) + "(";
-        std::string replacement = "plt." + std::string(func) + "(";
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
+        if (processed.find(func) != std::string::npos) {
+            std::string pattern = std::string(func) + "(";
+            std::string replacement = "plt." + std::string(func) + "(";
+            size_t pos = processed.find(pattern);
+            while (pos != std::string::npos) {
+                processed.replace(pos, pattern.length(), replacement);
+                pos = processed.find(pattern, pos + replacement.length());
+            }
         }
     }
 
@@ -127,12 +133,14 @@ std::string PythonParser::HandlePandasMode(std::string_view input) {
     });
 
     for (const auto& func : pd_funcs) {
-        std::string pattern = std::string(func) + "(";
-        std::string replacement = "pd." + std::string(func) + "(";
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
+        if (processed.find(func) != std::string::npos) {
+            std::string pattern = std::string(func) + "(";
+            std::string replacement = "pd." + std::string(func) + "(";
+            size_t pos = processed.find(pattern);
+            while (pos != std::string::npos) {
+                processed.replace(pos, pattern.length(), replacement);
+                pos = processed.find(pattern, pos + replacement.length());
+            }
         }
     }
 
@@ -149,12 +157,14 @@ std::string PythonParser::HandleSymPyMode(std::string_view input) {
     });
 
     for (const auto& func : sympy_funcs) {
-        std::string pattern = std::string(func) + "(";
-        std::string replacement = "sp." + std::string(func) + "(";
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
+        if (processed.find(func) != std::string::npos) {
+            std::string pattern = std::string(func) + "(";
+            std::string replacement = "sp." + std::string(func) + "(";
+            size_t pos = processed.find(pattern);
+            while (pos != std::string::npos) {
+                processed.replace(pos, pattern.length(), replacement);
+                pos = processed.find(pattern, pos + replacement.length());
+            }
         }
     }
 
