@@ -1,0 +1,4 @@
+## 2025-02-14 - Prevent Command Injection via `subprocess.run`
+**Vulnerability:** Command injection risks exist when `subprocess.run` is used with `shell=True`, allowing arbitrary code execution if an attacker modifies the command string.
+**Learning:** Python scripts in the project (`sonar_helper.py`, `zenith_audit_scribe.py`) used `shell=True` unnecessarily. When passing a string command, it should be safely split using `shlex.split(cmd, posix=(os.name != 'nt'))` and `shell=False`. Note that `shlex.split` does not correctly handle Windows paths (`\\`) on POSIX systems, so paths must be constructed via `os.path.join()`.
+**Prevention:** Never use `shell=True`. Always construct paths safely across platforms using `os.path.join()`, split command strings using `shlex.split`, pass lists to `subprocess.run(..., shell=False)`, and append `# NOSONAR` to clear SonarCloud warnings for safe usages.
