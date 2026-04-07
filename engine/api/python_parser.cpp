@@ -51,6 +51,23 @@ std::string PythonParser::HandleInteractiveMode(std::string_view input) {
     return std::string(input);
 }
 
+static void ReplaceFunctionCalls(std::string& processed, const AXIOM::FixedVector<std::string_view, 256>& funcs, std::string_view prefix, char suffix) {
+    for (const auto& func : funcs) {
+        if (processed.find(func) != std::string::npos) {
+            std::string pattern = std::string(func);
+            pattern += suffix;
+            std::string replacement = std::string(prefix);
+            replacement += std::string(func);
+            replacement += suffix;
+            size_t pos = processed.find(pattern);
+            while (pos != std::string::npos) {
+                processed.replace(pos, pattern.length(), replacement);
+                pos = processed.find(pattern, pos + replacement.length());
+            }
+        }
+    }
+}
+
 std::string PythonParser::HandleNumPyMode(std::string_view input) {
     // NumPy mode - automatically add np. prefix to numpy functions
     std::string processed{input};
@@ -62,15 +79,7 @@ std::string PythonParser::HandleNumPyMode(std::string_view input) {
         "exp", "log", "sin", "cos", "tan", "pi", "e"
     });
 
-    for (const auto& func : numpy_funcs) {
-        std::string pattern = std::string(func) + "(";
-        std::string replacement = "np." + std::string(func) + "(";
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
-        }
-    }
+    ReplaceFunctionCalls(processed, numpy_funcs, "np.", '(');
 
     return processed;
 }
@@ -83,15 +92,7 @@ std::string PythonParser::HandleSciPyMode(std::string_view input) {
         "integrate", "optimize", "linalg", "stats", "special", "fft"
     });
 
-    for (const auto& func : scipy_funcs) {
-        std::string pattern = std::string(func) + ".";
-        std::string replacement = "sp." + std::string(func) + ".";
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
-        }
-    }
+    ReplaceFunctionCalls(processed, scipy_funcs, "sp.", '.');
 
     return processed;
 }
@@ -105,15 +106,7 @@ std::string PythonParser::HandleMatplotlibMode(std::string_view input) {
         "xlabel", "ylabel", "title", "legend", "grid", "savefig"
     });
 
-    for (const auto& func : plt_funcs) {
-        std::string pattern = std::string(func) + "(";
-        std::string replacement = "plt." + std::string(func) + "(";
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
-        }
-    }
+    ReplaceFunctionCalls(processed, plt_funcs, "plt.", '(');
 
     return processed;
 }
@@ -126,15 +119,7 @@ std::string PythonParser::HandlePandasMode(std::string_view input) {
         "DataFrame", "Series", "read_csv", "read_excel", "read_json"
     });
 
-    for (const auto& func : pd_funcs) {
-        std::string pattern = std::string(func) + "(";
-        std::string replacement = "pd." + std::string(func) + "(";
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
-        }
-    }
+    ReplaceFunctionCalls(processed, pd_funcs, "pd.", '(');
 
     return processed;
 }
@@ -148,18 +133,9 @@ std::string PythonParser::HandleSymPyMode(std::string_view input) {
         "factor", "simplify", "limit", "series"
     });
 
-    for (const auto& func : sympy_funcs) {
-        std::string pattern = std::string(func) + "(";
-        std::string replacement = "sp." + std::string(func) + "(";
-        size_t pos = processed.find(pattern);
-        while (pos != std::string::npos) {
-            processed.replace(pos, pattern.length(), replacement);
-            pos = processed.find(pattern, pos + replacement.length());
-        }
-    }
+    ReplaceFunctionCalls(processed, sympy_funcs, "sp.", '(');
 
     return processed;
 }
 
 } // namespace AXIOM
-
