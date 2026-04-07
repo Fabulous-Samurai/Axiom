@@ -70,14 +70,14 @@ def verify_file(file_path):
         print(f"[ERROR] Could not read {file_path}: {e}")
     return violations
 
-def main():
-    print("--------------------------------------------------------")
-    print("  [AXIOM] ZENITH PILLAR VERIFIER: MANDATORY AUDIT      ")
-    print("--------------------------------------------------------")
+def get_files_to_check():
+    # If files are passed via sys.argv (e.g. by pre-commit), use them
+    if len(sys.argv) > 1:
+        return sys.argv[1:]
     
     # Target core directories
     core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
-    total_violations = 0
+    files_to_check = []
     
     for d in core_dirs:
         # Check if we are running from root or scripts dir
@@ -86,17 +86,30 @@ def main():
         
         for root, _, files in os.walk(search_path):
             for file in files:
-                # Tightened exemption check
-                if any(exempt in file for exempt in EXEMPT_FILES) or file in WHITELISTED_FILES:
-                    continue
-                if file.endswith((".cpp", ".h", ".hpp", ".cc")):
-                    path = os.path.join(root, file)
-                    violations = verify_file(path)
-                    if violations:
-                        print(f"[FAIL] {path}")
-                        for v in violations:
-                            print(f"  - {v}")
-                        total_violations += len(violations)
+                files_to_check.append(os.path.join(root, file))
+
+    return files_to_check
+
+def main():
+    print("--------------------------------------------------------")
+    print("  [AXIOM] ZENITH PILLAR VERIFIER: MANDATORY AUDIT      ")
+    print("--------------------------------------------------------")
+
+    total_violations = 0
+    files = get_files_to_check()
+
+    for path in files:
+        file = os.path.basename(path)
+        # Tightened exemption check
+        if any(exempt in file for exempt in EXEMPT_FILES) or file in WHITELISTED_FILES:
+            continue
+        if file.endswith((".cpp", ".h", ".hpp", ".cc")):
+            violations = verify_file(path)
+            if violations:
+                print(f"[FAIL] {path}")
+                for v in violations:
+                    print(f"  - {v}")
+                total_violations += len(violations)
                         
     if total_violations > 0:
         print(f"\n[CRITICAL] Found {total_violations} Zenith Pillar violations.")
