@@ -1,25 +1,27 @@
 #include <gtest/gtest.h>
-#include "secure_vault.h"
+
 #include <string>
 #include <vector>
 
+#include "secure_vault.h"
+
 TEST(AxiomEngine, EnclaveSealing) {
-    AXIOM::SecureMantisVault vault;
-    EXPECT_TRUE(vault.initialize_enclave());
+  AXIOM::SecureMantisVault vault;
+  EXPECT_TRUE(vault.initialize_enclave());
 
-    std::string secret_data = "SuperSecretMantisState123";
-    
-    // Mühürleme (Seal) işlemi
-    EXPECT_TRUE(vault.seal(secret_data.data(), secret_data.size()));
+  std::string secret_data = "SuperSecretMantisState123";
 
-    // Yanlış boyutta mühür açma (Unseal) girişimi
-    std::vector<char> wrong_buffer(10);
-    EXPECT_FALSE(vault.unseal(wrong_buffer.data(), wrong_buffer.size()));
+  // Mühürleme (Seal) işlemi
+  EXPECT_TRUE(vault.seal(secret_data.data(), secret_data.size()));
 
-    // Doğru mühür açma (Unseal) işlemi
-    std::vector<char> unsealed(secret_data.size());
-    EXPECT_TRUE(vault.unseal(unsealed.data(), unsealed.size()));
+  // Yanlış boyutta mühür açma (Unseal) girişimi
+  std::vector<char> wrong_buffer(10);
+  EXPECT_FALSE(vault.unseal(wrong_buffer.data(), wrong_buffer.size()));
 
-    std::string recovered(unsealed.begin(), unsealed.end());
-    EXPECT_EQ(secret_data, recovered);
+  // Doğru mühür açma (Unseal) işlemi
+  std::vector<char> unsealed(secret_data.size());
+  EXPECT_TRUE(vault.unseal(unsealed.data(), unsealed.size()));
+
+  std::string recovered(unsealed.begin(), unsealed.end());
+  EXPECT_EQ(secret_data, recovered);
 }

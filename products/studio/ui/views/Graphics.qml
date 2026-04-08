@@ -67,7 +67,7 @@ Item {
 
             Row {
                 spacing: Spacing.medium
-                
+
                 Rectangle {
                     width: 100; height: 36; radius: Spacing.radiusMedium
                     color: !useGPU ? Colors.primary : "transparent"
@@ -87,7 +87,7 @@ Item {
             GraphicsCanvas {
                 id: graphicsCanvas
                 width: 512; height: 512
-                source: "" 
+                source: ""
                 expression: graphicsInput.text
             }
 

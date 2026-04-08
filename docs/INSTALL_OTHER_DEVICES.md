@@ -88,4 +88,3 @@ java -jar tools/tla/tla2tools.jar -cleanup -config formal/tla/AxiomDaemonQueueFa
 
 - If VS Code reports `PySide6` unresolved import, ensure the workspace interpreter is `${workspaceFolder}/.venv/bin/python.exe`.
 - On MinGW/UCRT python, `pip install PySide6` may fail; use the MSYS2 package route in script 2.
-
