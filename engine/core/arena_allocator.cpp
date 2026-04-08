@@ -1,8 +1,8 @@
 // [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
 /**
- * @file arena_allocator.cpp  
+ * @file arena_allocator.cpp
  * @brief AXIOM Engine v3.0 - Arena Allocator Implementation
- * 
+ *
  * Ultra-high performance memory management system
  */
 
@@ -84,7 +84,7 @@ HarmonicArena::ArenaBlock::ArenaBlock(size_t cap, int node) noexcept
     , capacity(cap)
     , offset(0)
     , is_ready(false)
-    , next_in_pool(nullptr) 
+    , next_in_pool(nullptr)
 {
     void* ptr = nullptr;
 #ifdef _WIN32
@@ -133,7 +133,7 @@ HarmonicArena::HarmonicArena(size_t block_size, int numa_node)
             cpu_set_t cpuset;
             CPU_ZERO(&cpuset);
             // This is a simplification; in practice we'd bind to all CPUs in that node.
-            CPU_SET(numa_node_, &cpuset); 
+            CPU_SET(numa_node_, &cpuset);
             pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
         }
 #endif
@@ -332,7 +332,7 @@ MemoryArena::MemoryArena(size_t size, bool use_mmap)
             return;
         }
     }
-    
+
     // Pre-fault pages for better real-time performance
     prefault_pages(memory_base_, arena_size_);
 }
@@ -405,17 +405,17 @@ bool MemoryArena::setup_memory_mapping(size_t size) {
         static_cast<DWORD>(size & 0xFFFFFFFF),
         nullptr
     );
-    
+
     if (!file_mapping_) {
         return false;
     }
-    
+
     memory_base_ = MapViewOfFile(
         file_mapping_,
         FILE_MAP_ALL_ACCESS,
         0, 0, size
     );
-    
+
     return memory_base_ != nullptr;
 #else
     memory_base_ = mmap(
@@ -424,16 +424,16 @@ bool MemoryArena::setup_memory_mapping(size_t size) {
         MAP_PRIVATE | MAP_ANONYMOUS,
         -1, 0
     );
-    
+
     if (memory_base_ == MAP_FAILED) {
         memory_base_ = nullptr;
         return false;
     }
-    
+
     // Advise kernel about usage patterns
     madvise(memory_base_, size, MADV_WILLNEED);
     madvise(memory_base_, size, MADV_SEQUENTIAL);
-    
+
     return true;
 #endif
 }
@@ -525,7 +525,7 @@ bool MemoryArena::is_pointer_in_arena(void* ptr) const {
     std::byte* byte_ptr = static_cast<std::byte*>(ptr);
     std::byte* arena_start = static_cast<std::byte*>(memory_base_);
     std::byte* arena_end = arena_start + arena_size_;
-    
+
     return byte_ptr >= arena_start && byte_ptr < arena_end;
 }
 
@@ -537,7 +537,7 @@ MemoryArena::ArenaStats MemoryArena::get_stats() const {
     stats.peak_usage = peak_usage_.load(std::memory_order_seq_cst);
     stats.allocation_count = allocation_count_.load(std::memory_order_seq_cst);
     stats.free_count = free_count_.load(std::memory_order_seq_cst);
-    
+
     // Calculate fragmentation ratio
     size_t free_block_count = 0;
     size_t free_block_total = 0;
@@ -547,14 +547,14 @@ MemoryArena::ArenaStats MemoryArena::get_stats() const {
         free_block_total += block->size;
         block = block->next;
     }
-    
+
     if (free_block_count == 0 || stats.used_size == 0) {
         stats.fragmentation_ratio = 0.0;
     } else {
         stats.fragmentation_ratio = static_cast<double>(free_block_count) /
             (static_cast<double>(stats.used_size) / 1024.0);
     }
-    
+
     return stats;
 }
 
@@ -563,9 +563,9 @@ bool MemoryArena::set_numa_policy(int node) {
     if (numa_available() < 0) {
         return false;
     }
-    
+
     unsigned long node_mask = 1UL << node;
-    return mbind(memory_base_, arena_size_, MPOL_BIND, &node_mask, 
+    return mbind(memory_base_, arena_size_, MPOL_BIND, &node_mask,
                 sizeof(node_mask) * 8, MPOL_MF_STRICT) == 0;
 }
 
@@ -573,13 +573,13 @@ int MemoryArena::get_numa_node() const {
     if (numa_available() < 0) {
         return -1;
     }
-    
+
     int mode;
     const unsigned long max_nodes = static_cast<unsigned long>(numa_max_possible_node() + 1);
     const unsigned long bits_per_word = static_cast<unsigned long>(sizeof(unsigned long) * 8);
     AXIOM::FixedVector<unsigned long, 64> node_mask;
     node_mask.assign((max_nodes + bits_per_word - 1) / bits_per_word, 0UL);
-    
+
     if (get_mempolicy(&mode, node_mask.data(), max_nodes, memory_base_, MPOL_F_ADDR) == 0) {
         // Find first set bit
         for (int i = 0; i < static_cast<int>(max_nodes); ++i) {
@@ -589,7 +589,7 @@ int MemoryArena::get_numa_node() const {
             }
         }
     }
-    
+
     return -1;
 }
 #endif
@@ -608,7 +608,7 @@ PoolManager::PoolManager() {
 #endif
 
     const size_t CHANNEL_SIZE = 64 * 1024 * 1024; // 64MB Dual Channel
-    
+
     // BANK A
     banks_[0].type = PoolType::ZENITH_BANK_A;
     banks_[0].channel_1 = std::make_unique<MemoryArena>(CHANNEL_SIZE, true);
@@ -647,16 +647,16 @@ void* PoolManager::allocate(size_t size, size_t alignment) {
     // Try Bank A Channels
     void* ptr = banks_[0].channel_1->allocate(size, alignment);
     if (!ptr) ptr = banks_[0].channel_2->allocate(size, alignment);
-    
+
     if (ptr) {
         banks_[0].active_allocations.fetch_add(1, std::memory_order_seq_cst);
         return ptr;
     }
-    
+
     // Try Bank B Channels (Fallback)
     ptr = banks_[1].channel_1->allocate(size, alignment);
     if (!ptr) ptr = banks_[1].channel_2->allocate(size, alignment);
-    
+
     if (ptr) {
         banks_[1].active_allocations.fetch_add(1, std::memory_order_seq_cst);
         return ptr;
@@ -675,7 +675,7 @@ void PoolManager::deallocate(void* ptr, size_t size) {
     } else if (banks_[0].channel_2->is_pointer_in_arena(ptr)) {
         banks_[0].channel_2->deallocate(ptr, size);
         banks_[0].active_allocations.fetch_sub(1, std::memory_order_relaxed);
-    } 
+    }
     // Check Bank B
     else if (banks_[1].channel_1->is_pointer_in_arena(ptr)) {
         banks_[1].channel_1->deallocate(ptr, size);
@@ -711,11 +711,11 @@ MemoryOrchestrator& MemoryOrchestrator::instance() noexcept {
 
 void* MemoryOrchestrator::allocate(size_t size, size_t alignment) {
     void* ptr = PoolManager::instance().allocate(size, alignment);
-    
+
     if (ptr) {
         // Log allocation in profiler
         MemoryProfiler::instance().record_allocation(ptr, size, alignment, 0);
-        
+
         // [SUBWAY SURFERS LOGIC]: Check 85% threshold for rolling window
         auto arena_stats = PoolManager::instance().get_all_stats();
         for (const auto& stat : arena_stats) {
@@ -723,18 +723,18 @@ void* MemoryOrchestrator::allocate(size_t size, size_t alignment) {
             if (usage >= 0.85) {
                 // Trigger preparation of the next block in the sliding window
                 // This ensures that 'new path is added in front'
-                perform_emergency_maintenance(); 
+                perform_emergency_maintenance();
                 break;
             }
         }
     }
-    
+
     return ptr;
 }
 
 void MemoryOrchestrator::deallocate(void* ptr, size_t size) {
     if (!ptr) return;
-    
+
     PoolManager::instance().deallocate(ptr, size);
     MemoryProfiler::instance().record_deallocation(ptr);
 }
@@ -742,7 +742,7 @@ void MemoryOrchestrator::deallocate(void* ptr, size_t size) {
 MemoryOrchestrator::SystemMemoryStats MemoryOrchestrator::get_system_stats() const noexcept {
     SystemMemoryStats sys_stats{};
     auto arena_stats = PoolManager::instance().get_all_stats();
-    
+
     double total_frag = 0.0;
     for (const auto& s : arena_stats) {
         sys_stats.total_reserved_bytes += s.total_size;
@@ -750,19 +750,19 @@ MemoryOrchestrator::SystemMemoryStats MemoryOrchestrator::get_system_stats() con
         sys_stats.active_allocations += s.allocation_count - s.free_count;
         total_frag += s.fragmentation_ratio;
     }
-    
+
     if (!arena_stats.empty()) {
         sys_stats.fragmentation_avg = total_frag / arena_stats.size();
     }
-    
+
     // Determine Health Status
     double usage_ratio = static_cast<double>(sys_stats.total_used_bytes) / sys_stats.total_reserved_bytes;
-    
+
     if (usage_ratio > 0.95) sys_stats.status = HealthStatus::EMERGENCY;
     else if (usage_ratio > 0.90) sys_stats.status = HealthStatus::CRITICAL;
     else if (usage_ratio > 0.70) sys_stats.status = HealthStatus::WARNING;
     else sys_stats.status = HealthStatus::OPTIMAL;
-    
+
     return sys_stats;
 }
 
@@ -806,17 +806,17 @@ void MemoryProfiler::record_allocation(void* ptr, size_t size, size_t alignment,
     if (!is_profiling_enabled()) {
         return;
     }
-    
+
     AllocationProfile profile;
     profile.address = ptr;
     profile.size = size;
     profile.alignment = alignment;
     profile.pool_index = pool_index;
     profile.timestamp = std::chrono::high_resolution_clock::now();
-    
+
     auto& tl = tl_profiling_buffer;
     tl.buffer.push_back(profile);
-    
+
     if (tl.buffer.size() >= ThreadLocalProfilingBuffer::FLUSH_THRESHOLD) {
         std::scoped_lock lock(history_mutex_);
         for (const auto& p : tl.buffer) {
@@ -832,29 +832,29 @@ void MemoryProfiler::record_deallocation(void* ptr) noexcept {
 
 MemoryProfiler::PerformanceMetrics MemoryProfiler::get_metrics() const noexcept {
     std::scoped_lock lock(history_mutex_);
-    
+
     PerformanceMetrics metrics{};
-    
+
     if (allocation_history_.empty()) {
         return metrics;
     }
-    
+
     // Calculate timing metrics (simplified)
     size_t count = allocation_history_.size();
     size_t start_idx = count > 1000 ? count - 1000 : 0;
-    
+
     double total_allocation_time = 0.0;
     size_t allocation_count = 0;
-    
+
     for (size_t i = start_idx; i < count; ++i) {
         total_allocation_time += allocation_history_[i].size / 1000.0; // Simplified
         allocation_count++;
     }
-    
+
     if (allocation_count > 0) {
         metrics.avg_allocation_time_ns = total_allocation_time / allocation_count;
     }
-    
+
     // Calculate peak usage (simplified)
     metrics.peak_memory_usage = 0;
     for (const auto& profile : allocation_history_) {
@@ -862,7 +862,7 @@ MemoryProfiler::PerformanceMetrics MemoryProfiler::get_metrics() const noexcept 
             metrics.peak_memory_usage = profile.size;
         }
     }
-    
+
     return metrics;
 }
 

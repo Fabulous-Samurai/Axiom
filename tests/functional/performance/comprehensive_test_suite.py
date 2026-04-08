@@ -40,16 +40,16 @@ def run_test(category, name, expression, expected_contains=None):
     start = time.time()
     result = engine.execute_command(expression)
     elapsed_ms = (time.time() - start) * 1000
-    
+
     # Track category times
     if category not in category_times:
         category_times[category] = []
     category_times[category].append(elapsed_ms)
-    
+
     success = result["success"]
     if expected_contains and success:
         success = expected_contains in str(result.get("result", ""))
-    
+
     if elapsed_ms < 5:
         speed = "⚡ SENNA"
     elif elapsed_ms < 20:
@@ -59,7 +59,7 @@ def run_test(category, name, expression, expected_contains=None):
     else:
         speed = "🐌 SLOW"
     status = "✅" if success else "❌"
-    
+
     all_results.append({
         "category": category,
         "name": name,
@@ -69,7 +69,7 @@ def run_test(category, name, expression, expected_contains=None):
         "speed": speed,
         "status": status
     })
-    
+
     return elapsed_ms, success
 
 # ============================================================================

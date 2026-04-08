@@ -150,7 +150,7 @@ private:
     AXIOM::FixedVector<std::pair<std::string_view, LatencyVec*>, 32> latency_history_;
 
     SystemTelemetry system_telemetry_;
-    
+
     void collectSystemTelemetry();
     void calculateThroughput() noexcept;
     void calculateLatencyStats();

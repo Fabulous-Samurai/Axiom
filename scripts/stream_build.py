@@ -10,10 +10,10 @@ def run_build():
         text=True,
         bufsize=1
     )
-    
+
     for line in iter(process.stdout.readline, ''):
         print(line, end='', flush=True)
-        
+
     process.wait()
     print(f"Build finished with exit code {process.returncode}")
     sys.exit(process.returncode)

@@ -6,7 +6,7 @@ import "components"
 
 /*
  * AXIOM System Flow Dashboard
- * 
+ *
  * ┌──────────────────────────────────────────────────────────┐
  * │  AXIOM SYSTEM FLOW                    ● REC   ⟳ Reset  │
  * ├──────────────────────────────────────────────────────────┤
@@ -31,7 +31,7 @@ Window {
 
     // Visual
     color: "#050505" // Darker base
-    
+
     // Background Radial Highlight (Sprint 3)
     Rectangle {
         anchors.fill: parent
@@ -39,7 +39,7 @@ Window {
             GradientStop { position: 0.0; color: "#0F172A" }
             GradientStop { position: 1.0; color: "#020617" }
         }
-        
+
         // Background Grid Mesh
         Repeater {
             model: parent.width / 40
@@ -78,7 +78,7 @@ Window {
         color: Qt.rgba(0.06, 0.06, 0.08, 0.95)
         border.color: "#1E293B"
         border.width: 0
-        
+
         Rectangle {
             anchors.bottom: parent.bottom
             anchors.left: parent.left
@@ -163,10 +163,10 @@ Window {
                     width: 70
                     height: 28
                     radius: 4
-                    color: manager && manager.recording 
+                    color: manager && manager.recording
                            ? Qt.rgba(0.94, 0.27, 0.27, 0.2)
                            : Qt.rgba(0.23, 0.51, 0.96, 0.2)
-                    border.color: manager && manager.recording 
+                    border.color: manager && manager.recording
                                   ? "#EF4444" : "#3B82F6"
 
                     Row {
@@ -210,7 +210,7 @@ Window {
                 // Reset button
                 Rectangle {
                     width: 28; height: 28; radius: 4
-                    color: resetMouse.containsMouse 
+                    color: resetMouse.containsMouse
                            ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
 
                     Text {
@@ -281,7 +281,7 @@ Window {
                         property int nodeIndex: index
                         property int totalNodes: manager ? manager.stages.length : 1
 
-                        x: (flowArea.width - nodeWidth) * 
+                        x: (flowArea.width - nodeWidth) *
                            (nodeIndex / Math.max(1, totalNodes - 1))
                         y: (flowArea.height - nodeHeight) / 2
 
@@ -314,13 +314,13 @@ Window {
                         property var sourceNode: findNode(modelData.sourceId)
                         property var targetNode: findNode(modelData.targetId)
 
-                        startPoint: sourceNode 
-                            ? Qt.point(sourceNode.x + sourceNode.width, 
+                        startPoint: sourceNode
+                            ? Qt.point(sourceNode.x + sourceNode.width,
                                        sourceNode.y + sourceNode.height / 2)
                             : Qt.point(0, 0)
 
-                        endPoint: targetNode 
-                            ? Qt.point(targetNode.x, 
+                        endPoint: targetNode
+                            ? Qt.point(targetNode.x,
                                        targetNode.y + targetNode.height / 2)
                             : Qt.point(0, 0)
 
@@ -383,7 +383,7 @@ Window {
                     label: "RAM"
                     value: manager ? manager.systemTelemetry.ramUsage : 0
                     unit: "%"
-                    subtitle: manager ? formatBytes(manager.systemTelemetry.ramUsed) 
+                    subtitle: manager ? formatBytes(manager.systemTelemetry.ramUsed)
                               + " / " + formatBytes(manager.systemTelemetry.ramTotal) : ""
                     maxValue: 100
                     color: "#22C55E"
@@ -395,10 +395,10 @@ Window {
                 // GPU
                 TelemetryGauge {
                     label: "GPU"
-                    value: manager && manager.systemTelemetry.gpuAvailable 
+                    value: manager && manager.systemTelemetry.gpuAvailable
                            ? manager.systemTelemetry.gpuUsage : 0
                     unit: "%"
-                    subtitle: manager && manager.systemTelemetry.gpuAvailable 
+                    subtitle: manager && manager.systemTelemetry.gpuAvailable
                               ? manager.systemTelemetry.gpuTemp.toFixed(0) + "°C" : "N/A"
                     maxValue: 100
                     color: "#EAB308"
@@ -465,7 +465,7 @@ Window {
                     criticalThreshold: 8000
                     gridColor: "#1E293B"
                     showLegend: false
-                    
+
                     property var dataPoints: []
                     data: dataPoints
 
@@ -519,7 +519,7 @@ Window {
                     showLegend: false
                     warningThreshold: 800
                     criticalThreshold: 1500
-                    
+
                     property var dataPoints: []
                     data: dataPoints
 
@@ -575,7 +575,7 @@ Window {
     DetailPanel {
         id: detailPanel
         visible: false
-        
+
         // History Track Timer (Sprint 3)
         Timer {
             interval: 2000
@@ -583,7 +583,7 @@ Window {
             repeat: true
             onTriggered: {
                 if (!detailPanel.stageId) return
-                
+
                 var currentHistory = detailPanel.history || []
                 var newHistory = currentHistory.slice()
                 newHistory.unshift({
@@ -591,7 +591,7 @@ Window {
                     throughput: detailPanel.messagesPerSecond,
                     latency: detailPanel.avgLatencyUs
                 })
-                
+
                 if (newHistory.length > 10) newHistory.pop()
                 detailPanel.history = newHistory
             }
@@ -610,7 +610,7 @@ Window {
         radius: 8
         border.color: "#3B82F6"
         border.width: 1
-        
+
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 12

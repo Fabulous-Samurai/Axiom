@@ -21,7 +21,7 @@ add_subdirectory(widgets)
 
 # --- Global Interface Library ---
 add_library(axui INTERFACE)
-target_link_libraries(axui INTERFACE 
+target_link_libraries(axui INTERFACE
     axui_core
     axui_compiler
     axui_runtime

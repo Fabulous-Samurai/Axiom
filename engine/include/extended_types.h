@@ -30,19 +30,19 @@ struct ExtendedEngineResult {
     bool success = false;
     double value = 0.0;
     std::string error_message = "";
-    
+
     // Extended result types
     bool has_linear_result = false;
     bool has_stats_result = false;
     bool has_symbolic_result = false;
     bool has_unit_result = false;
     bool has_plot_result = false;
-    
+
     // Linear system result
     struct {
         std::vector<double> solution;
     } linear_result;
-    
+
     // Statistics result
     struct {
         double mean = 0.0;
@@ -51,35 +51,35 @@ struct ExtendedEngineResult {
         double max = 0.0;
         size_t count = 0;
     } stats_result;
-    
+
     // Symbolic result
     struct {
         std::string result;
         std::string simplified;
     } symbolic_result;
-    
+
     // Unit conversion result
     struct {
         double value = 0.0;
         std::string target_unit;
     } unit_result;
-    
+
     // Plot result
     struct {
         std::string filename;
         double x_min = 0.0;
         double x_max = 0.0;
     } plot_result;
-    
+
     // Convert from basic EngineResult
     static ExtendedEngineResult from_engine_result(const EngineResult& basic_result) {
         ExtendedEngineResult extended;
-        
+
         if (basic_result.result.has_value()) {
             extended.success = true;
-            
+
             const auto& result_value = basic_result.result.value();
-            
+
             if (std::holds_alternative<double>(result_value)) {
                 extended.value = std::get<double>(result_value);
             }
@@ -108,7 +108,7 @@ struct ExtendedEngineResult {
             extended.success = false;
             extended.error_message = "Calculation error occurred";
         }
-        
+
         return extended;
     }
 };

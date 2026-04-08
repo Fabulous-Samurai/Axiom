@@ -6,26 +6,26 @@
 #include <sstream>
 #include <algorithm>
 
-PythonREPL::PythonREPL(PythonEngine* engine) 
+PythonREPL::PythonREPL(PythonEngine* engine)
     : python_engine_(engine), session_active_(false), indent_level_(0) {
 }
 
 void PythonREPL::StartInteractiveSession() {
     session_active_ = true;
     ResetREPLState();
-    
+
     // Initialize Python interactive environment
     python_engine_->ExecutePython("import sys");
     python_engine_->ExecutePython("import os");
     python_engine_->ExecutePython("sys.ps1 = '>>> '");
     python_engine_->ExecutePython("sys.ps2 = '... '");
-    
+
     // Set up helpful REPL environment
     std::string setup_code = R"(
 # REPL Helper functions
 def help_vars():
     """List all user-defined variables"""
-    user_vars = {k: v for k, v in globals().items() 
+    user_vars = {k: v for k, v in globals().items()
                  if not k.startswith('_') and k not in ['help_vars', 'help_modules']}
     for name, value in user_vars.items():
         print(f"{name}: {type(value).__name__} = {repr(value)}")
@@ -37,7 +37,7 @@ def help_modules():
 
 print("Python FFI REPL - Type 'help_vars()' or 'help_modules()' for assistance")
     )";
-    
+
     python_engine_->ExecutePython(setup_code);
 }
 
@@ -50,16 +50,16 @@ std::string PythonREPL::ExecuteInteractive(const std::string& input) {
     if (!session_active_) {
         return "Error: REPL session not active";
     }
-    
+
     // Add to command history
     command_history_.push_back(input);
-    
+
     // Handle special REPL commands
     if (input == "exit()" || input == "quit()") {
         StopInteractiveSession();
         return "Goodbye!";
     }
-    
+
     // Check if this is multi-line input
     if (IsMultiLineInput(input)) {
         AddToMultiLineBuffer(input);
@@ -69,7 +69,7 @@ std::string PythonREPL::ExecuteInteractive(const std::string& input) {
             return ExecuteMultiLineBuffer();
         }
     }
-    
+
     // Execute single-line input
     auto result = python_engine_->EvaluatePython(input);
     if (result.result.has_value()) {
@@ -79,11 +79,11 @@ std::string PythonREPL::ExecuteInteractive(const std::string& input) {
             return FormatOutput(last_output_);
         }
     }
-    
+
     if (result.error.has_value()) {
         return FormatOutput("Error: Operation failed", true);
     }
-    
+
     return "";
 }
 
@@ -91,7 +91,7 @@ bool PythonREPL::IsMultiLineInput(const std::string& input) {
     // Check for constructs that typically require multiple lines
     std::string trimmed = input;
     trimmed.erase(0, trimmed.find_first_not_of(" \t"));
-    
+
     return trimmed.find("def ") == 0 ||
            trimmed.find("class ") == 0 ||
            trimmed.find("if ") == 0 ||
@@ -108,7 +108,7 @@ bool PythonREPL::IsMultiLineInput(const std::string& input) {
 
 void PythonREPL::AddToMultiLineBuffer(const std::string& input) {
     multiline_buffer_.push_back(input);
-    
+
     // Update indent level based on input
     if (input.back() == ':') {
         indent_level_++;
@@ -121,16 +121,16 @@ std::string PythonREPL::ExecuteMultiLineBuffer() {
     if (multiline_buffer_.empty()) {
         return "";
     }
-    
+
     // Join multi-line buffer
     std::stringstream code_stream;
     for (const auto& line : multiline_buffer_) {
         code_stream << line << "\n";
     }
-    
+
     std::string code = code_stream.str();
     ClearMultiLineBuffer();
-    
+
     // Execute the complete multi-line code
     auto result = python_engine_->ExecutePython(code);
     if (result.result.has_value()) {
@@ -140,11 +140,11 @@ std::string PythonREPL::ExecuteMultiLineBuffer() {
             return FormatOutput(last_output_);
         }
     }
-    
+
     if (result.error.has_value()) {
         return FormatOutput("Error: Multi-line execution failed", true);
     }
-    
+
     return ""; // Successful execution with no output
 }
 
@@ -172,11 +172,11 @@ std::string PythonREPL::FormatOutput(const std::string& output, bool is_error) {
     if (output.empty()) {
         return "";
     }
-    
+
     if (is_error) {
         return "ERROR: " + output;
     }
-    
+
     return output;
 }
 

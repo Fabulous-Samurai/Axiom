@@ -13,7 +13,7 @@ from pathlib import Path
 
 try:
     from PySide6.QtCore import Qt, QTimer, QRectF, QSize
-    from PySide6.QtGui import (QColor, QFont, QPainter, QPainterPath, QPen, QBrush, 
+    from PySide6.QtGui import (QColor, QFont, QPainter, QPainterPath, QPen, QBrush,
                                QLinearGradient, QIcon)
     from PySide6.QtWidgets import (
         QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -134,7 +134,7 @@ QPlainTextEdit {{
 /* Tables */
 QTableWidget {{
     background-color: {SHADOW_SOFT["canvas"]}; alternate-background-color: {SHADOW_SOFT["surface"]};
-    color: {SHADOW_SOFT["text-primary"]}; border: none; gridline-color: transparent; 
+    color: {SHADOW_SOFT["text-primary"]}; border: none; gridline-color: transparent;
     font-family: 'JetBrains Mono';
 }}
 QHeaderView::section {{
@@ -154,7 +154,7 @@ class MinimalSparkline(QWidget):
     def update_data(self, val):
         self.data.append(val)
         self.data.pop(0)
-        self.update() 
+        self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -210,15 +210,15 @@ class AxiomStudio(QMainWindow):
         self.setWindowTitle("AXIOM Studio v1.1.0 [SHADOW SOFT]")
         self.resize(1440, 900)
         self.setStyleSheet(AXIOM_QSS)
-        
+
         # Engine Initialization
         self.engine_exe = self._locate_engine()
         self.engine = CppEngineInterface(self.engine_exe)
         self._ui_tasks = queue.Queue()
-        
+
         self._setup_main_ui()
         self._create_docks()
-        
+
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._pulse)
         self.timer.start(500)
@@ -236,7 +236,7 @@ class AxiomStudio(QMainWindow):
         main_l = QVBoxLayout(central)
         main_l.setContentsMargins(0, 0, 0, 0)
         main_l.setSpacing(0)
-        
+
         # Navbar
         nav = QFrame(); nav.setObjectName("Navbar"); nav.setFixedHeight(64)
         nh = QHBoxLayout(nav); nh.setContentsMargins(24, 0, 24, 0)
@@ -246,57 +246,57 @@ class AxiomStudio(QMainWindow):
         self.status_lbl = QLabel("Engine: IDLE"); self.status_lbl.setStyleSheet("font-family: 'JetBrains Mono';")
         nh.addWidget(self.status_lbl)
         main_l.addWidget(nav)
-        
+
         # Body
         body = QHBoxLayout(); body.setSpacing(0)
         self.sidebar = self._build_sidebar()
         body.addWidget(self.sidebar)
-        
+
         # Dashboard Content (Middle)
         self.stack = QStackedWidget()
         self.dashboard_view = self._build_dashboard_view()
         self.stack.addWidget(self.dashboard_view)
         body.addWidget(self.stack, 1)
-        
+
         main_l.addLayout(body)
         self.setDockOptions(QMainWindow.AllowTabbedDocks | QMainWindow.AnimatedDocks)
 
     def _build_sidebar(self):
         side = QFrame(); side.setObjectName("Sidebar"); side.setFixedWidth(220)
         sl = QVBoxLayout(side); sl.setContentsMargins(8, 24, 8, 24); sl.setSpacing(4)
-        
+
         self.btn_dash = QPushButton("  ⚡ Dashboard"); self.btn_dash.setObjectName("NavBtn")
         self.btn_dash.setCheckable(True); self.btn_dash.setChecked(True)
         sl.addWidget(self.btn_dash)
-        
+
         modes_lbl = QLabel("ENGINE MODES"); modes_lbl.setStyleSheet("margin-top: 20px; color: #64748B; font-size: 11px; font-weight: 800; padding-left: 16px;")
         sl.addWidget(modes_lbl)
-        
+
         for m, color in AXIOM_SEMANTIC.items():
             mode_name = m.split('-')[1]
             btn = QPushButton(f"  ● {mode_name.title()}")
             btn.setObjectName("SubNavBtn")
             btn.clicked.connect(lambda _=False, name=mode_name: self._switch_mode(name))
             sl.addWidget(btn)
-            
+
         sl.addStretch()
         return side
 
     def _build_dashboard_view(self):
         scroll = QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QFrame.NoFrame)
         container = QWidget(); l = QVBoxLayout(container); l.setContentsMargins(32, 32, 32, 32); l.setSpacing(24)
-        
+
         # KPI Row
         kpi_l = QHBoxLayout(); kpi_l.setSpacing(16)
         self.tp_lbl = QLabel("2.50M ops/sec")
         self.tp_spark = MinimalSparkline(SHADOW_SOFT["success"])
         kpi_l.addWidget(self._card("PARSER THROUGHPUT", self.tp_lbl, self.tp_spark))
-        
+
         self.mem_lbl = QLabel("61.1 MB")
         self.mem_spark = MinimalSparkline(SHADOW_SOFT["info"])
         kpi_l.addWidget(self._card("TRACE MEMORY", self.mem_lbl, self.mem_spark))
         l.addLayout(kpi_l)
-        
+
         # Charts Row
         chart_l = QHBoxLayout(); chart_l.setSpacing(16)
         c1 = QFrame(); c1.setObjectName("ChartCard"); c1v = QVBoxLayout(c1)
@@ -304,7 +304,7 @@ class AxiomStudio(QMainWindow):
         c1v.addWidget(QLabel("LATENCY SPECTRUM (p50/p99)")); c1v.addWidget(CustomChart("Lat", SHADOW_SOFT["primary"]))
         chart_l.addWidget(c1)
         l.addLayout(chart_l)
-        
+
         scroll.setWidget(container)
         return scroll
 
@@ -346,14 +346,14 @@ class AxiomStudio(QMainWindow):
         if not cmd: return
         self.input.clear()
         self.output.appendPlainText(f">> {cmd}")
-        
+
         self.status_lbl.setText("Engine: BUSY")
         start_t = time.perf_counter()
-        
+
         def on_res(res):
             lat = (time.perf_counter() - start_t) * 1000000
             self._ui_tasks.put(lambda: self._handle_result(cmd, res, lat))
-        
+
         if self.engine:
             self.engine.execute_command_async(cmd, on_res)
         else:
@@ -364,7 +364,7 @@ class AxiomStudio(QMainWindow):
         if res.get("success"):
             val = res.get("result", "")
             self.output.appendPlainText(f"Result: {val}")
-            
+
             row = self.session_table.rowCount()
             self.session_table.insertRow(row)
             self.session_table.setItem(row, 0, QTableWidgetItem(cmd))
@@ -386,7 +386,7 @@ class AxiomStudio(QMainWindow):
                 if task: task()
             except Exception as e:
                 print(f"[Studio] Deferred task error: {e}")
-            
+
         # Real-time metrics simulation
         tp = 2.5 + random.uniform(-0.1, 0.2)
         self.tp_lbl.setText(f"{tp:.2f}M ops/sec")

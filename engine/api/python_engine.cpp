@@ -22,7 +22,7 @@ bool PythonEngine::Initialize() {
     // Import common modules
     GetOrImportModule("numpy");
     GetOrImportModule("scipy");
-    
+
     initialized_ = true;
     return true;
 }
@@ -56,9 +56,9 @@ EngineResult PythonEngine::EvaluatePython(const std::string& expression) {
 
     PyObject* main_module = PyImport_AddModule("__main__");
     PyObject* global_dict = PyModule_GetDict(main_module);
-    
+
     PyObject* result_obj = PyRun_String(expression.c_str(), Py_eval_input, global_dict, global_dict);
-    
+
     if (!result_obj) {
         SetErrorFromPython();
         return CreateErrorResult(CalcErr::OperationNotFound);
@@ -84,11 +84,11 @@ bool PythonEngine::SetVariable(const std::string& name, double value) {
 
     PyObject* main_module = PyImport_AddModule("__main__");
     PyObject* global_dict = PyModule_GetDict(main_module);
-    
+
     PyObject* py_val = PyFloat_FromDouble(value);
     int result = PyDict_SetItemString(global_dict, name.c_str(), py_val);
     Py_XDECREF(py_val);
-    
+
     return result == 0;
 }
 
@@ -98,10 +98,10 @@ bool PythonEngine::SetVariable(const std::string& name, const AXIOM::Vector& val
     PyObject* py_list = VectorToPyList(values);
     PyObject* main_module = PyImport_AddModule("__main__");
     PyObject* global_dict = PyModule_GetDict(main_module);
-    
+
     int result = PyDict_SetItemString(global_dict, name.c_str(), py_list);
     Py_XDECREF(py_list);
-    
+
     return result == 0;
 }
 
@@ -111,10 +111,10 @@ bool PythonEngine::SetVariable(const std::string& name, const AXIOM::Matrix& mat
     PyObject* py_list = MatrixToPyList(matrix);
     PyObject* main_module = PyImport_AddModule("__main__");
     PyObject* global_dict = PyModule_GetDict(main_module);
-    
+
     int result = PyDict_SetItemString(global_dict, name.c_str(), py_list);
     Py_XDECREF(py_list);
-    
+
     return result == 0;
 }
 
@@ -124,7 +124,7 @@ std::optional<double> PythonEngine::GetDouble(const std::string& name) {
     PyObject* main_module = PyImport_AddModule("__main__");
     PyObject* global_dict = PyModule_GetDict(main_module);
     PyObject* py_val = PyDict_GetItemString(global_dict, name.c_str());
-    
+
     if (py_val && PyFloat_Check(py_val)) {
         return PyFloat_AsDouble(py_val);
     }
@@ -137,7 +137,7 @@ std::optional<AXIOM::Vector> PythonEngine::GetVector(const std::string& name) {
     PyObject* main_module = PyImport_AddModule("__main__");
     PyObject* global_dict = PyModule_GetDict(main_module);
     PyObject* py_val = PyDict_GetItemString(global_dict, name.c_str());
-    
+
     if (py_val && PyList_Check(py_val)) {
         return PyListToVector(py_val);
     }
@@ -150,7 +150,7 @@ std::optional<AXIOM::Matrix> PythonEngine::GetMatrix(const std::string& name) {
     PyObject* main_module = PyImport_AddModule("__main__");
     PyObject* global_dict = PyModule_GetDict(main_module);
     PyObject* py_val = PyDict_GetItemString(global_dict, name.c_str());
-    
+
     if (py_val && PyList_Check(py_val)) {
         return PyListToMatrix(py_val);
     }
@@ -159,11 +159,11 @@ std::optional<AXIOM::Matrix> PythonEngine::GetMatrix(const std::string& name) {
 
 EngineResult PythonEngine::CreateNumpyArray(const AXIOM::Vector& data) {
     if (!IsInitialized()) return CreateErrorResult(CalcErr::OperationNotFound);
-    
+
     PyObject* py_list = VectorToPyList(data);
     SetVariable("__tmp_list", data);
     ExecutePython("import numpy as np\n__tmp_arr = np.array(__tmp_list)");
-    
+
     return CreateSuccessResult(0.0);
 }
 
@@ -230,7 +230,7 @@ PyObject* PythonEngine::MatrixToPyList(const AXIOM::Matrix& matrix) {
 AXIOM::Vector PythonEngine::PyListToVector(PyObject* obj) {
     AXIOM::Vector vec;
     if (!PyList_Check(obj)) return vec;
-    
+
     Py_ssize_t size = PyList_Size(obj);
     for (Py_ssize_t i = 0; i < size; ++i) {
         PyObject* item = PyList_GetItem(obj, i);
@@ -243,7 +243,7 @@ AXIOM::Vector PythonEngine::PyListToVector(PyObject* obj) {
 AXIOM::Matrix PythonEngine::PyListToMatrix(PyObject* obj) {
     AXIOM::Matrix mat;
     if (!PyList_Check(obj)) return mat;
-    
+
     Py_ssize_t size = PyList_Size(obj);
     for (Py_ssize_t i = 0; i < size; ++i) {
         mat.push_back(PyListToVector(PyList_GetItem(obj, i)));
@@ -268,7 +268,7 @@ bool PythonEngine::CheckPythonError() {
 
 PyObject* PythonEngine::GetOrImportModule(const std::string& module_name) {
     if (cached_modules_.count(module_name)) return cached_modules_[module_name];
-    
+
     PyObject* module = PyImport_ImportModule(module_name.c_str());
     if (module) cached_modules_[module_name] = module;
     return module;

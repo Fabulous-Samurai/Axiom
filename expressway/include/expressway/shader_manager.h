@@ -24,7 +24,7 @@ public:
 
         // Simplified: Reads binary SPIR-V file
         // Actual implementation will read from expressway/shaders/bin/*.spv
-        return VK_NULL_HANDLE; 
+        return VK_NULL_HANDLE;
     }
 
 private:

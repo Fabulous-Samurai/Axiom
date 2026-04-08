@@ -27,7 +27,7 @@ void AppRunner::setupMessageHandler() {
 }
 
 AppRunner::AppRunner(int& argc, char** argv, const std::string& app_name)
-    : app_(argc, argv) 
+    : app_(argc, argv)
 {
     setupMessageHandler();
     app_.setApplicationName(QString::fromStdString(app_name));
@@ -36,7 +36,7 @@ AppRunner::AppRunner(int& argc, char** argv, const std::string& app_name)
 
 int AppRunner::run(const std::string& main_qml_path, const std::string& window_title) {
     const QUrl url(QString::fromStdString(main_qml_path));
-    
+
     QObject::connect(&engine_, &QQmlApplicationEngine::objectCreated,
                      &app_, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl) {
