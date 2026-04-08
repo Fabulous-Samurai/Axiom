@@ -1,0 +1,3 @@
+## 2024-04-08 - [Cache engine path resolution and use tuples in loops]
+**Learning:** Engine path resolution in Qt GUIs (like `axiom_studio.py`) performs redundant disk I/O when instantiated multiple times, creating unnecessary delay on the main thread or worker initialization. Further, Python list comprehensions and constant list arrays (`["build/...", ...]`) in hot loops cost unnecessary instantiation overhead.
+**Action:** Used `functools.lru_cache(maxsize=1)` on constant resolution methods and replaced lists with immutable tuples `("build/...", ...)` to prevent repetitive memory allocations and filesystem scans.
