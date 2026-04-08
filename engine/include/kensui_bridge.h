@@ -1,5 +1,4 @@
-// [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO
-// .agents/workflows/agent_must_obey.md
+// [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
 /**
  * @file kensui_bridge.h
  * @brief Zero-Allocation C-ABI for Project AXIOM KENSUI GUI.
@@ -12,15 +11,14 @@
 
 #include <stddef.h>
 #include <stdint.h>
-
 #include "axiom_export.h"
 
 #ifdef __cplusplus
-#define AXIOM_C_ALIGN(x) alignas(x)
+    #define AXIOM_C_ALIGN(x) alignas(x)
 #elif defined(_MSC_VER)
-#define AXIOM_C_ALIGN(x) __declspec(align(x))
+    #define AXIOM_C_ALIGN(x) __declspec(align(x))
 #else
-#define AXIOM_C_ALIGN(x) __attribute__((aligned(x)))
+    #define AXIOM_C_ALIGN(x) __attribute__((aligned(x)))
 #endif
 
 #ifdef __cplusplus
@@ -32,19 +30,19 @@ extern "C" {
  * @brief Point structure for 3D Nav-Console (Mantis A*)
  */
 typedef struct AXIOM_C_ALIGN(64) {
-  float x, y, z;
-  uint32_t color;  // Packed RGBA
+    float x, y, z;
+    uint32_t color; // Packed RGBA
 } Kensui_Point3D;
 
 /**
  * @brief Decision Tree Node for Pluto (Mantis A*)
  */
 typedef struct AXIOM_C_ALIGN(64) {
-  Kensui_Point3D position;
-  uint32_t node_id;
-  uint32_t parent_id;
-  float cost_f;
-  float cost_g;
+    Kensui_Point3D position;
+    uint32_t node_id;
+    uint32_t parent_id;
+    float cost_f;
+    float cost_g;
 } Kensui_MantisNode;
 
 /**
@@ -56,9 +54,7 @@ typedef struct AXIOM_C_ALIGN(64) {
  * @param max_len Maximum length of the output buffer.
  * @return Actual length of the string written.
  */
-AXIOM_EXPORT uintptr_t AxiomJit_GetDisassembly(const uint8_t* code_ptr,
-                                               size_t size, char* out_buffer,
-                                               size_t max_len);
+AXIOM_EXPORT uintptr_t AxiomJit_GetDisassembly(const uint8_t* code_ptr, size_t size, char* out_buffer, size_t max_len);
 
 /**
  * @brief Stream Mantis A* search tree nodes for Vulkan rendering.
@@ -67,10 +63,9 @@ AXIOM_EXPORT uintptr_t AxiomJit_GetDisassembly(const uint8_t* code_ptr,
  * @param max_count Maximum number of nodes the UI can accept.
  * @return Number of nodes actually written.
  */
-AXIOM_EXPORT size_t AxiomMantis_StreamSearchTree(Kensui_MantisNode* out_nodes,
-                                                 size_t max_count);
+AXIOM_EXPORT size_t AxiomMantis_StreamSearchTree(Kensui_MantisNode* out_nodes, size_t max_count);
 
 #ifdef __cplusplus
 }
-}  // namespace AXIOM
+} // namespace AXIOM
 #endif
