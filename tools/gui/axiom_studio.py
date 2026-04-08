@@ -9,6 +9,7 @@ import sys
 import random
 import queue
 import time
+import collections
 from pathlib import Path
 
 try:
@@ -148,12 +149,13 @@ class MinimalSparkline(QWidget):
     def __init__(self, color_hex, parent=None):
         super().__init__(parent)
         self.color = QColor(color_hex)
-        self.data = [random.uniform(0.2, 0.8) for _ in range(40)]
+        # ⚡ Bolt: Using deque with maxlen provides O(1) appends and evictions
+        # compared to O(N) list.pop(0) shifts for real-time charting.
+        self.data = collections.deque((random.uniform(0.2, 0.8) for _ in range(40)), maxlen=40)
         self.setFixedHeight(30)
 
     def update_data(self, val):
         self.data.append(val)
-        self.data.pop(0)
         self.update() 
 
     def paintEvent(self, event):
