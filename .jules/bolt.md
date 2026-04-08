@@ -1,3 +1,3 @@
-## 2024-04-08 - [Cache engine path resolution and use tuples in loops]
-**Learning:** Engine path resolution in Qt GUIs (like `axiom_studio.py`) performs redundant disk I/O when instantiated multiple times, creating unnecessary delay on the main thread or worker initialization. Further, Python list comprehensions and constant list arrays (`["build/...", ...]`) in hot loops cost unnecessary instantiation overhead.
-**Action:** Used `functools.lru_cache(maxsize=1)` on constant resolution methods and replaced lists with immutable tuples `("build/...", ...)` to prevent repetitive memory allocations and filesystem scans.
+## 2024-04-08 - [Optimize GUI live-chart arrays with collections.deque]
+**Learning:** Using a built-in Python `list` as a fixed-size sliding window buffer in high-frequency GUI code (e.g. calling `list.pop(0)` and `list.append(val)` on every update tick) causes `O(N)` memory shifts, creating micro-stutters and unnecessary CPU overhead in the main thread.
+**Action:** Replaced the backing `list` with `collections.deque(..., maxlen=N)`. This structure is implemented as a doubly-linked list in C, making both appends and max-length evictions `O(1)` operations, which guarantees consistent latency for rendering loops.

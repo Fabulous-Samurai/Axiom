@@ -9,7 +9,7 @@ import sys
 import random
 import queue
 import time
-import functools
+import collections
 from pathlib import Path
 
 try:
@@ -149,12 +149,13 @@ class MinimalSparkline(QWidget):
     def __init__(self, color_hex, parent=None):
         super().__init__(parent)
         self.color = QColor(color_hex)
-        self.data = [random.uniform(0.2, 0.8) for _ in range(40)]
+        # ⚡ Bolt: Using deque with maxlen provides O(1) appends and evictions
+        # compared to O(N) list.pop(0) shifts for real-time charting.
+        self.data = collections.deque((random.uniform(0.2, 0.8) for _ in range(40)), maxlen=40)
         self.setFixedHeight(30)
 
     def update_data(self, val):
         self.data.append(val)
-        self.data.pop(0)
         self.update() 
 
     def paintEvent(self, event):
@@ -224,13 +225,9 @@ class AxiomStudio(QMainWindow):
         self.timer.timeout.connect(self._pulse)
         self.timer.start(500)
 
-    # ⚡ Bolt: Cache engine path resolution to prevent redundant disk I/O on UI main thread.
-    # Impact: Eliminates ~4 filesystem stat calls per subsequent initialization, reducing lag.
-    # We also use an immutable tuple for the paths to prevent list instantiation overhead on loop entry.
-    @functools.lru_cache(maxsize=1)
     def _locate_engine(self):
         root = Path(__file__).resolve().parents[2]
-        for c in ("build/axiom.exe", "axiom.exe", "build/axiom", "axiom"):
+        for c in ["build/axiom.exe", "axiom.exe", "build/axiom", "axiom"]:
             if (root / c).exists(): return str(root / c)
         return None
 
