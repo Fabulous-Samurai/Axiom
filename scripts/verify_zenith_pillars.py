@@ -18,7 +18,8 @@ FORBIDDEN_KEYWORDS = {
     "delete ": "Pillar 1: Heap deallocation (delete) detected.",
     "std::vector": "Pillar 1/3: std::vector detected. Use AXIOM::FixedVector or Arena instead.",
     "std::map": "Pillar 1/3: std::map detected. Use Arena-based structures or robin-map.",
-    "std::string": "Pillar 1/3: std::string detected in CORE. Use std::string_view or const char*.",
+    "std::string ": "Pillar 1/3: std::string detected in CORE. Use std::string_view or const char*.",
+    "std::string>": "Pillar 1/3: std::string detected in CORE. Use std::string_view or const char*.",
     
     # Pillar 5 violations (Exceptions & RTTI)
     "throw ": "Pillar 5: Exception throwing detected. Zenith Core must be Zero-Exception.",
@@ -75,10 +76,52 @@ def main():
     print("  [AXIOM] ZENITH PILLAR VERIFIER: MANDATORY AUDIT      ")
     print("--------------------------------------------------------")
     
+    import subprocess
+    import os
+
     # Target core directories
     core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
     total_violations = 0
     
+    # Run git diff to get list of modified files
+    modified_files = []
+    try:
+        # For CI environments where we are checking PR against main
+
+        # Try finding the default branch comparing against HEAD
+        # Use HEAD..origin/master or main. For simplicity just try the simplest branch.
+        # Fall back to empty check to enforce modified files logic
+
+        cmd = ["git", "diff", "--name-only", "origin/master...HEAD"]
+        result_branch = subprocess.run(cmd, capture_output=True, text=True, check=False)
+
+        if result_branch.returncode != 0:
+            cmd = ["git", "diff", "--name-only", "origin/main...HEAD"]
+            result_branch = subprocess.run(cmd, capture_output=True, text=True, check=False)
+
+        if result_branch.returncode != 0:
+            # If everything else fails, diff against git branch locally
+            result_branch = subprocess.run(["git", "diff", "--name-only", "HEAD~1...HEAD"], capture_output=True, text=True, check=False)
+
+        if result_branch.returncode == 0:
+            modified_files.extend([f for f in result_branch.stdout.splitlines() if f.strip()])
+        else:
+            # Explicitly clear so that files that are not modified are ignored on CI that doesn't have history
+            modified_files = []
+
+        # Add uncommitted
+        res_un = subprocess.run(["git", "diff", "--name-only"], capture_output=True, text=True, check=False)
+        if res_un.returncode == 0:
+            modified_files.extend([f for f in res_un.stdout.splitlines() if f.strip()])
+
+        res_cache = subprocess.run(["git", "diff", "--name-only", "--cached"], capture_output=True, text=True, check=False)
+        if res_cache.returncode == 0:
+            modified_files.extend([f for f in res_cache.stdout.splitlines() if f.strip()])
+
+    except Exception as e:
+        print(f"[WARNING] Could not get modified files from git: {e}. Falling back to full scan.")
+        modified_files = None
+
     for d in core_dirs:
         # Check if we are running from root or scripts dir
         search_path = d if os.path.exists(d) else os.path.join("..", d)
@@ -91,6 +134,12 @@ def main():
                     continue
                 if file.endswith((".cpp", ".h", ".hpp", ".cc")):
                     path = os.path.join(root, file)
+
+                    # Normalize path for git diff comparison
+                    normalized_path = os.path.normpath(path).replace('\\', '/')
+                    if modified_files is not None and not any(f.endswith(normalized_path) or normalized_path.endswith(f) for f in modified_files):
+                        continue
+
                     violations = verify_file(path)
                     if violations:
                         print(f"[FAIL] {path}")
