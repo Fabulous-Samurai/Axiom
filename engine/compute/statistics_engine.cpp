@@ -20,33 +20,48 @@ EngineResult StatisticsEngine::Mean(const Vector& data) {
 EngineResult StatisticsEngine::Median(Vector data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
 
-    std::ranges::sort(data);
     auto n = data.size();
+    auto mid = data.begin() + n / 2;
+    std::nth_element(data.begin(), mid, data.end());
     
     if (n % 2 == 0) {
-        return CreateSuccessResult((data[n/2-1] + data[n/2]) / 2.0);
+        auto max_lower = std::max_element(data.begin(), mid);
+        return CreateSuccessResult((*max_lower + *mid) / 2.0);
     } else {
-        return CreateSuccessResult(data[n/2]);
+        return CreateSuccessResult(*mid);
     }
 }
 
 EngineResult StatisticsEngine::Mode(const Vector& data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
-    std::map<double, int> frequency;
-    for (double val : data) {
-        frequency[val]++;
-    }
-    
-    double mode_val = data[0];
-    int max_count = 0;
-    for (const auto& [val, count] : frequency) {
-        if (count > max_count) {
-            max_count = count;
-            mode_val = val;
+    // Convert to AXIOM Zenith Pillar Zero-Allocation implementation
+    Vector sorted = data;
+    std::ranges::sort(sorted);
+
+    double mode_val = sorted[0];
+    int max_count = 1;
+
+    double current_val = sorted[0];
+    int current_count = 1;
+
+    for (size_t i = 1; i < sorted.size(); ++i) {
+        if (sorted[i] == current_val) {
+            current_count++;
+        } else {
+            if (current_count > max_count) {
+                max_count = current_count;
+                mode_val = current_val;
+            }
+            current_val = sorted[i];
+            current_count = 1;
         }
     }
     
+    if (current_count > max_count) {
+        mode_val = current_val;
+    }
+
     return CreateSuccessResult(mode_val);
 }
 
@@ -156,22 +171,26 @@ EngineResult StatisticsEngine::Percentile(Vector data, double p) {
     if (data.empty() || p < 0 || p > 100) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
-    
-    std::ranges::sort(data);
 
-    if (p == 0) return CreateSuccessResult(data[0]);
-    if (p == 100) return CreateSuccessResult(data.back());
+    if (p == 0) return CreateSuccessResult(*std::min_element(data.begin(), data.end()));
+    if (p == 100) return CreateSuccessResult(*std::max_element(data.begin(), data.end()));
     
     double index = (p / 100.0) * (data.size() - 1);
     size_t lower = static_cast<size_t>(index);
     size_t upper = lower + 1;
     
+    auto it_lower = data.begin() + lower;
+    std::nth_element(data.begin(), it_lower, data.end());
+    double val_lower = *it_lower;
+
     if (upper >= data.size()) {
-        return CreateSuccessResult(data.back());
+        return CreateSuccessResult(val_lower);
     }
     
+    double val_upper = *std::min_element(it_lower + 1, data.end());
+
     double weight = index - lower;
-    double result = data[lower] * (1.0 - weight) + data[upper] * weight;
+    double result = val_lower * (1.0 - weight) + val_upper * weight;
     
     return CreateSuccessResult(result);
 }
