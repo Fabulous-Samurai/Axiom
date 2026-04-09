@@ -97,7 +97,7 @@ def docker_image_exists(image: str) -> bool:
             capture_output=True, text=True, timeout=10
         )
         return bool(result.stdout.strip())
-    except:
+    except Exception:
         return False
 
 
@@ -203,7 +203,7 @@ def run_native_ci(config: dict) -> CIResult:
     try:
         quality_result = run_quality(config)
         result.add_stage(quality_result)
-    except:
+    except Exception:
         pass # Quality is often optional
 
     return result

@@ -1,0 +1,4 @@
+## 2024-05-24 - Fix command injection risks in CI and helper scripts
+**Vulnerability:** Use of `shell=True` in `subprocess.run` calls across Python automation scripts (`scripts/sonar_helper.py`, `scripts/zenith_audit_scribe.py`) which can lead to command injection if arguments are ever sourced from untrusted input. Also found bare `except:` blocks swallowing critical system exceptions.
+**Learning:** Hardcoded Windows paths in Python scripts combined with POSIX `shlex.split` behavior strip backslashes, breaking cross-platform execution.
+**Prevention:** Construct cross-platform command paths using `os.path.join` before passing to `shlex.split`. Replace bare `except:` with `except Exception:` to avoid catching `KeyboardInterrupt`. Always use `shell=False` for `subprocess.run` and append `# NOSONAR` to clear linter false positives.
