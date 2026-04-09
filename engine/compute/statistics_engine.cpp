@@ -20,13 +20,15 @@ EngineResult StatisticsEngine::Mean(const Vector& data) {
 EngineResult StatisticsEngine::Median(Vector data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
 
-    std::ranges::sort(data);
     auto n = data.size();
+    auto mid = data.begin() + n / 2;
+    std::nth_element(data.begin(), mid, data.end());
     
     if (n % 2 == 0) {
-        return CreateSuccessResult((data[n/2-1] + data[n/2]) / 2.0);
+        auto max_lower = std::max_element(data.begin(), mid);
+        return CreateSuccessResult((*max_lower + *mid) / 2.0);
     } else {
-        return CreateSuccessResult(data[n/2]);
+        return CreateSuccessResult(*mid);
     }
 }
 
@@ -156,22 +158,26 @@ EngineResult StatisticsEngine::Percentile(Vector data, double p) {
     if (data.empty() || p < 0 || p > 100) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
-    
-    std::ranges::sort(data);
 
-    if (p == 0) return CreateSuccessResult(data[0]);
-    if (p == 100) return CreateSuccessResult(data.back());
+    if (p == 0) return CreateSuccessResult(*std::min_element(data.begin(), data.end()));
+    if (p == 100) return CreateSuccessResult(*std::max_element(data.begin(), data.end()));
     
     double index = (p / 100.0) * (data.size() - 1);
     size_t lower = static_cast<size_t>(index);
     size_t upper = lower + 1;
     
+    auto it_lower = data.begin() + lower;
+    std::nth_element(data.begin(), it_lower, data.end());
+    double val_lower = *it_lower;
+
     if (upper >= data.size()) {
-        return CreateSuccessResult(data.back());
+        return CreateSuccessResult(val_lower);
     }
     
+    double val_upper = *std::min_element(it_lower + 1, data.end());
+
     double weight = index - lower;
-    double result = data[lower] * (1.0 - weight) + data[upper] * weight;
+    double result = val_lower * (1.0 - weight) + val_upper * weight;
     
     return CreateSuccessResult(result);
 }

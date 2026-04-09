@@ -308,13 +308,22 @@ std::string_view PlotEngine::BoxPlot(const Vector& data, const PlotConfig& confi
     if (data.empty()) return arena_.allocString("Error: Data is empty\n");
 
     Vector sorted = data;
-    std::sort(sorted.begin(), sorted.end());
 
-    const double min_val = sorted.front();
-    const double max_val = sorted.back();
-    const double q1 = sorted[sorted.size() / 4];
-    const double median = sorted[sorted.size() / 2];
-    const double q3 = sorted[3 * sorted.size() / 4];
+    auto [min_it, max_it] = std::minmax_element(sorted.begin(), sorted.end());
+    const double min_val = *min_it;
+    const double max_val = *max_it;
+
+    auto it_med = sorted.begin() + sorted.size() / 2;
+    std::nth_element(sorted.begin(), it_med, sorted.end());
+    const double median = *it_med;
+
+    auto it_q1 = sorted.begin() + sorted.size() / 4;
+    std::nth_element(sorted.begin(), it_q1, it_med);
+    const double q1 = *it_q1;
+
+    auto it_q3 = sorted.begin() + 3 * sorted.size() / 4;
+    std::nth_element(sorted.begin(), it_q3, sorted.end());
+    const double q3 = *it_q3;
 
     const int width = std::clamp(config.width, 10, 256);
     const double range = max_val - min_val;
