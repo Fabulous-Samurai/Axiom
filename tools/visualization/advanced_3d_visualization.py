@@ -4,9 +4,72 @@
 Advanced 3D plotting and visualization capabilities
 """
 
+import ast
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+
+class SafeMathEvaluator:
+    def __init__(self, safe_dict):
+        self.safe_dict = safe_dict
+        self.allowed_nodes = {
+            ast.Expression, ast.BinOp, ast.UnaryOp, ast.Call,
+            ast.Name, ast.Constant, ast.List, ast.Tuple, ast.Load,
+            ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow, ast.Mod,
+            ast.USub, ast.UAdd, ast.BitAnd, ast.BitOr, ast.BitXor
+        }
+
+    def evaluate(self, expression):
+        try:
+            tree = ast.parse(expression, mode='eval')
+            return self._eval_node(tree.body)
+        except Exception as e:
+            raise ValueError(f"Safe evaluation failed: {e}")
+
+    def _eval_node(self, node):
+        if type(node) not in self.allowed_nodes:
+            raise ValueError(f"Disallowed AST node: {type(node).__name__}")
+
+        if isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.Name):
+            if node.id in self.safe_dict:
+                return self.safe_dict[node.id]
+            raise ValueError(f"Unknown variable/function: {node.id}")
+        elif isinstance(node, ast.BinOp):
+            left = self._eval_node(node.left)
+            right = self._eval_node(node.right)
+            return self._apply_binop(node.op, left, right)
+        elif isinstance(node, ast.UnaryOp):
+            operand = self._eval_node(node.operand)
+            return self._apply_unaryop(node.op, operand)
+        elif isinstance(node, ast.Call):
+            func = self._eval_node(node.func)
+            args = [self._eval_node(arg) for arg in node.args]
+            return func(*args)
+        elif isinstance(node, ast.Tuple):
+            return tuple(self._eval_node(el) for el in node.elts)
+        elif isinstance(node, ast.List):
+            return [self._eval_node(el) for el in node.elts]
+        else:
+            raise ValueError(f"Unsupported AST node: {type(node).__name__}")
+
+    def _apply_binop(self, op, left, right):
+        if isinstance(op, ast.Add): return left + right
+        elif isinstance(op, ast.Sub): return left - right
+        elif isinstance(op, ast.Mult): return left * right
+        elif isinstance(op, ast.Div): return left / right
+        elif isinstance(op, ast.Pow): return left ** right
+        elif isinstance(op, ast.Mod): return left % right
+        elif isinstance(op, ast.BitAnd): return left & right
+        elif isinstance(op, ast.BitOr): return left | right
+        elif isinstance(op, ast.BitXor): return left ^ right
+        else: raise ValueError(f"Unsupported binary operator: {type(op).__name__}")
+
+    def _apply_unaryop(self, op, operand):
+        if isinstance(op, ast.USub): return -operand
+        elif isinstance(op, ast.UAdd): return +operand
+        else: raise ValueError(f"Unsupported unary operator: {type(op).__name__}")
 import matplotlib.animation as animation
 from matplotlib.widgets import Slider
 import tkinter as tk
@@ -45,7 +108,8 @@ class Advanced3DVisualization:
                 'x': X, 'y': Y, 'X': X, 'Y': Y
             }
             
-            Z = eval(func_str, {"__builtins__": {}}, safe_dict)
+            evaluator = SafeMathEvaluator(safe_dict)
+            Z = evaluator.evaluate(func_str)
             
             # Create 3D plot
             fig = plt.figure(figsize=(14, 10))
@@ -111,9 +175,10 @@ class Advanced3DVisualization:
             }
             
             # Evaluate parametric equations
-            x = eval(x_func, {"__builtins__": {}}, safe_dict)
-            y = eval(y_func, {"__builtins__": {}}, safe_dict)
-            z = eval(z_func, {"__builtins__": {}}, safe_dict)
+            evaluator = SafeMathEvaluator(safe_dict)
+            x = evaluator.evaluate(x_func)
+            y = evaluator.evaluate(y_func)
+            z = evaluator.evaluate(z_func)
             
             # Create 3D plot
             fig = plt.figure(figsize=(12, 8))
@@ -202,8 +267,9 @@ class Advanced3DVisualization:
                 'x': X, 'y': Y, 't': t
             }
             
-            z_base = eval(base_func, {"__builtins__": {}}, safe_dict)
-            time_mod = eval(time_modulation, {"__builtins__": {}}, safe_dict)
+            evaluator = SafeMathEvaluator(safe_dict)
+            z_base = evaluator.evaluate(base_func)
+            time_mod = evaluator.evaluate(time_modulation)
             Z = z_base * time_mod
             
             _ = ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
@@ -219,8 +285,9 @@ class Advanced3DVisualization:
                 t = frame * 0.1
                 safe_dict['t'] = t
                 
-                z_base = eval(base_func, {"__builtins__": {}}, safe_dict)
-                time_mod = eval(time_modulation, {"__builtins__": {}}, safe_dict)
+                evaluator = SafeMathEvaluator(safe_dict)
+                z_base = evaluator.evaluate(base_func)
+                time_mod = evaluator.evaluate(time_modulation)
                 Z = z_base * time_mod
                 
                 surface = ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
@@ -355,7 +422,8 @@ class Advanced3DVisualization:
                     'x': X * frequency, 'y': Y * frequency, 'A': amplitude
                 }
                 
-                Z = amplitude * eval(func_str, {"__builtins__": {}}, safe_dict)
+                evaluator = SafeMathEvaluator(safe_dict)
+                Z = amplitude * evaluator.evaluate(func_str)
                 return Z
             
             # Initial surface
@@ -509,7 +577,8 @@ class Advanced3DVisualization:
                 t_range_str = t_range_var.get()
                 
                 # Parse t range
-                t_min, t_max = eval(f"({t_range_str})", {"pi": np.pi})
+                evaluator = SafeMathEvaluator({"pi": np.pi})
+                t_min, t_max = evaluator.evaluate(f"({t_range_str})")
                 t_range = (t_min, t_max)
                 
                 self.parametric_3d_plot(x_func, y_func, z_func, t_range)
