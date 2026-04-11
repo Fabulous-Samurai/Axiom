@@ -20,13 +20,22 @@ EngineResult StatisticsEngine::Mean(const Vector& data) {
 EngineResult StatisticsEngine::Median(Vector data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
 
-    std::ranges::sort(data);
     auto n = data.size();
     
     if (n % 2 == 0) {
-        return CreateSuccessResult((data[n/2-1] + data[n/2]) / 2.0);
+        auto mid1 = data.begin() + n / 2 - 1;
+        auto mid2 = data.begin() + n / 2;
+        // Optimize O(N log N) sort to average O(N) using nth_element
+        std::nth_element(data.begin(), mid1, data.end());
+        double a = *mid1;
+        std::nth_element(mid1 + 1, mid2, data.end());
+        double b = *mid2;
+        return CreateSuccessResult((a + b) / 2.0);
     } else {
-        return CreateSuccessResult(data[n/2]);
+        auto mid = data.begin() + n / 2;
+        // Optimize O(N log N) sort to average O(N) using nth_element
+        std::nth_element(data.begin(), mid, data.end());
+        return CreateSuccessResult(*mid);
     }
 }
 
@@ -156,22 +165,35 @@ EngineResult StatisticsEngine::Percentile(Vector data, double p) {
     if (data.empty() || p < 0 || p > 100) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
-    
-    std::ranges::sort(data);
 
-    if (p == 0) return CreateSuccessResult(data[0]);
-    if (p == 100) return CreateSuccessResult(data.back());
+    if (p == 0) {
+        auto min_it = std::min_element(data.begin(), data.end());
+        return CreateSuccessResult(*min_it);
+    }
+    if (p == 100) {
+        auto max_it = std::max_element(data.begin(), data.end());
+        return CreateSuccessResult(*max_it);
+    }
     
     double index = (p / 100.0) * (data.size() - 1);
     size_t lower = static_cast<size_t>(index);
     size_t upper = lower + 1;
     
     if (upper >= data.size()) {
-        return CreateSuccessResult(data.back());
+        auto max_it = std::max_element(data.begin(), data.end());
+        return CreateSuccessResult(*max_it);
     }
     
+    auto lower_it = data.begin() + lower;
+    // Optimize O(N log N) sort to average O(N) using nth_element and min_element
+    std::nth_element(data.begin(), lower_it, data.end());
+    double val_lower = *lower_it;
+
+    auto min_rest_it = std::min_element(lower_it + 1, data.end());
+    double val_upper = *min_rest_it;
+
     double weight = index - lower;
-    double result = data[lower] * (1.0 - weight) + data[upper] * weight;
+    double result = val_lower * (1.0 - weight) + val_upper * weight;
     
     return CreateSuccessResult(result);
 }
