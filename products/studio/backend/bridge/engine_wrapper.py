@@ -10,7 +10,7 @@ except ImportError:
             self.value = value
             self.latency_us = latency_us
             self.image_path = image_path
-            
+
     class MockEngine:
         def evaluate(self, _expression, _mode):
             time.sleep(0.01)
@@ -94,7 +94,7 @@ class EngineWrapper(QObject):
                     x_max = view_range - panX
                     y_min = -view_range - panY
                     y_max = view_range - panY
-                    
+
                     # Motor API'sine bu sınırları iletiyoruz
                     result = self._engine.evaluate(expression, "plot", {
                         "res": resolution,
@@ -113,14 +113,14 @@ class EngineWrapper(QObject):
             # Gelecekte C++ tarafındaki shared_memory counter'larından okunabilir
             import psutil
             import os
-            
+
             process = psutil.Process(os.getpid())
             self._memory_mb = process.memory_info().rss / 1024 / 1024
-            
+
             # Throughput simülasyonunu hafiflet (IPC hattını tıkama)
             if self._engine_status == "running":
                 self._throughput = 2500000.0 + (time.time() % 10 * 1000)
-                
+
             self.metricsUpdated.emit({
                 "throughput": self._throughput,
                 "memory_mb": self._memory_mb,

@@ -3,12 +3,12 @@ import QtQuick.Controls 2.15
 
 TextField {
     id: root
-    
+
     placeholderTextColor: "#94a3b8"
     color: "#f8fafc"
     selectionColor: "#3b82f6"
     selectedTextColor: "#ffffff"
-    
+
     background: Rectangle {
         implicitWidth: 200
         implicitHeight: 40

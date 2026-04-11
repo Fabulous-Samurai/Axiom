@@ -465,4 +465,3 @@ Validation evidence:
 Accepted risk / defer:
 
 - Cognitive complexity (`S3776`) and deep nesting (`S134`) in `src/main.cpp` are still pending; these require a dedicated refactor batch to avoid functional drift.
-

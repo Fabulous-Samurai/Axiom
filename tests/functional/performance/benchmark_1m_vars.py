@@ -396,7 +396,7 @@ def bench_cache_locality(store: HeadlessWorkspaceStore) -> dict:
 
     # ── tier key lists ───────────────────────────────────────────────────────
     hot_keys  = [f"var_{i:07d}" for i in range(LOCALITY_HOT_KEYS)] * LOCALITY_REPEATS
-    
+
     # Secure Fisher-Yates shuffle using secrets.randbelow
     for i in range(len(hot_keys) - 1, 0, -1):
         j = secrets.randbelow(i + 1)
@@ -619,7 +619,7 @@ def bench_extrapolate_1b(ladder: list[dict], mem: dict) -> None:
         elif ram_gb < 32:
             constraint = "needs 32 GB RAM"
         elif ram_gb < 64:
-            constraint = "needs 64 GB RAM"  
+            constraint = "needs 64 GB RAM"
         else:
             constraint = "⚠ EXCEEDS 64 GB — SWAP"
 
