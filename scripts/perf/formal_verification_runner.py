@@ -17,13 +17,13 @@ def run_tlc(tla_path, cfg_path):
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         elapsed = time.time() - t0
         output = result.stdout
-        
+
         # Parse TLC output
         states_found = re.search(r"(\d+) states generated", output)
         distinct_states = re.search(r"(\d+) distinct states found", output)
         depth = re.search(r"The depth of the complete state graph is (\d+)", output)
         success = "Model checking completed. No errors were found." in output
-        
+
         return {
             "success": success,
             "states": int(states_found.group(1)) if states_found else 0,
@@ -38,7 +38,7 @@ def print_final_report(formal_data):
     print("\n" + "═"*80)
     print(" 🛡️  AXIOM ZENITH v3.1.2 - COMPREHENSIVE FORMAL & PERFORMANCE SCORECARD")
     print("═"*80)
-    
+
     print("\n--- SECTION 1: FORMAL VERIFICATION (TLA+) ---")
     for model in formal_data:
         status = "✅ VERIFIED" if model["data"].get("success") else "❌ FAILED"
@@ -48,13 +48,13 @@ def print_final_report(formal_data):
             print(f"  └ Distinct States : {model['data']['distinct']:,}")
             print(f"  └ Graph Depth     : {model['data']['depth']}")
             print(f"  └ Verification Time: {model['data']['time']:.2f}s")
-    
+
     print("\n--- SECTION 2: PHYSICAL PERFORMANCE (BENCHMARKS) ---")
     # Integrating previous benchmark results
     print("▶ Rolling Arena Jitter (Subway Surfers):")
     print("  └ Average Rotation Jitter : 533.33 ns  ✅")
     print("  └ p99 Allocation Latency  : 900.00 ns  ✅")
-    
+
     print("\n▶ Execution Orchestrator Efficiency:")
     print("  └ Dispatch Speed (Static) : 27.97 ns   ✅")
     print("  └ Efficiency Gain         : 7.1 %      ✅")
@@ -68,5 +68,5 @@ if __name__ == "__main__":
     for model in MODELS:
         data = run_tlc(model["tla"], model["cfg"])
         results.append({"name": model["name"], "data": data})
-    
+
     print_final_report(results)
