@@ -45,7 +45,7 @@ public:
         // Fallback to /dev/urandom
         int fd = open("/dev/urandom", O_RDONLY);
         if (fd < 0) throw std::runtime_error("Failed to open /dev/urandom");
-        
+
         size_t total_read = 0;
         uint8_t* ptr = static_cast<uint8_t*>(buffer);
         while (total_read < len) {

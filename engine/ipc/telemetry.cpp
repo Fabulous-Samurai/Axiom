@@ -55,7 +55,7 @@ public:
         // POSIX implementation for Linux and macOS
         // Ensure name starts with '/' for POSIX compliance
         std::string posix_name = (name[0] == '/') ? name : "/" + name;
-        
+
         fd_ = shm_open(posix_name.c_str(), O_CREAT | O_RDWR, 0666);
         if (fd_ == -1) return false;
 

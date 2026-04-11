@@ -25,9 +25,9 @@ class JitExecutionManager : public QObject {
 public:
     explicit JitExecutionManager(QObject* parent = nullptr);
 
-    QString disassembly() const { 
+    QString disassembly() const {
         const auto& disasm = m_jit.last_disassembly();
-        return QString::fromUtf8(disasm.data(), static_cast<int>(disasm.size())); 
+        return QString::fromUtf8(disasm.data(), static_cast<int>(disasm.size()));
     }
     QString lastExpression() const { return m_lastExpression; }
 

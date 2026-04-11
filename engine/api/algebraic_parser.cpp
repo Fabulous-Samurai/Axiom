@@ -61,7 +61,7 @@ namespace {
         size_t start = state.pos;
         while (state.has_more() && (std::isalnum(static_cast<unsigned char>(state.peek())) || state.peek() == '_')) state.get();
         std::string_view name = state.input.substr(start, state.pos - start);
-        
+
         state.skip_ws();
         if (state.peek() == '(') {
             state.get(); // '('
@@ -70,7 +70,7 @@ namespace {
             state.match(')');
             return state.arena.template alloc<AnyNode>(UnaryOpNode(state.arena.allocString(name), arg));
         }
-        
+
         return state.arena.template alloc<AnyNode>(VariableNode(state.arena.allocString(name)));
     }
 
@@ -156,7 +156,7 @@ namespace {
 
     bool is_matrix_node(NodePtr node) noexcept {
         if (!node) return false;
-        return std::holds_alternative<MatrixNode>(*node) || 
+        return std::holds_alternative<MatrixNode>(*node) ||
                std::holds_alternative<MatrixBinaryOpNode>(*node);
     }
 
@@ -206,21 +206,21 @@ namespace {
         auto start = input.find('(');
         auto end = input.rfind(')');
         if (start == std::string_view::npos || end == std::string_view::npos || end <= start) return false;
-        
+
         std::string_view content = input.substr(start + 1, end - start - 1);
         size_t c1 = content.find(',');
         if (c1 == std::string_view::npos) return false;
-        
+
         expr = Utils::Trim(content.substr(0, c1));
         std::string_view rest = content.substr(c1 + 1);
         size_t c2 = rest.find(',');
         if (c2 == std::string_view::npos) return false;
-        
+
         var = Utils::Trim(rest.substr(0, c2));
         std::string_view point_str = Utils::Trim(rest.substr(c2 + 1));
         auto point_val = Utils::FastParseDouble(point_str);
         if (!point_val) return false;
-        
+
         point = *point_val;
         return true;
     }
@@ -229,27 +229,27 @@ namespace {
         auto start = input.find('(');
         auto end = input.rfind(')');
         if (start == std::string_view::npos || end == std::string_view::npos || end <= start) return false;
-        
+
         std::string_view content = input.substr(start + 1, end - start - 1);
         size_t c1 = content.find(',');
         if (c1 == std::string_view::npos) return false;
-        
+
         expr = Utils::Trim(content.substr(0, c1));
         std::string_view rest1 = content.substr(c1 + 1);
         size_t c2 = rest1.find(',');
         if (c2 == std::string_view::npos) return false;
-        
+
         var = Utils::Trim(rest1.substr(0, c2));
         std::string_view rest2 = rest1.substr(c2 + 1);
         size_t c3 = rest2.find(',');
         if (c3 == std::string_view::npos) return false;
-        
+
         std::string_view a_str = Utils::Trim(rest2.substr(0, c3));
         std::string_view b_str = Utils::Trim(rest2.substr(c3 + 1));
         auto a_val = Utils::FastParseDouble(a_str);
         auto b_val = Utils::FastParseDouble(b_str);
         if (!a_val || !b_val) return false;
-        
+
         a = *a_val;
         b = *b_val;
         return true;
@@ -259,12 +259,12 @@ namespace {
 void AlgebraicParser::RegisterSpecialCommands() noexcept {}
 NodePtr AlgebraicParser::ParseExpression(std::string_view input) noexcept { ParserState state{input, 0, arena_}; return parse_expression(state); }
 
-EngineResult AlgebraicParser::ParseAndExecute(std::string_view input) noexcept { 
+EngineResult AlgebraicParser::ParseAndExecute(std::string_view input) noexcept {
     std::string_view trimmed = Utils::Trim(input);
     if (trimmed.rfind("derive ", 0) == 0) return HandleDerivative(trimmed);
     if (trimmed.rfind("limit(", 0) == 0) return HandleLimit(trimmed);
     if (trimmed.rfind("integrate(", 0) == 0) return HandleIntegrate(trimmed);
-    return ParseAndExecuteWithContext(trimmed, SymbolTable{}); 
+    return ParseAndExecuteWithContext(trimmed, SymbolTable{});
 }
 
 EngineResult AlgebraicParser::HandleLimit(std::string_view input) noexcept {
@@ -279,18 +279,18 @@ EngineResult AlgebraicParser::HandleIntegrate(std::string_view input) noexcept {
     std::string_view expr, var;
     double a = 0, b = 0;
     if (!ParseIntegrateArguments(input, expr, var, a, b)) return CreateErrorResult(CalcErr::ParseError);
-    
+
     constexpr int n = 1000;
     const double h = (b - a) / n;
     double sum = 0;
     SymbolTable ctx; ctx.push_back({var, 0.0});
-    
-    auto eval = [&](double x) { 
-        if (!ctx.empty()) ctx[0].second = Number(x); 
-        auto res = ParseAndExecuteWithContext(expr, ctx); 
-        return res.HasResult() ? res.GetDouble().value_or(0.0) : 0.0; 
+
+    auto eval = [&](double x) {
+        if (!ctx.empty()) ctx[0].second = Number(x);
+        auto res = ParseAndExecuteWithContext(expr, ctx);
+        return res.HasResult() ? res.GetDouble().value_or(0.0) : 0.0;
     };
-    
+
     sum += 0.5 * (eval(a) + eval(b));
     for (int i = 1; i < n; i++) sum += eval(a + i * h);
     return CreateSuccessResult(sum * h);
@@ -312,18 +312,18 @@ EngineResult AlgebraicParser::HandleDerivative(std::string_view input) noexcept 
     Arena transient_arena(1 * 1024 * 1024); // 1MB arena for this operation only
 
     std::string_view target = input; if (target.rfind("derive ", 0) == 0) target = target.substr(7);
-    
+
     // Parse expression using the transient arena
     ParserState state{target, 0, transient_arena};
-    auto root = parse_expression(state); 
+    auto root = parse_expression(state);
     if (!root) return CreateErrorResult(CalcErr::ParseError);
 
     // Perform symbolic operations on the transient arena
-    auto deriv = NodeDispatcher::Derivative(root, transient_arena, "x"); 
+    auto deriv = NodeDispatcher::Derivative(root, transient_arena, "x");
     if (!deriv) return CreateErrorResult(CalcErr::OperationNotFound);
-    
-    auto simplified = NodeDispatcher::Simplify(deriv, transient_arena); 
-    
+
+    auto simplified = NodeDispatcher::Simplify(deriv, transient_arena);
+
     // The final result is a string, which is safe to return as it's copied.
     return CreateSuccessResult(NodeDispatcher::ToString(simplified, transient_arena));
 }

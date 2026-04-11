@@ -12,7 +12,7 @@ Rectangle {
 
     color: "#1e293b"
     radius: 4
-    
+
     RowLayout {
         anchors.centerIn: parent
         spacing: 8

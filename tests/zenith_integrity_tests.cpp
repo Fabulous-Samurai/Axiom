@@ -18,7 +18,7 @@ using namespace AXIOM;
 TEST(ZenithIntegrity, JitterHunter) {
     AXIOM::AlgebraicParser parser;
     std::string expr = "2 + 2 * sin(0.5)";
-    
+
     // Warm-up
     for(int i = 0; i < 1000; ++i) {
         parser.ParseAndExecute(expr);
@@ -63,7 +63,7 @@ TEST(ZenithIntegrity, TerminatorWatchdog) {
     // Core engine must return an error node or empty result, NOT throw.
     EXPECT_NO_THROW({
         auto res = parser.ParseAndExecute("1.0 / 0.0");
-        EXPECT_FALSE(res.HasResult()); 
+        EXPECT_FALSE(res.HasResult());
     });
 
     // Test Case 2: Out-of-bounds math (sqrt of negative)
@@ -105,7 +105,7 @@ TEST(ZenithIntegrity, HeisenbergCheck) {
     // Simulate a telemetry-instrumented operation
     uint64_t t1 = AXIOM_RDTSC();
     uint64_t overhead = t1 - t0;
-    
+
     std::cout << "[INFO] Telemetry/RDTSC Overhead: " << overhead << " cycles\n";
     EXPECT_LT(overhead, 20) << "Telemetry overhead exceeds Heisenberg limit!";
 }

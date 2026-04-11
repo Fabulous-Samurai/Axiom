@@ -8,10 +8,10 @@
 
 class HarmonicString {
 public:
-    explicit HarmonicString(std::size_t capacity) noexcept 
-        : data_(capacity > 0 ? new(std::nothrow) char[capacity] : nullptr), 
-          capacity_(capacity), 
-          size_(0) 
+    explicit HarmonicString(std::size_t capacity) noexcept
+        : data_(capacity > 0 ? new(std::nothrow) char[capacity] : nullptr),
+          capacity_(capacity),
+          size_(0)
     {}
 
     ~HarmonicString() = default;

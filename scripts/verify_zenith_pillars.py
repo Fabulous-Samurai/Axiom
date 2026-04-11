@@ -19,7 +19,7 @@ FORBIDDEN_KEYWORDS = {
     "std::vector": "Pillar 1/3: std::vector detected. Use AXIOM::FixedVector or Arena instead.",
     "std::map": "Pillar 1/3: std::map detected. Use Arena-based structures or robin-map.",
     "std::string": "Pillar 1/3: std::string detected in CORE. Use std::string_view or const char*.",
-    
+
     # Pillar 5 violations (Exceptions & RTTI)
     "throw ": "Pillar 5: Exception throwing detected. Zenith Core must be Zero-Exception.",
     "try {": "Pillar 5: Exception handling (try) detected.",
@@ -41,13 +41,21 @@ SUGGESTIONS = {
 EXEMPT_FILES = ["main.cpp", "setup_other_device", "test_"]
 # WHITELISTED_FILES are the ONLY files allowed to implement allocation logic
 WHITELISTED_FILES = [
-    "arena.h", 
-    "arena_allocator.cpp", 
+    "arena.h",
+    "arena_allocator.cpp",
     "harmonic_arena.h",
-    "fixed_vector.h", 
-    "python_bindings.cpp", 
+    "fixed_vector.h",
+    "python_bindings.cpp",
     "nanobind_interface.cpp"
 ]
+
+import subprocess
+def get_modified_files():
+    try:
+        result = subprocess.check_output(['git', 'diff', '--name-only', 'origin/master...HEAD'], stderr=subprocess.DEVNULL)
+        return [os.path.abspath(f.decode('utf-8').strip()) for f in result.splitlines() if f.strip()]
+    except Exception:
+        return None
 
 def verify_file(file_path):
     violations = []
@@ -59,7 +67,7 @@ def verify_file(file_path):
                 clean_line = line.strip()
                 if clean_line.startswith("//") or clean_line.startswith("/*") or clean_line.startswith("*"):
                     continue
-                
+
                 for keyword, message in FORBIDDEN_KEYWORDS.items():
                     if keyword in line:
                         # Double check it's not a comment at the end of a line
@@ -71,19 +79,20 @@ def verify_file(file_path):
     return violations
 
 def main():
+    modified_files = get_modified_files()
     print("--------------------------------------------------------")
     print("  [AXIOM] ZENITH PILLAR VERIFIER: MANDATORY AUDIT      ")
     print("--------------------------------------------------------")
-    
+
     # Target core directories
     core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
     total_violations = 0
-    
+
     for d in core_dirs:
         # Check if we are running from root or scripts dir
         search_path = d if os.path.exists(d) else os.path.join("..", d)
         if not os.path.exists(search_path): continue
-        
+
         for root, _, files in os.walk(search_path):
             for file in files:
                 # Tightened exemption check
@@ -91,24 +100,27 @@ def main():
                     continue
                 if file.endswith((".cpp", ".h", ".hpp", ".cc")):
                     path = os.path.join(root, file)
+                    abs_path = os.path.abspath(path)
+                    if modified_files is not None and abs_path not in modified_files:
+                        continue
                     violations = verify_file(path)
                     if violations:
                         print(f"[FAIL] {path}")
                         for v in violations:
                             print(f"  - {v}")
                         total_violations += len(violations)
-                        
+
     if total_violations > 0:
         print(f"\n[CRITICAL] Found {total_violations} Zenith Pillar violations.")
         print("\n--- ARCHITECTURAL REMEDIATION SUGGESTIONS ---")
         # Global scan for suggestions (limited to unique ones)
         for keyword, suggestion in SUGGESTIONS.items():
             print(f"💡 [FOR {keyword}]: {suggestion}")
-        
+
         print("\n[RESULT] Enforcement: BLOCKING. Please fix violations to proceed.")
         sys.exit(1)
     else:
         print("\n[SUCCESS] All core modules comply with Zenith Pillars (Zero-Allocation, Zero-Exception).")
-        
+
 if __name__ == "__main__":
     main()

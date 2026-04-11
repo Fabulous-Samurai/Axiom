@@ -36,7 +36,7 @@ class MockMemoryOrchestrator:
 
     def allocate(self, size_bytes):
         t0 = time.perf_counter_ns()
-        
+
         # Check 85% threshold
         if (self.blocks[-1] + size_bytes) / self.block_size >= THRESHOLD_85:
             # Trigger 'Maintenance' (Subway Surfers: New block ahead)
@@ -44,62 +44,62 @@ class MockMemoryOrchestrator:
             self.rotations += 1
             if len(self.blocks) > 3:
                 self.blocks.pop(0) # Old block leaves the screen
-            
+
             t1 = time.perf_counter_ns()
             self.jitter_points.append(t1 - t0)
-        
+
         self.blocks[-1] += size_bytes
         return True
 
 def bench_rolling_window_jitter():
     banner("PHASE 1 · ROLLING WINDOW (SUBWAY SURFERS) JITTER")
     orchestrator = MockMemoryOrchestrator()
-    
+
     alloc_size = 1024 * 512 # 1MB chunks
     iterations = 2000 # Enough to trigger many rotations
-    
+
     latencies = []
     for _ in range(iterations):
         t0 = time.perf_counter_ns()
         orchestrator.allocate(alloc_size)
         t1 = time.perf_counter_ns()
         latencies.append(t1 - t0)
-    
+
     p99 = sorted(latencies)[int(len(latencies) * 0.99)]
     avg_rotation_jitter = statistics.mean(orchestrator.jitter_points) if orchestrator.jitter_points else 0
-    
+
     row("Total Window Rotations", str(orchestrator.rotations))
     row("p99 Allocation Latency", f"{p99:.2f} ns")
     row("Avg Rotation Jitter (Maintenance)", f"{avg_rotation_jitter:.2f} ns", avg_rotation_jitter < 5000)
-    
+
     return p99
 
 def bench_dispatch_overhead():
     banner("PHASE 2 · EXECUTION ORCHESTRATOR DISPATCH OVERHEAD")
-    
+
     # Simulating Static Dispatch vs Dynamic VTable lookup
     # In real C++, this is ns vs us. In Python, we model the logic overhead.
-    
+
     def vtable_dispatch():
         return 1 + 1 # Simulates virtual call overhead
-    
+
     def static_dispatch():
         return 1 + 1 # Simulates direct call
-    
+
     t0 = time.perf_counter()
     for _ in range(SAMPLE_COUNT):
         vtable_dispatch()
     t1 = time.perf_counter()
     vtable_time = (t1 - t0) / SAMPLE_COUNT * 1e9
-    
+
     t0 = time.perf_counter()
     for _ in range(SAMPLE_COUNT):
         static_dispatch()
     t1 = time.perf_counter()
     static_time = (t1 - t0) / SAMPLE_COUNT * 1e9
-    
+
     efficiency = (1 - (static_time / vtable_time)) * 100
-    
+
     row("Virtual Dispatch (Model)", f"{vtable_time:.2f} ns")
     row("Static Dispatch (Model)", f"{static_time:.2f} ns")
     row("Theoretical Efficiency Gain", f"{efficiency:.1f} %", efficiency >= 0)

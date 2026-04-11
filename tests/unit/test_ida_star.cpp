@@ -39,7 +39,7 @@ TEST(MantisIDAStar, BinaryScaling) {
     IDAStarSolver solver;
     AStarNode node;
     node.features.data[0] = 10.0f;
-    
+
     TargetProfileF32 profile;
     profile.weights[0] = 1.0f;
     solver.set_target_profile(profile);

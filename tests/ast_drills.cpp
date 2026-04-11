@@ -232,7 +232,7 @@ int main() {
     // taking derivative
     NodePtr derivative = root->Derivative(myArena,"x");
 
-    //calculation phase 
+    //calculation phase
     std::map<std::string,double>ctx;
     ctx["x"] = 3.0;
 
@@ -241,4 +241,3 @@ int main() {
 
     return 0;
 }
-

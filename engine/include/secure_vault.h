@@ -2,7 +2,7 @@
 /**
  * @file secure_vault.h
  * @brief Phase H: Hardware Security Enclaves
- * 
+ *
  * Provides an interface for hardware-protected memory (SGX/TrustZone)
  * to encrypt/decrypt the Mantis state machine memory.
  */
@@ -48,4 +48,3 @@ public:
 };
 
 } // namespace AXIOM
-
