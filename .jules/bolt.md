@@ -1,3 +1,0 @@
-## $(date +%Y-%m-%d) - Optimize Statistics Percentile/Median to O(N)
-**Learning:** In C++ statistical calculations (like `Median` and `Percentile`), completely sorting a data vector (`std::ranges::sort` or `std::sort`) is a common $O(N \log N)$ anti-pattern. If you only need specific positional elements (like the exact middle, or an interpolated percentile boundary), using $O(N)$ selection algorithms like `std::nth_element` combined with `std::min_element` is significantly faster and eliminates unnecessary sorting overhead.
-**Action:** When calculating medians, quartiles, or percentiles, proactively check if full sorting is used and replace it with `std::nth_element` to achieve linear time complexity without sacrificing readability.
