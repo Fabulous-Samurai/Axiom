@@ -29,7 +29,7 @@ namespace AXIOM
             std::function<EngineResult(std::string_view)> handler;
             std::string description;
         };
-        
+
         // Use engine standard Vector/Matrix (256 capacity)
         FixedVector<CommandEntry, 32> command_registry_;
 

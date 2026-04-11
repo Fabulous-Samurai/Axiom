@@ -31,16 +31,16 @@ class SonarIssuePuller:
             if response.status_code != 200:
                 print(f"Error fetching issues: {response.status_code} - {response.text}")
                 break
-            
+
             data = response.json()
             current_issues = data.get("issues", [])
             issues.extend(current_issues)
-            
+
             paging = data.get("paging", {})
             if page * paging.get("pageSize", 100) >= paging.get("total", 0):
                 break
             page += 1
-            
+
         # Fetch Security Hotspots
         hotspot_url = "https://sonarcloud.io/api/hotspots/search"
         hotspot_params = {

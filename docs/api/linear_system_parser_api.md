@@ -281,4 +281,3 @@ Planned features for future versions:
 - [Error Codes](dynamic_calc_types.h) - LinAlgErr enum
 - [Eigen Engine API](eigen_engine.h) - Alternative high-performance solver
 - [Test Suite](../tests/giga_test_suite.cpp) - Comprehensive examples
-

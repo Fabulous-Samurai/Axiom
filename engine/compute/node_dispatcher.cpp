@@ -39,7 +39,7 @@ EvalResult NodeDispatcher::Evaluate(NodePtr node, const SymbolTable& vars) noexc
 
     return std::visit([&](auto&& n) -> EvalResult {
         using T = std::decay_t<decltype(n)>;
-        
+
         if constexpr (std::is_same_v<T, NumberNode>) {
             return EvalResult::Success(n.value);
         }

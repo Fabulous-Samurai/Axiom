@@ -22,5 +22,3 @@
 ### Sonuç:
 - Kullanıcı tarafından odaklanılması istenen Security (1), Reliability (156) ve Hotspot (11) kategorilerindeki en kritik bulgular temizlendi.
 - `master` branch'i üzerindeki build ve testler (`differential_suite` dahil) %100 başarıyla tamamlandı.
-
-

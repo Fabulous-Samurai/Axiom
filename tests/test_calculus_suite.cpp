@@ -17,14 +17,14 @@ int main() {
 
     auto test_expression = [&](const std::string& expr, double expected, double tolerance = 1e-6) {
         std::cout << "[TEST] " << expr << std::endl;
-        
+
         auto result = parser.ParseAndExecute(expr);
         if (result.HasResult() && result.GetDouble().has_value()) {
             double actual = *result.GetDouble();
             if (std::abs(actual - expected) < tolerance) {
                 tests_passed++;
             } else {
-                std::cout << "  [FAIL] expected: " << expected << ", actual: " << actual 
+                std::cout << "  [FAIL] expected: " << expected << ", actual: " << actual
                           << ", diff: " << std::abs(actual - expected) << std::endl;
                 tests_failed++;
             }
@@ -33,7 +33,7 @@ int main() {
             tests_failed++;
         }
     };
-    
+
     // --- All tests from simple and final combined ---
 
     test_expression("2 + 3", 5.0);
@@ -49,7 +49,7 @@ int main() {
     std::cout << "========================================" << std::endl;
     std::cout << "FINAL RESULTS" << std::endl;
     std::cout << "Tests Passed: " << tests_passed << " / " << (tests_passed + tests_failed) << std::endl;
-    
+
     if (tests_failed == 0) {
         std::cout << "ALL CALCULUS TESTS PASSED!" << std::endl;
         return 0;

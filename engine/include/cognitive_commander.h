@@ -2,8 +2,8 @@
 /**
  * @file cognitive_commander.h
  * @brief Phase F: Cognitive Commander & SLM Integration
- * 
- * Manages model weights in pinned physical memory and executes inferences in 
+ *
+ * Manages model weights in pinned physical memory and executes inferences in
  * pre-allocated tensor pools.
  */
 

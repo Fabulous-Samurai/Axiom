@@ -38,7 +38,7 @@ void TestVariables() {
     SymbolTable var_map;
     var_map.push_back({"x", 0.0});
     var_map.push_back({"y", 0.0});
-    
+
     JiffedFunc fn = jit.Compile(root, var_map);
     assert(fn != nullptr);
 
@@ -61,7 +61,7 @@ void TestNestedComplexity() {
     SymbolTable var_map;
     var_map.push_back({"a", 0.0});
     var_map.push_back({"b", 0.0});
-    
+
     JiffedFunc fn = jit.Compile(root, var_map);
     assert(fn != nullptr);
 
@@ -86,8 +86,8 @@ void TestMatrixSIMDMath() {
     m.push_back(std::move(r2));
     m.push_back(std::move(r3));
     m.push_back(std::move(r4));
-    
-    std::string_view expr = "sin(M)"; 
+
+    std::string_view expr = "sin(M)";
     std::cout << "  Parsing expression: " << expr << std::endl;
     NodePtr root = parser.ParseExpression(expr);
     assert(root != nullptr);
@@ -95,7 +95,7 @@ void TestMatrixSIMDMath() {
     std::cout << "  Compiling matrix expression..." << std::endl;
     SymbolTable var_map;
     var_map.push_back({"M", 0.0});
-    
+
     JiffedMatrixFunc fn = jit.CompileMatrix(root, var_map);
     if (!fn) {
         std::cerr << "  Compilation failed!" << std::endl;
@@ -108,7 +108,7 @@ void TestMatrixSIMDMath() {
         for(int j=0; j<4; ++j) flat_matrix[i*4 + j] = m[i][j];
     }
 
-    double results[16] = {0}; 
+    double results[16] = {0};
     fn(flat_matrix, results);
 
     std::cout << "  Verifying results..." << std::endl;
@@ -118,7 +118,7 @@ void TestMatrixSIMDMath() {
             double expected = std::sin(m[i][j] * D2R);
             double actual = results[i*4 + j];
             if (std::abs(expected - actual) > 1e-7) {
-                std::cerr << "    Mismatch at [" << i << "][" << j << "]: " 
+                std::cerr << "    Mismatch at [" << i << "][" << j << "]: "
                           << "Expected " << expected << ", got " << actual << std::endl;
             }
         }

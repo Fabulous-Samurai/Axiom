@@ -22,21 +22,21 @@ public:
 
     EngineResult ExecutePython(const std::string& code);
     EngineResult EvaluatePython(const std::string& expression);
-    
+
     bool SetVariable(const std::string& name, double value);
     bool SetVariable(const std::string& name, const AXIOM::Vector& values);
     bool SetVariable(const std::string& name, const AXIOM::Matrix& matrix);
-    
+
     std::optional<double> GetDouble(const std::string& name);
     std::optional<AXIOM::Vector> GetVector(const std::string& name);
     std::optional<AXIOM::Matrix> GetMatrix(const std::string& name);
 
     EngineResult CreateNumpyArray(const AXIOM::Vector& data);
     EngineResult NumpyOperation(const std::string& operation);
-    
+
     EngineResult ScipyFunction(const std::string& func_name, const AXIOM::Vector& args);
     EngineResult ScipyOptimize(const std::string& objective, const AXIOM::Vector& initial_guess);
-    
+
     EngineResult MatplotlibPlot(const std::string& expression, double x_min, double x_max, int points = 1000);
     EngineResult MatplotlibShow();
     EngineResult MatplotlibSaveFig(const std::string& filename);
@@ -44,7 +44,7 @@ public:
     EngineResult ImportModule(const std::string& module_name);
     EngineResult ListAvailableModules();
     EngineResult GetPythonVersion();
-    
+
     std::string GetLastError() const { return last_error_; }
     void ClearError() { last_error_.clear(); }
 
@@ -57,7 +57,7 @@ private:
     PyObject* MatrixToPyList(const AXIOM::Matrix& matrix);
     AXIOM::Vector PyListToVector(PyObject* obj);
     AXIOM::Matrix PyListToMatrix(PyObject* obj);
-    
+
     void SetErrorFromPython();
     bool CheckPythonError();
     PyObject* GetOrImportModule(const std::string& module_name);

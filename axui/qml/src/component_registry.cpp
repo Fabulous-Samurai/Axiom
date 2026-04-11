@@ -14,7 +14,7 @@ void ComponentRegistry::registerComponent(const std::string& axui_name, Componen
 }
 
 void ComponentRegistry::registerComponent(
-    const std::string& axui_name, 
+    const std::string& axui_name,
     ComponentMeta meta,
     ComponentFactory factory
 ) {
@@ -40,13 +40,13 @@ std::optional<ComponentFactory> ComponentRegistry::getFactory(const std::string&
 
 void ComponentRegistry::registerAllToEngine(QQmlEngine* engine) {
     if (!engine) return;
-    
+
     // QML import path ekle
     engine->addImportPath("qrc:/axui");
-    
+
     // Her component'i QML'e kaydet
     for (const auto& [name, meta] : meta_registry_) {
-        qDebug() << "Registering component:" << meta.qml_type 
+        qDebug() << "Registering component:" << meta.qml_type
                  << "from" << meta.qml_module;
     }
 }
@@ -54,17 +54,17 @@ void ComponentRegistry::registerAllToEngine(QQmlEngine* engine) {
 std::vector<std::string> ComponentRegistry::registeredComponents() const {
     std::vector<std::string> components;
     components.reserve(meta_registry_.size());
-    
+
     for (const auto& [name, _] : meta_registry_) {
         components.push_back(name);
     }
-    
+
     return components;
 }
 
 void ComponentRegistry::loadBuiltinComponents() {
     if (builtins_loaded_) return;
-    
+
     // ─── Layout Components ───────────────────────────────────────
     registerComponent("Column", {
         .qml_type = "AXColumn",
@@ -75,7 +75,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = false,
         .supports_hover = false
     });
-    
+
     registerComponent("Row", {
         .qml_type = "AXRow",
         .qml_module = "AXUI.Components",
@@ -85,7 +85,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = false,
         .supports_hover = false
     });
-    
+
     registerComponent("Grid", {
         .qml_type = "AXGrid",
         .qml_module = "AXUI.Components",
@@ -95,7 +95,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = false,
         .supports_hover = false
     });
-    
+
     registerComponent("Stack", {
         .qml_type = "AXStack",
         .qml_module = "AXUI.Components",
@@ -105,7 +105,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = false,
         .supports_hover = false
     });
-    
+
     // ─── Data Display Components ─────────────────────────────────
     registerComponent("KPICard", {
         .qml_type = "AXKPICard",
@@ -120,7 +120,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = true,
         .supports_hover = true
     });
-    
+
     registerComponent("DataGrid", {
         .qml_type = "AXDataGrid",
         .qml_module = "AXUI.Components",
@@ -134,7 +134,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = true,
         .supports_hover = true
     });
-    
+
     registerComponent("Chart", {
         .qml_type = "AXChart",
         .qml_module = "AXUI.Components",
@@ -148,7 +148,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = true,
         .supports_hover = false
     });
-    
+
     registerComponent("Gauge", {
         .qml_type = "AXGauge",
         .qml_module = "AXUI.Components",
@@ -162,7 +162,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = true,
         .supports_hover = true
     });
-    
+
     // ─── Input Components ────────────────────────────────────────
     registerComponent("Button", {
         .qml_type = "AXButton",
@@ -176,7 +176,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = true,
         .supports_hover = true
     });
-    
+
     registerComponent("TextField", {
         .qml_type = "AXTextField",
         .qml_module = "AXUI.Components",
@@ -189,7 +189,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = true,
         .supports_hover = true
     });
-    
+
     registerComponent("Select", {
         .qml_type = "AXSelect",
         .qml_module = "AXUI.Components",
@@ -202,7 +202,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = true,
         .supports_hover = true
     });
-    
+
     // ─── Feedback Components ─────────────────────────────────────
     registerComponent("Toast", {
         .qml_type = "AXToast",
@@ -216,7 +216,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = true,
         .supports_hover = false
     });
-    
+
     registerComponent("Skeleton", {
         .qml_type = "AXSkeleton",
         .qml_module = "AXUI.Components",
@@ -229,7 +229,7 @@ void ComponentRegistry::loadBuiltinComponents() {
         .supports_glass = false,
         .supports_hover = false
     });
-    
+
     builtins_loaded_ = true;
 }
 
