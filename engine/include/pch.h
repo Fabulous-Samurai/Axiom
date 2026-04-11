@@ -1,28 +1,27 @@
 #pragma once
 
 // Standard Library
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <expected>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <optional>
-#include <span>
+#include <vector>
 #include <string>
 #include <string_view>
-#include <unordered_map>
+#include <memory>
 #include <variant>
-#include <vector>
+#include <optional>
+#include <map>
+#include <unordered_map>
+#include <algorithm>
+#include <chrono>
+#include <iostream>
+#include <cstdint>
+#include <expected>
+#include <span>
 
 // Third-Party Library
-#include <asmjit/asmjit.h>
-#include <simdjson.h>
-
 #include <Eigen/Dense>
+#include <simdjson.h>
+#include <asmjit/asmjit.h>
 
 // Zenith Core Utility Headers
-#include "arena_allocator.h"
 #include "axiom_export.h"
 #include "fixed_vector.h"
+#include "arena_allocator.h"

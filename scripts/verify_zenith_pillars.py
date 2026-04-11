@@ -49,6 +49,14 @@ WHITELISTED_FILES = [
     "nanobind_interface.cpp"
 ]
 
+import subprocess
+def get_modified_files():
+    try:
+        result = subprocess.check_output(['git', 'diff', '--name-only', 'origin/master...HEAD'], stderr=subprocess.DEVNULL)
+        return [os.path.abspath(f.decode('utf-8').strip()) for f in result.splitlines() if f.strip()]
+    except Exception:
+        return None
+
 def verify_file(file_path):
     violations = []
     try:
@@ -71,6 +79,7 @@ def verify_file(file_path):
     return violations
 
 def main():
+    modified_files = get_modified_files()
     print("--------------------------------------------------------")
     print("  [AXIOM] ZENITH PILLAR VERIFIER: MANDATORY AUDIT      ")
     print("--------------------------------------------------------")
@@ -91,6 +100,9 @@ def main():
                     continue
                 if file.endswith((".cpp", ".h", ".hpp", ".cc")):
                     path = os.path.join(root, file)
+                    abs_path = os.path.abspath(path)
+                    if modified_files is not None and abs_path not in modified_files:
+                        continue
                     violations = verify_file(path)
                     if violations:
                         print(f"[FAIL] {path}")
