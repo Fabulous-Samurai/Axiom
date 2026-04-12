@@ -1,0 +1,4 @@
+## 2025-04-12 - Fix Command Injection Risk in Subprocess Calls
+**Vulnerability:** Found `subprocess.run(..., shell=True)` usage in `scripts/sonar_helper.py` and `scripts/zenith_audit_scribe.py`. `sonar_helper.py` interpolated external user arguments (`ide_cmd`) into the command string, exposing a command injection vulnerability.
+**Learning:** `shell=True` passes the command string to the system shell for evaluation, opening the door for command injection if inputs are unsanitized. SonarCloud flags this as a security hotspot.
+**Prevention:** Avoid `shell=True`. Always pass commands as a list of arguments to `subprocess.run(cmd, shell=False)`. Construct paths securely using `os.path.join` to avoid platform-specific string splitting issues when executing without a shell. Append `# NOSONAR` to `subprocess.run` calls that are explicitly confirmed to be safe to pass SonarCloud checks.
