@@ -19,21 +19,35 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
-        
+        // Handle edge cases that std::from_chars might not handle well without allocation
         // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
-        }
         // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
+        if (sv.front() == '.' || sv.back() == '.') {
+            std::string str(sv);
+            if (str.front() == '.') {
+                str = "0" + str;
+            } else if (str.back() == '.') {
+                str += "0";
+            }
+            double result;
+#if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
+            try {
+                size_t pos;
+                result = std::stod(str, &pos);
+                if (pos != str.size()) return std::nullopt;
+                return result;
+            } catch (...) {
+                return std::nullopt;
+            }
+#else
+            auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+            return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+#endif
         }
         
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
-        // Fallback for compilers with missing floating-point from_chars
+        std::string str(sv);
         try {
             size_t pos;
             result = std::stod(str, &pos);
@@ -43,15 +57,17 @@ namespace Utils {
             return std::nullopt;
         }
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-        // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
+        return (ec == std::errc{} && ptr == sv.data() + sv.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
     // Helper to trim strings (removes whitespace from both ends)
     AXIOM_EXPORT std::string Trim(std::string_view str);
     
+    // Internal helper for non-allocating trim
+    std::string_view TrimView(std::string_view str);
+
     // Helper to split string by delimiter
     AXIOM_EXPORT AXIOM::FixedVector<std::string, 256> Split(std::string_view s, char delimiter);
 
