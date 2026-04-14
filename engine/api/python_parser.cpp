@@ -162,4 +162,3 @@ std::string PythonParser::HandleSymPyMode(std::string_view input) {
 }
 
 } // namespace AXIOM
-

@@ -4,7 +4,7 @@ import "../theme"
 Row {
     property string status: "running"
     property string label: ""
-    
+
     spacing: Spacing.small
 
     Rectangle {
@@ -12,7 +12,7 @@ Row {
         color: status === "running" ? Colors.success : (status === "error" ? Colors.error : Colors.warning)
         anchors.verticalCenter: parent.verticalCenter
     }
-    
+
     Text {
         text: label
         color: Colors.textSecondary

@@ -25,7 +25,7 @@ void run_engine_simulation(std::atomic<bool>& running) {
     AXIOM::CPUOptimization::SetThreadAffinity(1);
 
     std::cout << "[Engine] Simulation thread started on Core 1." << std::endl;
-    
+
     // Initialize IPC Shared Memory
     AXIOM::TelemetryScribe::instance().start("AXIOM_STUDIO_LIVE");
 
@@ -37,12 +37,12 @@ void run_engine_simulation(std::atomic<bool>& running) {
         // Simulate 2.5M ops/sec with some harmonic jitter
         double base_ops = 2500000.0;
         double jitter = 500000.0 * std::sin(time * 2.0);
-        
+
         AXIOM::TelemetryScribe::instance().log_throughput(base_ops + jitter);
-        
+
         // Also step Pluto search
         AXIOM::Pluto::PlutoController::instance().step_search();
-        
+
         time += 0.01;
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     // Start Engine Simulator
     std::atomic<bool> engine_running{true};
     std::thread engine_thread;
-    
+
     if (!parser.isSet(noSimOption)) {
         engine_thread = std::thread(run_engine_simulation, std::ref(engine_running));
     } else {
@@ -108,10 +108,10 @@ int main(int argc, char *argv[]) {
     }
 
     int result = app.exec();
-    
+
     // Cleanup
     engine_running = false;
     if (engine_thread.joinable()) engine_thread.join();
-    
+
     return result;
 }

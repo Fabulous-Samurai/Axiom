@@ -10,7 +10,7 @@ ThemeResolver::TokenParts ThemeResolver::parseToken(const std::string& token) {
 
     size_t start = 0;
     while (start < token.size() && token[start] == ' ') start++;
-    
+
     if (start >= token.size() || token[start] != '@') return parts;
     start++; // Skip '@'
 
@@ -187,7 +187,7 @@ void ThemeResolver::resolveNode(UINode& node) {
 }
 
 static bool isThemeCategory(const std::string& cat) {
-    return cat == "colors" || cat == "typography" || cat == "spacing" || 
+    return cat == "colors" || cat == "typography" || cat == "spacing" ||
            cat == "radius" || cat == "animation" || cat == "glass";
 }
 
@@ -226,9 +226,9 @@ void ThemeResolver::resolveProperties(AXIOM::FixedVector<Property, 32>& props) {
                             resolve_count_++;
                         }
                     }
-                } else if (parts.category == "spacing" || 
-                           parts.category == "radius" || 
-                           parts.category == "animation" || 
+                } else if (parts.category == "spacing" ||
+                           parts.category == "radius" ||
+                           parts.category == "animation" ||
                            parts.category == "glass") {
                     prop.value = resolveNumber(token_str);
                     resolve_count_++;

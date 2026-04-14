@@ -6,22 +6,22 @@
         <file alias="layout/AXRow.qml">components/layout/AXRow.qml</file>
         <file alias="layout/AXGrid.qml">components/layout/AXGrid.qml</file>
         <file alias="layout/AXStack.qml">components/layout/AXStack.qml</file>
-        
+
         <!-- Data Display Components -->
         <file alias="AXKPICard.qml">components/AXKPICard.qml</file>
         <file alias="AXDataGrid.qml">components/AXDataGrid.qml</file>
         <file alias="AXChart.qml">components/AXChart.qml</file>
         <file alias="AXGauge.qml">components/AXGauge.qml</file>
-        
+
         <!-- Control Components -->
         <file alias="controls/AXButton.qml">components/controls/AXButton.qml</file>
         <file alias="controls/AXTextField.qml">components/controls/AXTextField.qml</file>
         <file alias="controls/AXSelect.qml">components/controls/AXSelect.qml</file>
-        
+
         <!-- Feedback Components -->
         <file alias="feedback/AXToast.qml">components/feedback/AXToast.qml</file>
         <file alias="feedback/AXSkeleton.qml">components/feedback/AXSkeleton.qml</file>
-        
+
         <!-- Shared -->
         <file alias="qmldir">components/qmldir</file>
     </qresource>

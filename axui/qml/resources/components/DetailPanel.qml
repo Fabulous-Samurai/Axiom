@@ -4,33 +4,33 @@ import QtQuick.Controls 2.15
 
 Rectangle {
     id: root
-    
+
     // ═══════════════════════════════════════════════════════════════
     // PUBLIC PROPERTIES
     // ═══════════════════════════════════════════════════════════════
     property var selectedNode: null
     property var history: [] // List of {tp, lat, time}
-    
+
     color: "#1E293B"
     radius: 8
     border.color: "#334155"
     clip: true
-    
+
     // ═══════════════════════════════════════════════════════════════
     // UI COMPONENTS
     // ═══════════════════════════════════════════════════════════════
-    
+
     RowLayout {
         anchors.fill: parent
         anchors.margins: 16
         spacing: 24
-        
+
         // Section 1: Chart / Trend (Left)
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             spacing: 12
-            
+
             Text {
                 text: selectedNode ? selectedNode.stageName.toUpperCase() + " // TREND" : "NO NODE SELECTED"
                 font.pixelSize: 14
@@ -38,7 +38,7 @@ Rectangle {
                 font.family: "JetBrains Mono"
                 color: "#F8FAFC"
             }
-            
+
             AXChart {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -50,13 +50,13 @@ Rectangle {
                 backgroundColor: "transparent"
             }
         }
-        
+
         // Section 2: Stats Table (Right)
         ColumnLayout {
             Layout.preferredWidth: 300
             Layout.fillHeight: true
             spacing: 8
-            
+
             Text {
                 text: "HISTORICAL SAMPLES"
                 font.pixelSize: 12
@@ -64,7 +64,7 @@ Rectangle {
                 font.family: "JetBrains Mono"
                 color: "#94A3B8"
             }
-            
+
             ListView {
                 id: historyList
                 Layout.fillWidth: true
@@ -74,7 +74,7 @@ Rectangle {
                 delegate: RowLayout {
                     width: historyList.width
                     height: 25
-                    
+
                     Text {
                         text: modelData.time
                         font.pixelSize: 11
@@ -98,7 +98,7 @@ Rectangle {
                     }
                 }
             }
-            
+
             // Diagnostic Tooltip
             Rectangle {
                 Layout.fillWidth: true

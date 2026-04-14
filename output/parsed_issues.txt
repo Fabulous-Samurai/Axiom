@@ -1866,7 +1866,7 @@ Total issues: 2
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\.build-output\ninja-build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU.h ---
 Total issues: 5
-[WARN] Line 95 (\bnew\b):   * (and eventually the rows) of the matrix to reduce the number of new elements that are created during 
+[WARN] Line 95 (\bnew\b):   * (and eventually the rows) of the matrix to reduce the number of new elements that are created during
 [WARN] Line 308 (\bstd::string\b):     std::string lastErrorMessage() const
 [WARN] Line 474 (\bstd::string\b):     std::string m_lastError;
 [WARN] Line 614 (\bnew\b):       StorageIndex* outerIndexPtr_t = new StorageIndex[matrix.cols()+1];
@@ -1879,10 +1879,10 @@ Total issues: 1
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\.build-output\ninja-build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_column_dfs.h ---
 Total issues: 5
 [WARN] Line 79 (\bnew\b):  * \param [in,out] nseg Number of segments in current U[*,j] - new segments appended
-[WARN] Line 81 (\bnew\b):  * \param [in,out] segrep Segment representatives - new segments appended 
+[WARN] Line 81 (\bnew\b):  * \param [in,out] segrep Segment representatives - new segments appended
 [WARN] Line 142 (\bnew\b):     /* If jcol starts a new supernode, reclaim storage space in
-[WARN] Line 148 (\bnew\b):     { // starts a new supernode 
-[WARN] Line 163 (\bnew\b):     } // if a new supernode 
+[WARN] Line 148 (\bnew\b):     { // starts a new supernode
+[WARN] Line 163 (\bnew\b):     } // if a new supernode
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\.build-output\ninja-build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_heap_relax_snode.h ---
 Total issues: 1
@@ -1898,7 +1898,7 @@ Total issues: 1
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\.build-output\ninja-build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_Structs.h ---
 Total issues: 2
-[WARN] Line 24 (\bnew\b):  *  Note: dfs will be performed on supernode rep. relative to the new 
+[WARN] Line 24 (\bnew\b):  *  Note: dfs will be performed on supernode rep. relative to the new
 [WARN] Line 66 (\bnew\b):  *  Storage: new row subscripts; that is subscripts of PA.
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\.build-output\ninja-build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_SupernodalMatrix.h ---
@@ -2104,7 +2104,7 @@ Total issues: 9
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\.build-output\ninja-build\_deps\eigen3-src\test\sparse_solver.h ---
 Total issues: 11
 [WARN] Line 375 (\bstd::string\b): inline std::string get_matrixfolder()
-[WARN] Line 377 (\bstd::string\b):   std::string mat_folder = TEST_REAL_CASES; 
+[WARN] Line 377 (\bstd::string\b):   std::string mat_folder = TEST_REAL_CASES;
 [WARN] Line 379 (\bstd::string\b):     mat_folder  = mat_folder + static_cast<std::string>("/complex/");
 [WARN] Line 381 (\bstd::string\b):     mat_folder = mat_folder + static_cast<std::string>("/real/");
 [WARN] Line 384 (\bstd::string\b): std::string sym_to_string(int sym)
@@ -2261,7 +2261,7 @@ Total issues: 2
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\.build-output\ninja-build\_deps\eigen3-src\unsupported\Eigen\CXX11\src\Tensor\TensorForcedEval.h ---
 Total issues: 3
 [WARN] Line 87 (\bnew\b):       for (Index i = 0; i < numValues; ++i) new (m_buffer + i) CoeffReturnType();
-[WARN] Line 93 (\bnew\b): // having new (m_buffer + i) CoeffReturnType() causes the following compiler error for SYCL Devices 
+[WARN] Line 93 (\bnew\b): // having new (m_buffer + i) CoeffReturnType() causes the following compiler error for SYCL Devices
 [WARN] Line 94 (\bnew\b): // no matching function for call to 'operator new'
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\.build-output\ninja-build\_deps\eigen3-src\unsupported\Eigen\CXX11\src\Tensor\TensorMacros.h ---
@@ -2404,7 +2404,7 @@ Total issues: 13
 [WARN] Line 427 (\bnew\b):   Scalar *workd = new Scalar[3*n];
 [WARN] Line 429 (\bnew\b):   Scalar *workl = new Scalar[lworkl];
 [WARN] Line 431 (\bnew\b):   int *iparam= new int[11];
-[WARN] Line 438 (\bnew\b):   int *ipntr = new int[11]; 
+[WARN] Line 438 (\bnew\b):   int *ipntr = new int[11];
 [WARN] Line 581 (\bnew\b):     int *select = new int[ncv];
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\.build-output\ninja-build\_deps\eigen3-src\unsupported\Eigen\src\FFT\ei_kissfft_impl.h ---
@@ -2427,10 +2427,10 @@ Total issues: 2
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\.build-output\ninja-build\_deps\eigen3-src\unsupported\Eigen\src\IterativeSolvers\DGMRES.h ---
 Total issues: 9
 [WARN] Line 135 (\bnew\b):     * this class becomes invalid. Call compute() to update it with the new
-[WARN] Line 266 (\bnew\b):     // Compute the new residual vector for the restart 
+[WARN] Line 266 (\bnew\b):     // Compute the new residual vector for the restart
 [WARN] Line 278 (\bnew\b):  * \param x the new approximated solution
 [WARN] Line 294 (\bstd::vector\b):   std::vector<JacobiRotation<Scalar> >gr(m_restart); // Givens rotations
-[WARN] Line 334 (\bnew\b):     // Compute the new plane rotation 
+[WARN] Line 334 (\bnew\b):     // Compute the new plane rotation
 [WARN] Line 336 (\bnew\b):     // Apply the new rotation
 [WARN] Line 353 (\bnew\b):   // Compute the new coefficients by solving the least square problem
 [WARN] Line 359 (\bnew\b):   // Form the new solution
@@ -2531,14 +2531,14 @@ Total issues: 13
 [WARN] Line 57 (\bstd::string\b):   inline void GetVectorElt (const std::string& line, std::complex<RealScalar>& val)
 [WARN] Line 66 (\bstd::string\b):   inline void putMarketHeader(std::string& header,int sym)
 [WARN] Line 109 (\bstd::string\b): inline bool getMarketHeader(const std::string& filename, int& sym, bool& iscomplex, bool& isvector)
-[WARN] Line 118 (\bstd::string\b):   std::string line; 
+[WARN] Line 118 (\bstd::string\b):   std::string line;
 [WARN] Line 123 (\bstd::string\b):   std::string substr[5];
 [WARN] Line 134 (\bstd::string\b): bool loadMarket(SparseMatrixType& mat, const std::string& filename)
 [WARN] Line 151 (\bstd::vector\b):   std::vector<T> elements;
 [WARN] Line 200 (\bstd::string\b): bool loadMarketVector(VectorType& vec, const std::string& filename)
-[WARN] Line 207 (\bstd::string\b):   std::string line; 
+[WARN] Line 207 (\bstd::string\b):   std::string line;
 [WARN] Line 232 (\bstd::string\b): bool saveMarket(const SparseMatrixType& mat, const std::string& filename, int sym = 0)
-[WARN] Line 242 (\bstd::string\b):   std::string header; 
+[WARN] Line 242 (\bstd::string\b):   std::string header;
 [WARN] Line 258 (\bstd::string\b): bool saveMarketVector (const VectorType& vec, const std::string& filename)
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\.build-output\ninja-build\_deps\eigen3-src\unsupported\Eigen\src\SparseExtra\MatrixMarketIterator.h ---
@@ -5627,7 +5627,7 @@ Total issues: 2
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU.h ---
 Total issues: 5
-[WARN] Line 95 (\bnew\b):   * (and eventually the rows) of the matrix to reduce the number of new elements that are created during 
+[WARN] Line 95 (\bnew\b):   * (and eventually the rows) of the matrix to reduce the number of new elements that are created during
 [WARN] Line 308 (\bstd::string\b):     std::string lastErrorMessage() const
 [WARN] Line 474 (\bstd::string\b):     std::string m_lastError;
 [WARN] Line 614 (\bnew\b):       StorageIndex* outerIndexPtr_t = new StorageIndex[matrix.cols()+1];
@@ -5640,10 +5640,10 @@ Total issues: 1
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_column_dfs.h ---
 Total issues: 5
 [WARN] Line 79 (\bnew\b):  * \param [in,out] nseg Number of segments in current U[*,j] - new segments appended
-[WARN] Line 81 (\bnew\b):  * \param [in,out] segrep Segment representatives - new segments appended 
+[WARN] Line 81 (\bnew\b):  * \param [in,out] segrep Segment representatives - new segments appended
 [WARN] Line 142 (\bnew\b):     /* If jcol starts a new supernode, reclaim storage space in
-[WARN] Line 148 (\bnew\b):     { // starts a new supernode 
-[WARN] Line 163 (\bnew\b):     } // if a new supernode 
+[WARN] Line 148 (\bnew\b):     { // starts a new supernode
+[WARN] Line 163 (\bnew\b):     } // if a new supernode
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_heap_relax_snode.h ---
 Total issues: 1
@@ -5659,7 +5659,7 @@ Total issues: 1
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_Structs.h ---
 Total issues: 2
-[WARN] Line 24 (\bnew\b):  *  Note: dfs will be performed on supernode rep. relative to the new 
+[WARN] Line 24 (\bnew\b):  *  Note: dfs will be performed on supernode rep. relative to the new
 [WARN] Line 66 (\bnew\b):  *  Storage: new row subscripts; that is subscripts of PA.
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_SupernodalMatrix.h ---
@@ -5865,7 +5865,7 @@ Total issues: 9
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\build\_deps\eigen3-src\test\sparse_solver.h ---
 Total issues: 11
 [WARN] Line 375 (\bstd::string\b): inline std::string get_matrixfolder()
-[WARN] Line 377 (\bstd::string\b):   std::string mat_folder = TEST_REAL_CASES; 
+[WARN] Line 377 (\bstd::string\b):   std::string mat_folder = TEST_REAL_CASES;
 [WARN] Line 379 (\bstd::string\b):     mat_folder  = mat_folder + static_cast<std::string>("/complex/");
 [WARN] Line 381 (\bstd::string\b):     mat_folder = mat_folder + static_cast<std::string>("/real/");
 [WARN] Line 384 (\bstd::string\b): std::string sym_to_string(int sym)
@@ -6022,7 +6022,7 @@ Total issues: 2
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\build\_deps\eigen3-src\unsupported\Eigen\CXX11\src\Tensor\TensorForcedEval.h ---
 Total issues: 3
 [WARN] Line 87 (\bnew\b):       for (Index i = 0; i < numValues; ++i) new (m_buffer + i) CoeffReturnType();
-[WARN] Line 93 (\bnew\b): // having new (m_buffer + i) CoeffReturnType() causes the following compiler error for SYCL Devices 
+[WARN] Line 93 (\bnew\b): // having new (m_buffer + i) CoeffReturnType() causes the following compiler error for SYCL Devices
 [WARN] Line 94 (\bnew\b): // no matching function for call to 'operator new'
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\build\_deps\eigen3-src\unsupported\Eigen\CXX11\src\Tensor\TensorMacros.h ---
@@ -6165,7 +6165,7 @@ Total issues: 13
 [WARN] Line 427 (\bnew\b):   Scalar *workd = new Scalar[3*n];
 [WARN] Line 429 (\bnew\b):   Scalar *workl = new Scalar[lworkl];
 [WARN] Line 431 (\bnew\b):   int *iparam= new int[11];
-[WARN] Line 438 (\bnew\b):   int *ipntr = new int[11]; 
+[WARN] Line 438 (\bnew\b):   int *ipntr = new int[11];
 [WARN] Line 581 (\bnew\b):     int *select = new int[ncv];
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\build\_deps\eigen3-src\unsupported\Eigen\src\FFT\ei_kissfft_impl.h ---
@@ -6188,10 +6188,10 @@ Total issues: 2
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\build\_deps\eigen3-src\unsupported\Eigen\src\IterativeSolvers\DGMRES.h ---
 Total issues: 9
 [WARN] Line 135 (\bnew\b):     * this class becomes invalid. Call compute() to update it with the new
-[WARN] Line 266 (\bnew\b):     // Compute the new residual vector for the restart 
+[WARN] Line 266 (\bnew\b):     // Compute the new residual vector for the restart
 [WARN] Line 278 (\bnew\b):  * \param x the new approximated solution
 [WARN] Line 294 (\bstd::vector\b):   std::vector<JacobiRotation<Scalar> >gr(m_restart); // Givens rotations
-[WARN] Line 334 (\bnew\b):     // Compute the new plane rotation 
+[WARN] Line 334 (\bnew\b):     // Compute the new plane rotation
 [WARN] Line 336 (\bnew\b):     // Apply the new rotation
 [WARN] Line 353 (\bnew\b):   // Compute the new coefficients by solving the least square problem
 [WARN] Line 359 (\bnew\b):   // Form the new solution
@@ -6292,14 +6292,14 @@ Total issues: 13
 [WARN] Line 57 (\bstd::string\b):   inline void GetVectorElt (const std::string& line, std::complex<RealScalar>& val)
 [WARN] Line 66 (\bstd::string\b):   inline void putMarketHeader(std::string& header,int sym)
 [WARN] Line 109 (\bstd::string\b): inline bool getMarketHeader(const std::string& filename, int& sym, bool& iscomplex, bool& isvector)
-[WARN] Line 118 (\bstd::string\b):   std::string line; 
+[WARN] Line 118 (\bstd::string\b):   std::string line;
 [WARN] Line 123 (\bstd::string\b):   std::string substr[5];
 [WARN] Line 134 (\bstd::string\b): bool loadMarket(SparseMatrixType& mat, const std::string& filename)
 [WARN] Line 151 (\bstd::vector\b):   std::vector<T> elements;
 [WARN] Line 200 (\bstd::string\b): bool loadMarketVector(VectorType& vec, const std::string& filename)
-[WARN] Line 207 (\bstd::string\b):   std::string line; 
+[WARN] Line 207 (\bstd::string\b):   std::string line;
 [WARN] Line 232 (\bstd::string\b): bool saveMarket(const SparseMatrixType& mat, const std::string& filename, int sym = 0)
-[WARN] Line 242 (\bstd::string\b):   std::string header; 
+[WARN] Line 242 (\bstd::string\b):   std::string header;
 [WARN] Line 258 (\bstd::string\b): bool saveMarketVector (const VectorType& vec, const std::string& filename)
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\build\_deps\eigen3-src\unsupported\Eigen\src\SparseExtra\MatrixMarketIterator.h ---
@@ -11435,12 +11435,12 @@ Total issues: 27
 Total issues: 8
 [WARN] Line 42 (\bstd::string\b):     std::string operation_name;
 [WARN] Line 43 (\bstd::string\b):     std::string decision_reason;
-[WARN] Line 56 (\bstd::string\b):     EngineResult DispatchOperation(const std::string& operation, 
+[WARN] Line 56 (\bstd::string\b):     EngineResult DispatchOperation(const std::string& operation,
 [WARN] Line 57 (\bstd::vector\b):                                  const std::vector<std::string>& args = {},
 [WARN] Line 57 (\bstd::string\b):                                  const std::vector<std::string>& args = {},
-[WARN] Line 60 (\bstd::string\b):     EngineResult DispatchMatrixOperation(const std::string& operation, 
+[WARN] Line 60 (\bstd::string\b):     EngineResult DispatchMatrixOperation(const std::string& operation,
 [WARN] Line 65 (\bstd::string\b):     std::string GetPerformanceReport() const;
-[WARN] Line 69 (\bstd::unique_ptr\b):     std::unique_ptr<Impl> pimpl_; 
+[WARN] Line 69 (\bstd::unique_ptr\b):     std::unique_ptr<Impl> pimpl_;
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\codeql\databases\cpp\src\C_\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\core\dispatch\selective_dispatcher_capi.cpp ---
 Total issues: 2
@@ -11598,7 +11598,7 @@ Total issues: 22
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\codeql\databases\cpp\src\C_\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\include\nanobind_interface.h ---
 Total issues: 23
 [WARN] Line 46 (\bstd::string\b):     std::string last_function_called;
-[WARN] Line 63 (\bstd::string\b):     nb::object CallPythonFunction(const std::string& module_name, 
+[WARN] Line 63 (\bstd::string\b):     nb::object CallPythonFunction(const std::string& module_name,
 [WARN] Line 64 (\bstd::string\b):                                   const std::string& function_name,
 [WARN] Line 65 (\bstd::vector\b):                                   const std::vector<nb::object>& args = {});
 [WARN] Line 68 (\bstd::vector\b):     std::vector<double> ConvertFromNumPy(const nb::ndarray<nb::numpy, double>& array);
@@ -11610,7 +11610,7 @@ Total issues: 23
 [WARN] Line 92 (\bstd::string\b):     std::string GetPerformanceReport() const;
 [WARN] Line 100 (\bstd::string\b):     std::string last_error_;
 [WARN] Line 104 (\bstd::string\b):     auto MeasureCall(const std::string& function_name, Func&& func) -> decltype(func());
-[WARN] Line 106 (\bstd::string\b):     void UpdateMetrics(const std::string& function_name, double overhead_us, 
+[WARN] Line 106 (\bstd::string\b):     void UpdateMetrics(const std::string& function_name, double overhead_us,
 [WARN] Line 132 (\bstd::string\b):     PythonFunction(const std::string& module_name, const std::string& function_name);
 [WARN] Line 141 (\bstd::string\b):     std::string module_name_;
 [WARN] Line 142 (\bstd::string\b):     std::string function_name_;
@@ -11624,7 +11624,7 @@ Total issues: 23
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\codeql\databases\cpp\src\C_\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\include\plot_engine.h ---
 Total issues: 9
 [WARN] Line 26 (\bstd::string\b):     std::string PlotFunction(const std::string& expression, const PlotConfig& config = {});
-[WARN] Line 27 (\bstd::string\b):     std::string PlotParametric(const std::string& x_expr, const std::string& y_expr, 
+[WARN] Line 27 (\bstd::string\b):     std::string PlotParametric(const std::string& x_expr, const std::string& y_expr,
 [WARN] Line 32 (\bstd::string\b):     Matrix ComputeFunctionData(const std::string& expression, const PlotConfig& config = {}, int samples = -1);
 [WARN] Line 35 (\bstd::string\b):     std::string PlotData(const Vector& x_data, const Vector& y_data, const PlotConfig& config = {});
 [WARN] Line 36 (\bstd::string\b):     std::string Histogram(const Vector& data, int bins = 10, const PlotConfig& config = {});
@@ -11660,7 +11660,7 @@ Total issues: 10
 Total issues: 14
 [WARN] Line 14 (\bstd::string\b):     std::unordered_map<std::string, AXIOM::NodePtr> symbol_table_;
 [WARN] Line 18 (\bstd::string\b):     EngineResult Expand(const std::string& expression);         // (x+1)^2 -> x^2 + 2x + 1
-[WARN] Line 19 (\bstd::string\b):     EngineResult Factor(const std::string& expression);         // x^2 - 1 -> (x-1)(x+1)  
+[WARN] Line 19 (\bstd::string\b):     EngineResult Factor(const std::string& expression);         // x^2 - 1 -> (x-1)(x+1)
 [WARN] Line 20 (\bstd::string\b):     EngineResult Simplify(const std::string& expression);       // Complex simplification
 [WARN] Line 21 (\bstd::string\b):     EngineResult Substitute(const std::string& expr, const std::string& var, const std::string& value);
 [WARN] Line 24 (\bstd::string\b):     EngineResult Integrate(const std::string& expression, const std::string& variable);
@@ -12029,7 +12029,7 @@ Total issues: 2
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\codeql\databases\cpp\src\C_\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\ninja-build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU.h ---
 Total issues: 5
-[WARN] Line 95 (\bnew\b):   * (and eventually the rows) of the matrix to reduce the number of new elements that are created during 
+[WARN] Line 95 (\bnew\b):   * (and eventually the rows) of the matrix to reduce the number of new elements that are created during
 [WARN] Line 308 (\bstd::string\b):     std::string lastErrorMessage() const
 [WARN] Line 474 (\bstd::string\b):     std::string m_lastError;
 [WARN] Line 614 (\bnew\b):       StorageIndex* outerIndexPtr_t = new StorageIndex[matrix.cols()+1];
@@ -12042,10 +12042,10 @@ Total issues: 1
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\codeql\databases\cpp\src\C_\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\ninja-build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_column_dfs.h ---
 Total issues: 5
 [WARN] Line 79 (\bnew\b):  * \param [in,out] nseg Number of segments in current U[*,j] - new segments appended
-[WARN] Line 81 (\bnew\b):  * \param [in,out] segrep Segment representatives - new segments appended 
+[WARN] Line 81 (\bnew\b):  * \param [in,out] segrep Segment representatives - new segments appended
 [WARN] Line 142 (\bnew\b):     /* If jcol starts a new supernode, reclaim storage space in
-[WARN] Line 148 (\bnew\b):     { // starts a new supernode 
-[WARN] Line 163 (\bnew\b):     } // if a new supernode 
+[WARN] Line 148 (\bnew\b):     { // starts a new supernode
+[WARN] Line 163 (\bnew\b):     } // if a new supernode
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\codeql\databases\cpp\src\C_\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\ninja-build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_heap_relax_snode.h ---
 Total issues: 1
@@ -12061,7 +12061,7 @@ Total issues: 1
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\codeql\databases\cpp\src\C_\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\ninja-build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_Structs.h ---
 Total issues: 2
-[WARN] Line 24 (\bnew\b):  *  Note: dfs will be performed on supernode rep. relative to the new 
+[WARN] Line 24 (\bnew\b):  *  Note: dfs will be performed on supernode rep. relative to the new
 [WARN] Line 66 (\bnew\b):  *  Storage: new row subscripts; that is subscripts of PA.
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\codeql\databases\cpp\src\C_\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\ninja-build\_deps\eigen3-src\Eigen\src\SparseLU\SparseLU_SupernodalMatrix.h ---
@@ -12098,7 +12098,7 @@ Total issues: 90
 [WARN] Line 133 (\bstd::string\b):     std::string ToString(Precedence) const override { return std::string(name); }
 [WARN] Line 144 (\bstd::string\b):     EvalResult Evaluate(const std::map<std::string, AXIOM::Number>& vars) const override {
 [WARN] Line 248 (\bstd::string\b):     std::string ToString(Precedence parent_prec) const override {
-[WARN] Line 250 (\bstd::string\b):         std::string result = left->ToString(my_prec) + " " + op + " " + right->ToString(my_prec); 
+[WARN] Line 250 (\bstd::string\b):         std::string result = left->ToString(my_prec) + " " + op + " " + right->ToString(my_prec);
 [WARN] Line 263 (\bstd::string\b):      * FIX: Changed to std::string keys to avoid string_view comparison issues with arena-allocated strings
 [WARN] Line 265 (\bstd::string\b):     static const std::unordered_map<std::string, std::function<double(double)>>& GetFunctionMap() {
 [WARN] Line 266 (\bstd::string\b):         static const std::unordered_map<std::string, std::function<double(double)>> func_map = {
@@ -12107,14 +12107,14 @@ Total issues: 90
 [WARN] Line 547 (\bstd::string\b):     std::string ToString(Precedence) const override {
 [WARN] Line 549 (\bstd::string\b):         return std::string(func) + "(" + operand->ToString(Precedence::None) + ")";
 [WARN] Line 558 (\bstd::vector\b):     std::vector<NodePtr> args;
-[WARN] Line 560 (\bstd::vector\b):     MultiArgFunctionNode(std::string_view f, std::vector<NodePtr> arguments) 
+[WARN] Line 560 (\bstd::vector\b):     MultiArgFunctionNode(std::string_view f, std::vector<NodePtr> arguments)
 [WARN] Line 563 (\bstd::string\b):     EvalResult Evaluate(const std::map<std::string, AXIOM::Number>& vars) const override {
 [WARN] Line 572 (\bstd::string\b):             std::string var_name = std::string(var_node->name);
 [WARN] Line 592 (\bstd::string\b):             std::string var_name = std::string(var_node->name);
 [WARN] Line 715 (\bstd::vector\b):         std::vector<NodePtr> simplified_args;
 [WARN] Line 722 (\bstd::string\b):     std::string ToString(Precedence) const override {
 [WARN] Line 723 (\bstd::string\b):         std::string result = std::string(func) + "(";
-[WARN] Line 733 (\bstd::string\b):     EvalResult EvaluateNumericalLimit(const std::map<std::string, AXIOM::Number>& vars, 
+[WARN] Line 733 (\bstd::string\b):     EvalResult EvaluateNumericalLimit(const std::map<std::string, AXIOM::Number>& vars,
 [WARN] Line 734 (\bstd::string\b):                                     const std::string& var_name, double approach_point) const {
 [WARN] Line 739 (\bstd::string\b):             std::map<std::string, AXIOM::Number> local_vars = vars;
 [WARN] Line 784 (\bstd::string\b):     EvalResult EvaluateLimitAtInfinity(const std::map<std::string, AXIOM::Number>& vars,
@@ -12137,7 +12137,7 @@ Total issues: 90
 [WARN] Line 1113 (\bstd::string\b):     static const std::set<std::string> known_functions = {
 [WARN] Line 1126 (\bstd::string\b):     while ((pos = trimmed.find('(', pos)) != std::string::npos && func_check_count < max_func_checks) {
 [WARN] Line 1135 (\bstd::string\b):             std::string func_name = trimmed.substr(func_start, pos - func_start);
-[WARN] Line 1149 (\bstd::string\b):     std::string processed_input = input; 
+[WARN] Line 1149 (\bstd::string\b):     std::string processed_input = input;
 [WARN] Line 1151 (\bstd::string\b):     std::string first_token;
 [WARN] Line 1191 (\bstd::string\b): EngineResult AlgebraicParser::HandleQuadratic(const std::string& input) {
 [WARN] Line 1193 (\bstd::string\b):     std::string cmd;
@@ -12632,12 +12632,12 @@ Total issues: 18
 Total issues: 8
 [WARN] Line 41 (\bstd::string\b):     std::string operation_name;
 [WARN] Line 42 (\bstd::string\b):     std::string decision_reason;
-[WARN] Line 55 (\bstd::string\b):     EngineResult DispatchOperation(const std::string& operation, 
+[WARN] Line 55 (\bstd::string\b):     EngineResult DispatchOperation(const std::string& operation,
 [WARN] Line 56 (\bstd::vector\b):                                  const std::vector<std::string>& args = {},
 [WARN] Line 56 (\bstd::string\b):                                  const std::vector<std::string>& args = {},
-[WARN] Line 59 (\bstd::string\b):     EngineResult DispatchMatrixOperation(const std::string& operation, 
+[WARN] Line 59 (\bstd::string\b):     EngineResult DispatchMatrixOperation(const std::string& operation,
 [WARN] Line 64 (\bstd::string\b):     std::string GetPerformanceReport() const;
-[WARN] Line 68 (\bstd::unique_ptr\b):     std::unique_ptr<Impl> pimpl_; 
+[WARN] Line 68 (\bstd::unique_ptr\b):     std::unique_ptr<Impl> pimpl_;
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\core\dispatch\selective_dispatcher_capi.cpp ---
 Total issues: 2
@@ -12820,7 +12820,7 @@ Total issues: 22
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\include\nanobind_interface.h ---
 Total issues: 23
 [WARN] Line 48 (\bstd::string\b):     std::string last_function_called;
-[WARN] Line 65 (\bstd::string\b):     nb::object CallPythonFunction(const std::string& module_name, 
+[WARN] Line 65 (\bstd::string\b):     nb::object CallPythonFunction(const std::string& module_name,
 [WARN] Line 66 (\bstd::string\b):                                   const std::string& function_name,
 [WARN] Line 67 (\bstd::vector\b):                                   const std::vector<nb::object>& args = {});
 [WARN] Line 70 (\bstd::vector\b):     std::vector<double> ConvertFromNumPy(const nb::ndarray<nb::numpy, double>& array);
@@ -12832,7 +12832,7 @@ Total issues: 23
 [WARN] Line 94 (\bstd::string\b):     std::string GetPerformanceReport() const;
 [WARN] Line 102 (\bstd::string\b):     std::string last_error_;
 [WARN] Line 106 (\bstd::string\b):     auto MeasureCall(const std::string& function_name, Func&& func) -> decltype(func());
-[WARN] Line 108 (\bstd::string\b):     void UpdateMetrics(const std::string& function_name, double overhead_us, 
+[WARN] Line 108 (\bstd::string\b):     void UpdateMetrics(const std::string& function_name, double overhead_us,
 [WARN] Line 134 (\bstd::string\b):     PythonFunction(const std::string& module_name, const std::string& function_name);
 [WARN] Line 143 (\bstd::string\b):     std::string module_name_;
 [WARN] Line 144 (\bstd::string\b):     std::string function_name_;
@@ -12846,7 +12846,7 @@ Total issues: 23
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\include\plot_engine.h ---
 Total issues: 9
 [WARN] Line 26 (\bstd::string\b):     std::string PlotFunction(const std::string& expression, const PlotConfig& config = {});
-[WARN] Line 27 (\bstd::string\b):     std::string PlotParametric(const std::string& x_expr, const std::string& y_expr, 
+[WARN] Line 27 (\bstd::string\b):     std::string PlotParametric(const std::string& x_expr, const std::string& y_expr,
 [WARN] Line 32 (\bstd::string\b):     Matrix ComputeFunctionData(const std::string& expression, const PlotConfig& config = {}, int samples = -1);
 [WARN] Line 35 (\bstd::string\b):     std::string PlotData(const Vector& x_data, const Vector& y_data, const PlotConfig& config = {});
 [WARN] Line 36 (\bstd::string\b):     std::string Histogram(const Vector& data, int bins = 10, const PlotConfig& config = {});
@@ -12949,7 +12949,7 @@ Total issues: 10
 Total issues: 15
 [WARN] Line 14 (\bstd::string\b):     std::unordered_map<std::string, AXIOM::NodePtr> symbol_table_;
 [WARN] Line 18 (\bstd::string\b):     EngineResult Expand(const std::string& expression);         // (x+1)^2 -> x^2 + 2x + 1
-[WARN] Line 19 (\bstd::string\b):     EngineResult Factor(const std::string& expression);         // x^2 - 1 -> (x-1)(x+1)  
+[WARN] Line 19 (\bstd::string\b):     EngineResult Factor(const std::string& expression);         // x^2 - 1 -> (x-1)(x+1)
 [WARN] Line 20 (\bstd::string\b):     EngineResult Simplify(const std::string& expression);       // Complex simplification
 [WARN] Line 21 (\bstd::string\b):     EngineResult Substitute(const std::string& expr, const std::string& var, const std::string& value);
 [WARN] Line 24 (\bstd::string\b):     EngineResult Integrate(const std::string& expression, const std::string& variable);
@@ -13037,15 +13037,15 @@ Total issues: 107
 [WARN] Line 288 (\bstd::string\b):     SymbolicExpression symbol(const std::string& name);
 [WARN] Line 289 (\bstd::string\b):     SymbolicExpression symbol(const std::string& name, const std::string& properties);
 [WARN] Line 292 (\bstd::string\b):     SymbolicExpression parse(const std::string& expression_str);
-[WARN] Line 293 (\bstd::string\b):     SymbolicExpression create_function(const std::string& name, 
+[WARN] Line 293 (\bstd::string\b):     SymbolicExpression create_function(const std::string& name,
 [WARN] Line 294 (\bstd::vector\b):                                      const std::vector<SymbolicExpression>& args);
-[WARN] Line 297 (\bstd::string\b):     void define_function(const std::string& name, 
+[WARN] Line 297 (\bstd::string\b):     void define_function(const std::string& name,
 [WARN] Line 298 (\bstd::vector\b):                         const std::vector<std::string>& variables,
 [WARN] Line 298 (\bstd::string\b):                         const std::vector<std::string>& variables,
 [WARN] Line 302 (\bstd::string\b):     SymbolicExpression diff(const std::string& expression, const std::string& variable, int order = 1);
 [WARN] Line 303 (\bstd::string\b):     SymbolicExpression integrate(const std::string& expression, const std::string& variable);
-[WARN] Line 304 (\bstd::string\b):     SymbolicExpression integrate(const std::string& expression, const std::string& variable, 
-[WARN] Line 307 (\bstd::string\b):     SymbolicExpression limit(const std::string& expression, const std::string& variable, 
+[WARN] Line 304 (\bstd::string\b):     SymbolicExpression integrate(const std::string& expression, const std::string& variable,
+[WARN] Line 307 (\bstd::string\b):     SymbolicExpression limit(const std::string& expression, const std::string& variable,
 [WARN] Line 308 (\bstd::string\b):                             const std::string& value, const std::string& direction = "");
 [WARN] Line 309 (\bstd::string\b):     SymbolicExpression series(const std::string& expression, const std::string& variable,
 [WARN] Line 310 (\bstd::string\b):                              const std::string& point, int order);
@@ -13062,7 +13062,7 @@ Total issues: 107
 [WARN] Line 323 (\bstd::string\b):                                             const std::string& independent_var);
 [WARN] Line 326 (\bstd::string\b):     std::string simplify_and_format(const std::string& expression, const std::string& format = "default");
 [WARN] Line 327 (\bstd::string\b):     double evaluate_numeric(const std::string& expression);
-[WARN] Line 328 (\bstd::string\b):     double evaluate_numeric(const std::string& expression, 
+[WARN] Line 328 (\bstd::string\b):     double evaluate_numeric(const std::string& expression,
 [WARN] Line 329 (\bstd::string\b):                            const std::unordered_map<std::string, double>& values);
 [WARN] Line 332 (\bstd::string\b):     void save_session(const std::string& filename);
 [WARN] Line 333 (\bstd::string\b):     void load_session(const std::string& filename);
@@ -13075,7 +13075,7 @@ Total issues: 107
 [WARN] Line 393 (\bstd::string\b):     void cache_expression(const std::string& hash, const SymbolicExpression& expr);
 [WARN] Line 398 (\bstd::string\b):     SymbolicExpression diff(const SymbolicExpression& expr, const std::string& var, int order = 1);
 [WARN] Line 399 (\bstd::string\b):     SymbolicExpression integrate(const SymbolicExpression& expr, const std::string& var);
-[WARN] Line 400 (\bstd::string\b):     SymbolicExpression limit(const SymbolicExpression& expr, const std::string& var, 
+[WARN] Line 400 (\bstd::string\b):     SymbolicExpression limit(const SymbolicExpression& expr, const std::string& var,
 
 --- File: C:\Users\fabulous_samurai\OneDrive\Documents\GitHub\axiom_engine\include\unit_manager.h ---
 Total issues: 10
@@ -13122,7 +13122,7 @@ Total issues: 79
 [WARN] Line 107 (\bstd::string\b):         std::string key(name);
 [WARN] Line 128 (\bstd::string\b):     std::string ToString(Precedence) const override { return std::string(name); }
 [WARN] Line 244 (\bstd::string\b):     std::string ToString(Precedence parent_prec) const override {
-[WARN] Line 246 (\bstd::string\b):         std::string result = left->ToString(my_prec) + " " + op + " " + right->ToString(my_prec); 
+[WARN] Line 246 (\bstd::string\b):         std::string result = left->ToString(my_prec) + " " + op + " " + right->ToString(my_prec);
 [WARN] Line 260 (\bstd::string\b):      * FIX: Changed to std::string keys to avoid string_view comparison issues with arena-allocated strings
 [WARN] Line 262 (\bstd::string\b):     static const std::unordered_map<std::string, std::function<double(double)>>& GetFunctionMap() {
 [WARN] Line 263 (\bstd::string\b):         static const std::unordered_map<std::string, std::function<double(double)>> func_map = {
@@ -13133,7 +13133,7 @@ Total issues: 79
 [WARN] Line 560 (\bstd::string\b):     std::string ToString(Precedence) const override {
 [WARN] Line 562 (\bstd::string\b):         return std::string(func) + "(" + operand->ToString(Precedence::None) + ")";
 [WARN] Line 571 (\bstd::vector\b):     std::vector<NodePtr> args;
-[WARN] Line 573 (\bstd::vector\b):     MultiArgFunctionNode(std::string_view f, std::vector<NodePtr> arguments) 
+[WARN] Line 573 (\bstd::vector\b):     MultiArgFunctionNode(std::string_view f, std::vector<NodePtr> arguments)
 [WARN] Line 587 (\bstd::string\b):             std::string var_name = std::string(var_node->name);
 [WARN] Line 607 (\bstd::string\b):             std::string var_name = std::string(var_node->name);
 [WARN] Line 732 (\bstd::vector\b):         std::vector<NodePtr> simplified_args;
@@ -13156,7 +13156,7 @@ Total issues: 79
 [WARN] Line 1144 (\bstd::string\b):     static const std::set<std::string, std::less<>> known_functions = {
 [WARN] Line 1157 (\bstd::string\b):     while ((pos = trimmed.find('(', pos)) != std::string::npos && func_check_count < max_func_checks) {
 [WARN] Line 1170 (\bstd::string\b):         std::string func_name = trimmed.substr(func_start, pos - func_start);
-[WARN] Line 1183 (\bstd::string\b):     std::string processed_input = input; 
+[WARN] Line 1183 (\bstd::string\b):     std::string processed_input = input;
 [WARN] Line 1185 (\bstd::string\b):     std::string first_token;
 [WARN] Line 1230 (\bstd::string\b): EngineResult AlgebraicParser::HandleQuadratic(const std::string& input) {
 [WARN] Line 1232 (\bstd::string\b):     std::string cmd;
@@ -13849,4 +13849,3 @@ Total issues: 2
 Total issues: 2
 [WARN] Line 75 (\bstd::vector\b):     std::vector<Number> real_numbers;
 [WARN] Line 90 (\bstd::vector\b):     std::vector<Number> complex_numbers;
-

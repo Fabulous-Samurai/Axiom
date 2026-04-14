@@ -8,7 +8,7 @@ TEST(AxiomEngine, EnclaveSealing) {
     EXPECT_TRUE(vault.initialize_enclave());
 
     std::string secret_data = "SuperSecretMantisState123";
-    
+
     // Mühürleme (Seal) işlemi
     EXPECT_TRUE(vault.seal(secret_data.data(), secret_data.size()));
 

@@ -76,7 +76,7 @@ public:
 
 private:
     std::array<T, Capacity> buffer_;
-    
+
     AXIOM_ALIGN_CACHE std::atomic<size_t> head_;
     AXIOM_ALIGN_CACHE std::atomic<size_t> tail_;
 };

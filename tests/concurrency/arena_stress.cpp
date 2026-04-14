@@ -17,7 +17,7 @@ TEST(ArenaStress, MultiThreadedAllocDealloc) {
     for (int t = 0; t < num_threads; ++t) {
         threads.emplace_back([&arena, &start, t, iterations]() {
             while (!start) std::this_thread::yield();
-            
+
             for (int i = 0; i < iterations; ++i) {
                 size_t size = (size_t)AXIOM::SecureRandom::range(8, 1024);
                 void* ptr = arena.allocate(size);
@@ -30,6 +30,6 @@ TEST(ArenaStress, MultiThreadedAllocDealloc) {
     }
 
     start = true;
-    
+
     // Test passes if it doesn't crash or hang (deadlock)
 }
