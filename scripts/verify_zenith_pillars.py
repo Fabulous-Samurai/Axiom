@@ -75,29 +75,49 @@ def main():
     print("  [AXIOM] ZENITH PILLAR VERIFIER: MANDATORY AUDIT      ")
     print("--------------------------------------------------------")
 
+
+    import subprocess
+    changed_files = []
+    try:
+        # Get list of files modified in PR compared to master/main
+        result = subprocess.run(['git', 'diff', '--name-only', 'master...HEAD'], capture_output=True, text=True)
+        if result.returncode != 0:
+            result = subprocess.run(['git', 'diff', '--name-only', 'main...HEAD'], capture_output=True, text=True)
+        changed_files = [f.strip() for f in result.stdout.splitlines() if f.strip()]
+    except Exception as e:
+        print(f"[WARNING] Could not get git diff: {e}. Falling back to checking all files.")
+
     # Target core directories
     core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
     total_violations = 0
 
-    for d in core_dirs:
-        # Check if we are running from root or scripts dir
-        search_path = d if os.path.exists(d) else os.path.join("..", d)
-        if not os.path.exists(search_path): continue
+    # Check if we should only check modified files
+    files_to_check = []
+    if changed_files:
+        for f in changed_files:
+            if any(f.startswith(d) for d in core_dirs):
+                files_to_check.append(f)
+    else:
+        for d in core_dirs:
+            search_path = d if os.path.exists(d) else os.path.join("..", d)
+            if not os.path.exists(search_path): continue
+            for root, _, files in os.walk(search_path):
+                for file in files:
+                    files_to_check.append(os.path.join(root, file))
 
-        for root, _, files in os.walk(search_path):
-            for file in files:
-                # Tightened exemption check
-                if any(exempt in file for exempt in EXEMPT_FILES) or file in WHITELISTED_FILES:
-                    continue
-                if file.endswith((".cpp", ".h", ".hpp", ".cc")):
-                    path = os.path.join(root, file)
-                    violations = verify_file(path)
-                    if violations:
-                        print(f"[FAIL] {path}")
-                        for v in violations:
-                            print(f"  - {v}")
-                        total_violations += len(violations)
-
+    for path in files_to_check:
+        file = os.path.basename(path)
+        # Tightened exemption check
+        if any(exempt in file for exempt in EXEMPT_FILES) or file in WHITELISTED_FILES:
+            continue
+        if file.endswith((".cpp", ".h", ".hpp", ".cc")):
+            if not os.path.exists(path): continue
+            violations = verify_file(path)
+            if violations:
+                print(f"[FAIL] {path}")
+                for v in violations:
+                    print(f"  - {v}")
+                total_violations += len(violations)
     if total_violations > 0:
         print(f"\n[CRITICAL] Found {total_violations} Zenith Pillar violations.")
         print("\n--- ARCHITECTURAL REMEDIATION SUGGESTIONS ---")
