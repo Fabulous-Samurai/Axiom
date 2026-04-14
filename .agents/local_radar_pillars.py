@@ -15,13 +15,13 @@ FILE_EXTENSIONS = ('.cpp', '.h', '.hpp', '.py', '.yml', '.md', '.conf', '.json',
 ANTI_PATTERNS = {
     # 1. Zero-Allocation Violations (Pillar 1)
     "P1: Dynamic Allocation": re.compile(r'\b(new |malloc\(|std::vector|std::string|std::map)\b'),
-    
+
     # 2. Zero-Exception Violations (Pillar 5)
     "P5: Exception/RTTI": re.compile(r'\b(throw |try\s*\{|catch\s*\(|dynamic_cast|typeid\()\b'),
 
     # 3. Buffer Overflow & Unsafe C-Strings (Security Hotspot)
     "S: Unsafe C-String": re.compile(r'\b(strncpy|strlen\(|strcat)\b'),
-    
+
     # 4. Cognitive Complexity (Code Smell - simplified regex)
     "C: Nested If/Loop": re.compile(r'(if|for|while)\s*\(.*\)\s*\{[^{}]*(if|for|while)\s*\(.*\)\s*\{'), # Simplified
 
@@ -36,7 +36,7 @@ ANTI_PATTERNS = {
     # 7. Structural Integrity (Linkage & Capacity)
     "I: Circular Dependency Risk": re.compile(r'add_library\(.*STATIC.*\)\s+#.*(Circular|interdependent)'),
     "I: Missing Windows Console Entry": re.compile(r'add_executable\(.*\)(?!.*mainCRTStartup)'),
-    "I: Capacity Mismatch (64 vs 256)": re.compile(r'FixedVector<.*,\s*64>') 
+    "I: Capacity Mismatch (64 vs 256)": re.compile(r'FixedVector<.*,\s*64>')
 }
 
 def scan_file(filepath):
@@ -65,7 +65,7 @@ def main():
     print("---------------------------------------------------------")
     print("  [AXIOM] LOCAL RADAR PILLARS: ON-DEMAND COMPLIANCE SCAN ")
     print("---------------------------------------------------------")
-    
+
     total_issues = 0
     all_findings = []
 
@@ -81,7 +81,7 @@ def main():
             for file in files:
                 if not file.endswith(FILE_EXTENSIONS) or file in EXCLUDE_FILES:
                     continue
-                
+
                 filepath = os.path.join(root, file)
                 findings = scan_file(filepath)
                 if findings:
@@ -96,7 +96,7 @@ def main():
 --- {os.path.relpath(filepath, project_root)} ---")
             for line, pattern_name, matched_text in findings:
                 print(f"  Line {line}: [{pattern_name}] -> '{matched_text}'")
-        
+
         print("
 Refer to .agents/sync_learn_from_sonar.md for remediation guidelines.")
         # sys.exit(1) # Optionally, exit with error for CI integration

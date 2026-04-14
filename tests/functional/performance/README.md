@@ -186,5 +186,3 @@ Detailed reports available at:
 
 - [OPTIMIZATION_REPORT_DEC25.md](../../docs/reports/OPTIMIZATION_REPORT_DEC25.md)
 - [PERFORMANCE_SLOWDOWN_ANALYSIS.md](../../docs/reports/PERFORMANCE_SLOWDOWN_ANALYSIS.md)
-
-

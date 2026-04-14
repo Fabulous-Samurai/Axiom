@@ -22,7 +22,7 @@ def find_axiom_executable():
         "ninja-build/axiom.exe",
         "cmake-build-debug/axiom.exe"
     ]
-    
+
     for path in possible_paths:
         if os.path.exists(path):
             return path
@@ -40,7 +40,7 @@ def axiom_path():
 def verify_architecture(axiom_path):
     """Verify AXIOM v3.0 architecture is present."""
     try:
-        result = subprocess.run([axiom_path, "--help"], 
+        result = subprocess.run([axiom_path, "--help"],
                               capture_output=True, text=True, timeout=5)
         if "AXIOM Engine v3.0" in result.stdout:
             print("✅ AXIOM v3.0 architecture confirmed")
@@ -60,11 +60,11 @@ def test_math_operations(axiom_path):
         ("3.14159265358979", "3.14159265358979"),
         ("max(1,2,3,4,5)", "5"),
     ]
-    
+
     passed = 0
     for expr, expected in test_cases:
         try:
-            result = subprocess.run([axiom_path, expr], 
+            result = subprocess.run([axiom_path, expr],
                                   capture_output=True, text=True, timeout=5)
             if result.returncode == 0 and expected in result.stdout:
                 print(f"✅ {expr} -> {result.stdout.strip()}")
@@ -73,7 +73,7 @@ def test_math_operations(axiom_path):
                 print(f"❌ {expr} -> {result.stdout.strip()} (expected {expected})")
         except Exception as e:
             print(f"❌ {expr} -> Error: {e}")
-    
+
     return passed, len(test_cases)
 
 def measure_performance(axiom_path):
@@ -82,16 +82,16 @@ def measure_performance(axiom_path):
     for _ in range(10):
         start = time.time()
         try:
-            subprocess.run([axiom_path, "2+2"], 
+            subprocess.run([axiom_path, "2+2"],
                          capture_output=True, text=True, timeout=1)
             end = time.time()
             times.append((end - start) * 1000)
         except (subprocess.TimeoutExpired, OSError):
             pass
-    
+
     if not times:
         return None
-    
+
     avg_time = sum(times) / len(times)
     return avg_time
 
@@ -109,11 +109,11 @@ def test_enterprise_features(axiom_path):
     enterprise_tests = [
         ("--benchmark", "benchmark"),
     ]
-    
+
     passed = 0
     for flag, keyword in enterprise_tests:
         try:
-            result = subprocess.run([axiom_path, flag], 
+            result = subprocess.run([axiom_path, flag],
                                   capture_output=True, text=True, timeout=10,
                                   encoding='utf-8', errors='ignore')
             stdout = result.stdout or ""
@@ -127,7 +127,7 @@ def test_enterprise_features(axiom_path):
             passed += 1
         except Exception as e:
             print(f"❌ Enterprise feature: {flag} -> {e}")
-    
+
     return passed, len(enterprise_tests)
 
 def print_results(math_passed, math_total, perf_time, enterprise_passed, enterprise_total):
@@ -135,58 +135,58 @@ def print_results(math_passed, math_total, perf_time, enterprise_passed, enterpr
     print("\n" + "=" * 55)
     print("📋 CORE ARCHITECTURE TEST SUMMARY")
     print("=" * 55)
-    
+
     total_score = math_passed + enterprise_passed
     max_score = math_total + enterprise_total
-    
+
     print(f"📊 Core Operations: {math_passed}/{math_total} passed")
     print(f"🏢 Enterprise Features: {enterprise_passed}/{enterprise_total} working")
     print(f"🎯 Overall Score: {total_score}/{max_score}")
-    
+
     if perf_time:
         print(f"⏱️ Average execution time: {perf_time:.2f}ms")
         print(classify_performance(perf_time))
-    
+
     success_rate = (total_score / max_score) * 100
     print(f"📈 Success Rate: {success_rate:.1f}%")
-    
+
     return success_rate
 
 def test_core_architecture():
     """Test the core AXIOM v3.0 architecture"""
     print("🔬 AXIOM v3.0 - Core Architecture Integration Test")
     print("=" * 55)
-    
+
     # Find executable
     axiom_path = find_axiom_executable()
     if not axiom_path:
         print("❌ AXIOM executable not found!")
         return False
-    
+
     print(f"✅ Found AXIOM executable: {axiom_path}")
-    
+
     # Test 1: Architecture Verification
     print("\n🏗️ Test 1: Architecture Verification")
     if not verify_architecture(axiom_path):
         return False
-    
+
     # Test 2: Core Mathematical Operations
     print("\n🧮 Test 2: Core Mathematical Operations")
     math_passed, math_total = test_math_operations(axiom_path)
     print(f"📊 Core operations: {math_passed}/{math_total} passed")
-    
+
     # Test 3: Performance Benchmarking
     print("\n⚡ Test 3: Performance Benchmarking")
     perf_time = measure_performance(axiom_path)
-    
+
     # Test 4: Enterprise Features
     print("\n🏢 Test 4: Enterprise Features")
     enterprise_passed, enterprise_total = test_enterprise_features(axiom_path)
-    
+
     # Print final results
-    success_rate = print_results(math_passed, math_total, perf_time, 
+    success_rate = print_results(math_passed, math_total, perf_time,
                                  enterprise_passed, enterprise_total)
-    
+
     if success_rate >= 80:
         print("🎉 AXIOM v3.0 CORE ARCHITECTURE: EXCELLENT!")
         return True

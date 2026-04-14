@@ -30,7 +30,7 @@ Write-Host "[EXEC] Running TLC on $Model. Output redirected to $LogFile"
     -w "$TlaDir" `
     $Image `
     bash -c "
-        if [ ! -f tla2tools.jar ]; then 
+        if [ ! -f tla2tools.jar ]; then
             curl -L $JarUrl -o tla2tools.jar;
         fi
         java -Xmx4G -cp tla2tools.jar tlc2.TLC -workers auto -deadlock -gzip $Model
