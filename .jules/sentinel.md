@@ -1,0 +1,4 @@
+## 2025-02-14 - Fix Command Injection in Python Scripts
+**Vulnerability:** Found `subprocess.run(..., shell=True)` used with string-concatenated commands in utility scripts (`sonar_helper.py`, `zenith_audit_scribe.py`). This allows arbitrary command injection if any of the command components are untrusted or derived from user input.
+**Learning:** Python scripts orchestrating build and test tasks often default to `shell=True` for convenience, but this violates SonarCloud security rules (S5332) and introduces serious risks.
+**Prevention:** Always use `subprocess.run(..., shell=False)` and provide the command as a list of arguments. When logging the executed command for debugging or auditing, use `shlex.join(cmd)` to ensure shell-escaped, human-readable output. Add `# NOSONAR` where appropriate after making the call safe to pass static analysis gates.
