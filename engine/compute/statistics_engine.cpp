@@ -20,12 +20,16 @@ EngineResult StatisticsEngine::Mean(const Vector& data) {
 EngineResult StatisticsEngine::Median(Vector data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
 
-    std::ranges::sort(data);
     auto n = data.size();
     
     if (n % 2 == 0) {
-        return CreateSuccessResult((data[n/2-1] + data[n/2]) / 2.0);
+        std::nth_element(data.begin(), data.begin() + n/2, data.end());
+        double e1 = data[n/2];
+        std::nth_element(data.begin(), data.begin() + n/2 - 1, data.end());
+        double e2 = data[n/2 - 1];
+        return CreateSuccessResult((e1 + e2) / 2.0);
     } else {
+        std::nth_element(data.begin(), data.begin() + n/2, data.end());
         return CreateSuccessResult(data[n/2]);
     }
 }
@@ -157,21 +161,31 @@ EngineResult StatisticsEngine::Percentile(Vector data, double p) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
     
-    std::ranges::sort(data);
-
-    if (p == 0) return CreateSuccessResult(data[0]);
-    if (p == 100) return CreateSuccessResult(data.back());
+    if (p == 0) {
+        auto min_it = std::min_element(data.begin(), data.end());
+        return CreateSuccessResult(*min_it);
+    }
+    if (p == 100) {
+        auto max_it = std::max_element(data.begin(), data.end());
+        return CreateSuccessResult(*max_it);
+    }
     
     double index = (p / 100.0) * (data.size() - 1);
     size_t lower = static_cast<size_t>(index);
     size_t upper = lower + 1;
     
+    std::nth_element(data.begin(), data.begin() + lower, data.end());
+    double lower_val = data[lower];
+
     if (upper >= data.size()) {
-        return CreateSuccessResult(data.back());
+        return CreateSuccessResult(lower_val);
     }
     
+    std::nth_element(data.begin() + lower + 1, data.begin() + upper, data.end());
+    double upper_val = data[upper];
+
     double weight = index - lower;
-    double result = data[lower] * (1.0 - weight) + data[upper] * weight;
+    double result = lower_val * (1.0 - weight) + upper_val * weight;
     
     return CreateSuccessResult(result);
 }
