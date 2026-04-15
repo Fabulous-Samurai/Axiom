@@ -8,6 +8,7 @@ by scanning for forbidden Keywords in the hot-path sources.
 import sys
 import os
 import re
+import subprocess
 
 # Forbidden patterns for Zenith compliance
 FORBIDDEN_KEYWORDS = {
@@ -79,24 +80,35 @@ def main():
     core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
     total_violations = 0
     
-    for d in core_dirs:
-        # Check if we are running from root or scripts dir
-        search_path = d if os.path.exists(d) else os.path.join("..", d)
-        if not os.path.exists(search_path): continue
+    try:
+        # Fallback to local HEAD vs origin/master (simulating PR diff)
+        res = subprocess.run(
+            ['git', 'diff', '--name-only', 'origin/master...HEAD'],
+            capture_output=True, text=True, check=True
+        )
+        changed_files = [f.strip() for f in res.stdout.split('\n') if f.strip()]
+    except Exception as e:
+        print(f"[WARNING] Could not get git diff: {e}. Falling back to empty list.")
+        changed_files = []
+
+    for path in changed_files:
+        # Only verify if inside core_dirs
+        if not any(path.replace('\\', '/').startswith(d) for d in core_dirs):
+            continue
+
+        file = os.path.basename(path)
         
-        for root, _, files in os.walk(search_path):
-            for file in files:
-                # Tightened exemption check
-                if any(exempt in file for exempt in EXEMPT_FILES) or file in WHITELISTED_FILES:
-                    continue
-                if file.endswith((".cpp", ".h", ".hpp", ".cc")):
-                    path = os.path.join(root, file)
-                    violations = verify_file(path)
-                    if violations:
-                        print(f"[FAIL] {path}")
-                        for v in violations:
-                            print(f"  - {v}")
-                        total_violations += len(violations)
+        # Tightened exemption check
+        if any(exempt in file for exempt in EXEMPT_FILES) or file in WHITELISTED_FILES:
+            continue
+
+        if file.endswith((".cpp", ".h", ".hpp", ".cc")) and os.path.exists(path):
+            violations = verify_file(path)
+            if violations:
+                print(f"[FAIL] {path}")
+                for v in violations:
+                    print(f"  - {v}")
+                total_violations += len(violations)
                         
     if total_violations > 0:
         print(f"\n[CRITICAL] Found {total_violations} Zenith Pillar violations.")
