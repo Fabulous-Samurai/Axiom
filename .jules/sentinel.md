@@ -1,4 +1,0 @@
-## 2025-02-20 - [Fix Command Injection in Visualization Tool]
-**Vulnerability:** The mathematical 3D visualization suite (`tools/visualization/advanced_3d_visualization.py`) was directly using Python's `eval()` to parse and evaluate mathematical strings provided by the user. Even with an attempted mitigation of `{"__builtins__": {}}` and a `safe_dict`, it is possible to break out of this sandbox via object attributes (e.g., `__class__`) to execute arbitrary code.
-**Learning:** `eval()` should never be used for mathematical expression parsing on user-provided input, no matter the built-in restrictions, as attackers can navigate up the object hierarchy.
-**Prevention:** Implemented and enforced the use of `SafeMathEvaluator` using the `ast` module, configuring it to only allow whitelist-approved `ast` nodes (like `ast.BinOp`, `ast.Call` mapping to `safe_dict`, etc.) and explicitly blocking `ast.Attribute`.
