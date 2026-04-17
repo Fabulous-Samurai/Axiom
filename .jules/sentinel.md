@@ -1,0 +1,4 @@
+## 2024-03-24 - [CRITICAL] Fix command injection vulnerability in visualization module
+**Vulnerability:** Use of `eval()` on unsanitized user input in `tools/visualization/advanced_3d_visualization.py` allowed arbitrary code execution (sandbox escape).
+**Learning:** Even with a restricted `__builtins__` dictionary (`{"__builtins__": {}}`), `eval()` is vulnerable because object introspection (e.g., via `__class__`, `__subclasses__`) can be used to break out of the sandbox. The `ast.parse` based custom evaluator provides a more secure approach by whitelisting safe operations.
+**Prevention:** Implement and use a safe math evaluator (like `SafeMathEvaluator` leveraging `ast.parse`) that explicitly allows only benign node types (like `Expression`, `BinOp`, `UnaryOp`, `Call`, `Name`, `Constant`, `List`, `Tuple`) and safe operators, explicitly disallowing `ast.Attribute` to prevent sandbox escapes.
