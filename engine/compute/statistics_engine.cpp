@@ -20,33 +20,50 @@ EngineResult StatisticsEngine::Mean(const Vector& data) {
 EngineResult StatisticsEngine::Median(Vector data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
 
-    std::ranges::sort(data);
     auto n = data.size();
+    auto mid = n / 2;
+    // O(N) instead of O(N log N)
+    std::nth_element(data.begin(), data.begin() + mid, data.end());
     
     if (n % 2 == 0) {
-        return CreateSuccessResult((data[n/2-1] + data[n/2]) / 2.0);
+        auto max_it = std::max_element(data.begin(), data.begin() + mid);
+        return CreateSuccessResult((*max_it + data[mid]) / 2.0);
     } else {
-        return CreateSuccessResult(data[n/2]);
+        return CreateSuccessResult(data[mid]);
     }
 }
 
 EngineResult StatisticsEngine::Mode(const Vector& data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
-    std::map<double, int> frequency;
-    for (double val : data) {
-        frequency[val]++;
-    }
-    
-    double mode_val = data[0];
-    int max_count = 0;
-    for (const auto& [val, count] : frequency) {
-        if (count > max_count) {
-            max_count = count;
-            mode_val = val;
+    // Use O(N log N) algorithm without allocation instead of std::map
+    Vector sorted_data = data;
+    std::ranges::sort(sorted_data);
+
+    double mode_val = sorted_data[0];
+    int max_count = 1;
+
+    double current_val = sorted_data[0];
+    int current_count = 1;
+
+    for (size_t i = 1; i < sorted_data.size(); ++i) {
+        if (sorted_data[i] == current_val) {
+            current_count++;
+        } else {
+            if (current_count > max_count) {
+                max_count = current_count;
+                mode_val = current_val;
+            }
+            current_val = sorted_data[i];
+            current_count = 1;
         }
     }
     
+    // Check the last run
+    if (current_count > max_count) {
+        mode_val = current_val;
+    }
+
     return CreateSuccessResult(mode_val);
 }
 
@@ -157,21 +174,25 @@ EngineResult StatisticsEngine::Percentile(Vector data, double p) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
     
-    std::ranges::sort(data);
-
-    if (p == 0) return CreateSuccessResult(data[0]);
-    if (p == 100) return CreateSuccessResult(data.back());
+    if (p == 0) return CreateSuccessResult(*std::min_element(data.begin(), data.end()));
+    if (p == 100) return CreateSuccessResult(*std::max_element(data.begin(), data.end()));
     
     double index = (p / 100.0) * (data.size() - 1);
     size_t lower = static_cast<size_t>(index);
     size_t upper = lower + 1;
     
     if (upper >= data.size()) {
-        return CreateSuccessResult(data.back());
+        return CreateSuccessResult(*std::max_element(data.begin(), data.end()));
     }
     
+    // O(N) instead of O(N log N)
+    std::nth_element(data.begin(), data.begin() + upper, data.end());
+    auto max_it = std::max_element(data.begin(), data.begin() + upper);
+    double lower_val = *max_it;
+    double upper_val = data[upper];
+
     double weight = index - lower;
-    double result = data[lower] * (1.0 - weight) + data[upper] * weight;
+    double result = lower_val * (1.0 - weight) + upper_val * weight;
     
     return CreateSuccessResult(result);
 }
