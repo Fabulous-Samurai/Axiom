@@ -1,0 +1,3 @@
+## 2024-05-24 - O(N) Array Partitioning using std::nth_element
+**Learning:** In calculations like Median and Percentile, `std::ranges::sort` was being used to completely sort arrays resulting in O(N log N) performance. The codebase constraint `FixedVector` prevents dynamic sizing, but standard algorithms work.
+**Action:** Replace `std::ranges::sort` with `std::nth_element` paired with `std::min_element`/`std::max_element` to achieve O(N) average time complexity for quantile partitioning. This drastically improves performance for large statistical arrays while maintaining backward compatibility and avoiding dynamic allocation.
