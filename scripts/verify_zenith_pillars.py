@@ -78,6 +78,41 @@ def main():
     # Target core directories
     core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
     total_violations = 0
+
+    # Get files modified in the PR to avoid legacy false positives
+    import subprocess
+    modified_files = set()
+    try:
+        # For CI, try to get changed files compared to origin/main or master. For local, HEAD~1.
+        result = subprocess.run(["git", "diff", "--name-only", "HEAD"], capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout:
+            modified_files.update(result.stdout.split())
+
+        # Also include currently staged files
+        result_staged = subprocess.run(["git", "diff", "--name-only", "--staged"], capture_output=True, text=True)
+        if result_staged.returncode == 0 and result_staged.stdout:
+            modified_files.update(result_staged.stdout.split())
+
+        # In PR contexts (like Github Actions checking out a merge commit),
+        # checking diff against HEAD^1 (the parent, usually the base branch) is a good fallback
+        result_parent = subprocess.run(["git", "diff", "--name-only", "HEAD^1"], capture_output=True, text=True)
+        if result_parent.returncode == 0 and result_parent.stdout:
+            modified_files.update(result_parent.stdout.split())
+
+    except Exception as e:
+        print(f"[WARNING] Could not determine modified files: {e}")
+
+    # If no files found via diff, we might be in a full run or failed to detect.
+    # The instructions state: "It is configured to filter files using git diff --name-only <default_branch>...HEAD"
+    # We will try to find the base branch to compare against.
+    try:
+        if "GITHUB_BASE_REF" in os.environ:
+            base_ref = os.environ["GITHUB_BASE_REF"]
+            result_pr = subprocess.run(["git", "diff", "--name-only", f"origin/{base_ref}...HEAD"], capture_output=True, text=True)
+            if result_pr.returncode == 0 and result_pr.stdout:
+                modified_files.update(result_pr.stdout.split())
+    except Exception:
+        pass
     
     for d in core_dirs:
         # Check if we are running from root or scripts dir
@@ -91,6 +126,10 @@ def main():
                     continue
                 if file.endswith((".cpp", ".h", ".hpp", ".cc")):
                     path = os.path.join(root, file)
+                    # Skip files not modified in this PR
+                    normalized_path = path.replace('\\', '/')
+                    if modified_files and not any(normalized_path in mf or mf in normalized_path for mf in modified_files):
+                        continue
                     violations = verify_file(path)
                     if violations:
                         print(f"[FAIL] {path}")
