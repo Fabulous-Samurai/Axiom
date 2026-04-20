@@ -1,0 +1,3 @@
+## 2024-04-20 - O(N) Median and Percentile calculations
+**Learning:** The StatisticsEngine can process statistics like Median and Percentile in O(N) average time complexity using `std::nth_element` (along with `std::max_element` or `std::min_element` for interpolations) instead of O(N log N) full sorting. Furthermore, standard C++ algorithms requiring mutable random-access iterators (like `std::nth_element`, `std::max_element`, `std::min_element`) are fully compatible with `AXIOM::FixedVector`.
+**Action:** Use `std::nth_element` over full sorting for order statistics functions to optimize performance without dynamic allocations.

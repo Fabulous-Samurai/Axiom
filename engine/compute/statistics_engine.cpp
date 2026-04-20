@@ -20,13 +20,16 @@ EngineResult StatisticsEngine::Mean(const Vector& data) {
 EngineResult StatisticsEngine::Median(Vector data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
 
-    std::ranges::sort(data);
     auto n = data.size();
+    auto mid = data.begin() + n / 2;
+    // O(N) average complexity
+    std::nth_element(data.begin(), mid, data.end());
     
     if (n % 2 == 0) {
-        return CreateSuccessResult((data[n/2-1] + data[n/2]) / 2.0);
+        auto max_left = std::max_element(data.begin(), mid);
+        return CreateSuccessResult((*max_left + *mid) / 2.0);
     } else {
-        return CreateSuccessResult(data[n/2]);
+        return CreateSuccessResult(*mid);
     }
 }
 
@@ -156,22 +159,29 @@ EngineResult StatisticsEngine::Percentile(Vector data, double p) {
     if (data.empty() || p < 0 || p > 100) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
-    
-    std::ranges::sort(data);
 
-    if (p == 0) return CreateSuccessResult(data[0]);
-    if (p == 100) return CreateSuccessResult(data.back());
+    if (p == 0) {
+        return CreateSuccessResult(*std::min_element(data.begin(), data.end()));
+    }
+    if (p == 100) {
+        return CreateSuccessResult(*std::max_element(data.begin(), data.end()));
+    }
     
     double index = (p / 100.0) * (data.size() - 1);
     size_t lower = static_cast<size_t>(index);
     size_t upper = lower + 1;
     
+    // O(N) average complexity
+    std::nth_element(data.begin(), data.begin() + lower, data.end());
+    double lower_val = data[lower];
+
     if (upper >= data.size()) {
-        return CreateSuccessResult(data.back());
+        return CreateSuccessResult(lower_val);
     }
     
+    double upper_val = *std::min_element(data.begin() + upper, data.end());
     double weight = index - lower;
-    double result = data[lower] * (1.0 - weight) + data[upper] * weight;
+    double result = lower_val * (1.0 - weight) + upper_val * weight;
     
     return CreateSuccessResult(result);
 }
