@@ -14,6 +14,71 @@ from tkinter import ttk, messagebox
 import time
 
 # Constants for default function strings
+
+import ast
+
+class SafeMathEvaluator:
+    """Safe evaluation of mathematical expressions using AST to prevent code injection."""
+
+    def __init__(self, safe_dict=None):
+        self.safe_dict = safe_dict or {}
+
+    def evaluate(self, expr_str, local_dict=None):
+        if local_dict:
+            allowed_names = {**self.safe_dict, **local_dict}
+        else:
+            allowed_names = self.safe_dict
+
+        tree = ast.parse(expr_str, mode='eval')
+        return self._eval_node(tree.body, allowed_names)
+
+    def _eval_node(self, node, allowed_names):
+        if isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.Name):
+            if node.id in allowed_names:
+                return allowed_names[node.id]
+            raise ValueError(f"Unknown variable: {node.id}")
+        elif isinstance(node, ast.BinOp):
+            left = self._eval_node(node.left, allowed_names)
+            right = self._eval_node(node.right, allowed_names)
+            op = node.op
+            if isinstance(op, ast.Add): return left + right
+            if isinstance(op, ast.Sub): return left - right
+            if isinstance(op, ast.Mult): return left * right
+            if isinstance(op, ast.Div): return left / right
+            if isinstance(op, ast.FloorDiv): return left // right
+            if isinstance(op, ast.Mod): return left % right
+            if isinstance(op, ast.Pow): return left ** right
+            if isinstance(op, ast.BitAnd): return left & right
+            if isinstance(op, ast.BitOr): return left | right
+            if isinstance(op, ast.BitXor): return left ^ right
+            raise ValueError(f"Unsupported binary operator: {type(op)}")
+        elif isinstance(node, ast.UnaryOp):
+            operand = self._eval_node(node.operand, allowed_names)
+            op = node.op
+            if isinstance(op, ast.UAdd): return +operand
+            if isinstance(op, ast.USub): return -operand
+            if isinstance(op, ast.Not): return not operand
+            raise ValueError(f"Unsupported unary operator: {type(op)}")
+        elif isinstance(node, ast.Call):
+            if not isinstance(node.func, ast.Name):
+                raise ValueError("Only direct function calls are allowed")
+            func_name = node.func.id
+            if func_name not in allowed_names or not callable(allowed_names[func_name]):
+                raise ValueError(f"Unknown or uncallable function: {func_name}")
+            func = allowed_names[func_name]
+            args = [self._eval_node(arg, allowed_names) for arg in node.args]
+            return func(*args)
+        elif isinstance(node, ast.List):
+            return [self._eval_node(elt, allowed_names) for elt in node.elts]
+        elif isinstance(node, ast.Tuple):
+            return tuple([self._eval_node(elt, allowed_names) for elt in node.elts])
+        elif isinstance(node, ast.Attribute):
+            raise ValueError("Attribute access is not allowed for security reasons")
+        else:
+            raise ValueError(f"Unsupported AST node type: {type(node)}")
+
 DEFAULT_SURFACE_FUNC = "sin(sqrt(x**2 + y**2))"
 DEFAULT_PARAMETRIC_X = "cos(t)"
 DEFAULT_PARAMETRIC_Y = "sin(t)"
@@ -45,7 +110,7 @@ class Advanced3DVisualization:
                 'x': X, 'y': Y, 'X': X, 'Y': Y
             }
             
-            Z = eval(func_str, {"__builtins__": {}}, safe_dict)
+            Z = SafeMathEvaluator(safe_dict).evaluate(func_str)
             
             # Create 3D plot
             fig = plt.figure(figsize=(14, 10))
@@ -111,9 +176,9 @@ class Advanced3DVisualization:
             }
             
             # Evaluate parametric equations
-            x = eval(x_func, {"__builtins__": {}}, safe_dict)
-            y = eval(y_func, {"__builtins__": {}}, safe_dict)
-            z = eval(z_func, {"__builtins__": {}}, safe_dict)
+            x = SafeMathEvaluator(safe_dict).evaluate(x_func)
+            y = SafeMathEvaluator(safe_dict).evaluate(y_func)
+            z = SafeMathEvaluator(safe_dict).evaluate(z_func)
             
             # Create 3D plot
             fig = plt.figure(figsize=(12, 8))
@@ -202,8 +267,8 @@ class Advanced3DVisualization:
                 'x': X, 'y': Y, 't': t
             }
             
-            z_base = eval(base_func, {"__builtins__": {}}, safe_dict)
-            time_mod = eval(time_modulation, {"__builtins__": {}}, safe_dict)
+            z_base = SafeMathEvaluator(safe_dict).evaluate(base_func)
+            time_mod = SafeMathEvaluator(safe_dict).evaluate(time_modulation)
             Z = z_base * time_mod
             
             _ = ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
@@ -219,8 +284,8 @@ class Advanced3DVisualization:
                 t = frame * 0.1
                 safe_dict['t'] = t
                 
-                z_base = eval(base_func, {"__builtins__": {}}, safe_dict)
-                time_mod = eval(time_modulation, {"__builtins__": {}}, safe_dict)
+                z_base = SafeMathEvaluator(safe_dict).evaluate(base_func)
+                time_mod = SafeMathEvaluator(safe_dict).evaluate(time_modulation)
                 Z = z_base * time_mod
                 
                 surface = ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
@@ -355,7 +420,7 @@ class Advanced3DVisualization:
                     'x': X * frequency, 'y': Y * frequency, 'A': amplitude
                 }
                 
-                Z = amplitude * eval(func_str, {"__builtins__": {}}, safe_dict)
+                Z = amplitude * SafeMathEvaluator(safe_dict).evaluate(func_str)
                 return Z
             
             # Initial surface
@@ -509,7 +574,7 @@ class Advanced3DVisualization:
                 t_range_str = t_range_var.get()
                 
                 # Parse t range
-                t_min, t_max = eval(f"({t_range_str})", {"pi": np.pi})
+                t_min, t_max = SafeMathEvaluator({"pi": np.pi}).evaluate(f"({t_range_str})")
                 t_range = (t_min, t_max)
                 
                 self.parametric_3d_plot(x_func, y_func, z_func, t_range)
