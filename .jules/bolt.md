@@ -1,0 +1,3 @@
+## 2025-04-21 - [Optimize BoxPlot logic]
+**Learning:** In C++ analytics/math logic code, use `std::nth_element` combined with `std::minmax_element` to isolate statistical order metrics (median, quartiles, ranges) instead of performing full array sorts via `std::sort`. This converts an $O(N \log N)$ operation to $O(N)$.
+**Action:** When finding quantiles, explicitly bounds-check the sub-array indexes in relation to the previously isolated medians (e.g., `if (q1_idx < med_idx)`) to prevent Undefined Behavior (UB) since `std::nth_element` does not safely process invalid iterator partitions. Always apply this to math code operating on arrays.
