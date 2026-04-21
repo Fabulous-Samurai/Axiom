@@ -308,13 +308,31 @@ std::string_view PlotEngine::BoxPlot(const Vector& data, const PlotConfig& confi
     if (data.empty()) return arena_.allocString("Error: Data is empty\n");
 
     Vector sorted = data;
-    std::sort(sorted.begin(), sorted.end());
 
-    const double min_val = sorted.front();
-    const double max_val = sorted.back();
-    const double q1 = sorted[sorted.size() / 4];
-    const double median = sorted[sorted.size() / 2];
-    const double q3 = sorted[3 * sorted.size() / 4];
+    // O(N) approach instead of O(N log N) sort
+    const size_t n = sorted.size();
+    const size_t q1_idx = n / 4;
+    const size_t med_idx = n / 2;
+    const size_t q3_idx = 3 * n / 4;
+
+    auto minmax = std::minmax_element(sorted.begin(), sorted.end());
+    const double min_val = *minmax.first;
+    const double max_val = *minmax.second;
+
+    std::nth_element(sorted.begin(), sorted.begin() + med_idx, sorted.end());
+    const double median = sorted[med_idx];
+
+    double q1 = median;
+    if (q1_idx < med_idx) {
+        std::nth_element(sorted.begin(), sorted.begin() + q1_idx, sorted.begin() + med_idx);
+        q1 = sorted[q1_idx];
+    }
+
+    double q3 = median;
+    if (q3_idx > med_idx && q3_idx < n) {
+        std::nth_element(sorted.begin() + med_idx + 1, sorted.begin() + q3_idx, sorted.end());
+        q3 = sorted[q3_idx];
+    }
 
     const int width = std::clamp(config.width, 10, 256);
     const double range = max_val - min_val;
