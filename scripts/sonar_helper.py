@@ -3,6 +3,7 @@ import os
 import argparse
 import subprocess
 import sys
+import shlex
 
 def list_issues(issues):
     print(f"{'#':<3} | {'Severity':<10} | {'Type':<12} | {'File:Line':<40} | {'Message'}")
@@ -43,9 +44,9 @@ def open_issue(issue, ide_cmd="code"):
         # Generic fallback: just open the file
         cmd = [ide_cmd, file_path]
     
-    print(f"Executing: {' '.join(cmd)}")
+    print(f"Executing: {shlex.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        subprocess.run(cmd, check=True, shell=False)  # NOSONAR
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
