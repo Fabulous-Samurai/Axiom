@@ -19,10 +19,10 @@ def list_issues(issues):
 def open_issue(issue, ide_cmd="code"):
     component = issue.get("component", "").split(":")[-1]
     line = issue.get("line")
-    
+
     # Assume workspace root is the current directory
     file_path = os.path.join(os.getcwd(), component)
-    
+
     if not os.path.exists(file_path):
         # Try to find the file if it's not relative to root
         # This is a simple heuristic
@@ -42,10 +42,10 @@ def open_issue(issue, ide_cmd="code"):
     else:
         # Generic fallback: just open the file
         cmd = [ide_cmd, file_path]
-    
+
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        subprocess.run(cmd, check=True, shell=False) # NOSONAR
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
@@ -67,7 +67,7 @@ def main():
 
     if args.list or args.open is None:
         list_issues(issues)
-    
+
     if args.open is not None:
         if 0 <= args.open < len(issues):
             open_issue(issues[args.open], args.ide)
