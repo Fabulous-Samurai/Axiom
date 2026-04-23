@@ -8,6 +8,7 @@ by scanning for forbidden Keywords in the hot-path sources.
 import sys
 import os
 import re
+import subprocess
 
 # Forbidden patterns for Zenith compliance
 FORBIDDEN_KEYWORDS = {
@@ -79,25 +80,56 @@ def main():
     core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
     total_violations = 0
     
-    for d in core_dirs:
-        # Check if we are running from root or scripts dir
-        search_path = d if os.path.exists(d) else os.path.join("..", d)
-        if not os.path.exists(search_path): continue
+    # Try to get files modified in PR first
+    modified_files = None
+    try:
+        output = subprocess.check_output(['git', 'diff', '--name-only', 'origin/master...HEAD'], text=True, stderr=subprocess.DEVNULL)
+        modified_files = [line.strip() for line in output.splitlines() if line.strip()]
+        if modified_files is not None:
+            print(f"[INFO] Running in PR mode. Checking {len(modified_files)} modified files.")
+    except Exception:
+        # Fallback to full scan if git command fails
+        print("[INFO] Fallback: Full directory scan.")
+        pass
+
+    if modified_files is not None:
+        files_to_check = modified_files
+    else:
+        files_to_check = []
+        for d in core_dirs:
+            search_path = d if os.path.exists(d) else os.path.join("..", d)
+            if not os.path.exists(search_path): continue
+            for root, _, files in os.walk(search_path):
+                for file in files:
+                    files_to_check.append(os.path.join(root, file))
+
+    for path in files_to_check:
+        # Normalize path separators for filtering
+        norm_path = path.replace("\\", "/")
         
-        for root, _, files in os.walk(search_path):
-            for file in files:
-                # Tightened exemption check
-                if any(exempt in file for exempt in EXEMPT_FILES) or file in WHITELISTED_FILES:
-                    continue
-                if file.endswith((".cpp", ".h", ".hpp", ".cc")):
-                    path = os.path.join(root, file)
-                    violations = verify_file(path)
-                    if violations:
-                        print(f"[FAIL] {path}")
-                        for v in violations:
-                            print(f"  - {v}")
-                        total_violations += len(violations)
-                        
+        # Only check files within core directories
+        in_core = any(norm_path.startswith(d) for d in core_dirs)
+        if not in_core and modified_files is not None:
+            # When full scan is running, files_to_check only has files in core_dirs anyway
+            continue
+
+        file_name = os.path.basename(path)
+
+        # Tightened exemption check
+        if any(exempt in file_name for exempt in EXEMPT_FILES) or file_name in WHITELISTED_FILES:
+            continue
+
+        if file_name.endswith((".cpp", ".h", ".hpp", ".cc")):
+            if not os.path.exists(path):
+                continue # File might have been deleted in git diff
+
+            violations = verify_file(path)
+            if violations:
+                print(f"[FAIL] {path}")
+                for v in violations:
+                    print(f"  - {v}")
+                total_violations += len(violations)
+
     if total_violations > 0:
         print(f"\n[CRITICAL] Found {total_violations} Zenith Pillar violations.")
         print("\n--- ARCHITECTURAL REMEDIATION SUGGESTIONS ---")
