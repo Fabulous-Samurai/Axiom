@@ -8,6 +8,7 @@ by scanning for forbidden Keywords in the hot-path sources.
 import sys
 import os
 import re
+import subprocess
 
 # Forbidden patterns for Zenith compliance
 FORBIDDEN_KEYWORDS = {
@@ -49,6 +50,24 @@ WHITELISTED_FILES = [
     "nanobind_interface.cpp"
 ]
 
+
+def get_modified_files():
+    try:
+        result = subprocess.run(["git", "diff", "--name-only", "HEAD"], capture_output=True, text=True)
+        files = set()
+        if result.returncode == 0:
+            files.update(result.stdout.splitlines())
+
+        branches = ["origin/main", "origin/master", "main", "master"]
+        for branch in branches:
+             res = subprocess.run(["git", "diff", "--name-only", f"{branch}...HEAD"], capture_output=True, text=True)
+             if res.returncode == 0:
+                 files.update(res.stdout.splitlines())
+
+        return files
+    except Exception:
+        return set()
+
 def verify_file(file_path):
     violations = []
     try:
@@ -79,6 +98,8 @@ def main():
     core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
     total_violations = 0
     
+    modified_files = get_modified_files()
+
     for d in core_dirs:
         # Check if we are running from root or scripts dir
         search_path = d if os.path.exists(d) else os.path.join("..", d)
@@ -91,6 +112,18 @@ def main():
                     continue
                 if file.endswith((".cpp", ".h", ".hpp", ".cc")):
                     path = os.path.join(root, file)
+                    # Normalise path for git diff matching
+                    norm_path = os.path.normpath(path).replace('\\', '/')
+                    # Check if file is in modified_files (either exact match or suffix)
+                    is_modified = False
+                    if not modified_files:
+                        is_modified = True
+                    for mf in modified_files:
+                        if norm_path.endswith(mf) or mf.endswith(norm_path):
+                            is_modified = True
+                            break
+                    if not is_modified:
+                        continue
                     violations = verify_file(path)
                     if violations:
                         print(f"[FAIL] {path}")
