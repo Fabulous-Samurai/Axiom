@@ -1,0 +1,4 @@
+## 2024-05-15 - [CRITICAL] Fix arbitrary code execution via eval() in visualization suite
+**Vulnerability:** The advanced 3D visualization tool used Python's `eval()` function to parse and execute math formulas from user input with only `{"__builtins__": {}}` disabled, which allows for sandbox escapes via object introspection.
+**Learning:** Even when disabling `__builtins__`, arbitrary code execution is possible in Python via class introspection (e.g. `().__class__.__bases__[0].__subclasses__()`).
+**Prevention:** Avoid `eval()` completely for user input. If mathematical expression parsing is needed, use `ast.parse` in `'eval'` mode along with an explicit whitelist of allowed node types (e.g., `ast.BinOp`, `ast.Expression`, `ast.Call` if carefully sandboxing functions), explicitly forbidding `ast.Attribute`.
