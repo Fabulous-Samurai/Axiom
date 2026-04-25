@@ -1,0 +1,4 @@
+## 2024-05-20 - [Fix Code Injection in 3D Visualization tool]
+**Vulnerability:** Python `eval()` was being used for interpreting mathematical string equations inputted by users in `tools/visualization/advanced_3d_visualization.py`. Despite wiping `__builtins__`, arbitrary attribute lookups could be performed.
+**Learning:** Even if you restrict the globals and set `__builtins__` to empty during `eval()`, malicious input can still gain access to modules through introspection of base objects (like `().__class__.__bases__[0]...`). An AST-based filtering mechanism is required.
+**Prevention:** In visualization/math plotting code that dynamically parses expressions, use an AST validator like `SafeMathEvaluator` that strictly allowlists AST node types and specifically forbids `ast.Attribute` traversal to stop sandbox escape.

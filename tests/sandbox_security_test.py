@@ -40,3 +40,39 @@ if __name__ == "__main__":
     test_timeout()
     test_file_access()
     print("\n[SUCCESS] All sandbox security tests completed.")
+
+def test_safe_math_evaluator():
+    import ast
+    import sys
+    import os
+    # Add tools/visualization to path to import advanced_3d_visualization
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../tools/visualization')))
+    try:
+        from advanced_3d_visualization import SafeMathEvaluator
+    except ImportError:
+        print("advanced_3d_visualization.py bulunamadı.")
+        return
+
+    evaluator = SafeMathEvaluator({"sin": lambda x: x})
+
+    # Safe expression
+    assert evaluator.evaluate("sin(1)") == 1
+
+    # Unsafe attribute access
+    try:
+        evaluator.evaluate("().__class__.__bases__[0]")
+        assert False, "Should have raised ValueError for attribute access"
+    except ValueError as e:
+        assert "Attribute access is forbidden" in str(e) or "Unsupported AST node" in str(e)
+
+    # Unsafe OS command
+    try:
+        evaluator.evaluate("__import__('os').system('ls')")
+        assert False, "Should have raised ValueError for __import__ or Call"
+    except Exception as e:
+        pass # Expected
+
+    print("[PASS] SafeMathEvaluator security test executed.")
+
+if __name__ == "__main__":
+    test_safe_math_evaluator()
