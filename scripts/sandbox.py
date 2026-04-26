@@ -5,6 +5,37 @@ import threading
 import subprocess
 import signal
 
+import ast
+
+class SafeMathEvaluator:
+    def __init__(self):
+        self.allowed_nodes = {
+            ast.Expression, ast.Constant, ast.Name,
+            ast.BinOp, ast.UnaryOp, ast.Call,
+            ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow,
+            ast.Mod, ast.FloorDiv, ast.BitAnd, ast.BitOr,
+            ast.BitXor, ast.LShift, ast.RShift,
+            ast.UAdd, ast.USub, ast.Invert, ast.Load
+        }
+
+    def _validate_node(self, node):
+        if type(node) not in self.allowed_nodes:
+            raise ValueError(f"Unsupported AST node: {type(node).__name__}")
+        for child in ast.iter_child_nodes(node):
+            self._validate_node(child)
+
+    def evaluate(self, expression):
+        try:
+            tree = ast.parse(expression, mode='eval')
+        except SyntaxError as e:
+            raise ValueError(f"Invalid syntax: {e}")
+
+        self._validate_node(tree)
+
+        # We use a limited builtins dictionary for safe evaluation
+        safe_dict = {'__builtins__': {}}
+        return eval(compile(tree, '<string>', 'eval'), safe_dict)
+
 class ComplexityGuard:
     """
     Monitors the resource usage of an expression evaluation process.
@@ -32,8 +63,7 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    cmd = [sys.executable, os.path.abspath(__file__), "--evaluate-internal", expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -54,7 +84,14 @@ def run_isolated_expression(expression):
         return f"Sandbox Exception: {str(e)}"
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2 and sys.argv[1] == "--evaluate-internal":
+        try:
+            evaluator = SafeMathEvaluator()
+            print(evaluator.evaluate(sys.argv[2]))
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+    elif len(sys.argv) > 1:
         expr = sys.argv[1]
         print(run_isolated_expression(expr))
     else:
