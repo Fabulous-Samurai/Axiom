@@ -32,7 +32,51 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"""
+import ast
+import operator
+import sys
+
+# Allow large number computation for timeout testing
+sys.set_int_max_str_digits(0)
+
+class SafeMathEvaluator:
+    def __init__(self):
+        self.allowed_operators = {{
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.Mod: operator.mod,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }}
+
+    def evaluate(self, node):
+        if isinstance(node, ast.Expression):
+            return self.evaluate(node.body)
+        elif isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.BinOp):
+            return self.allowed_operators[type(node.op)](self.evaluate(node.left), self.evaluate(node.right))
+        elif isinstance(node, ast.UnaryOp):
+            return self.allowed_operators[type(node.op)](self.evaluate(node.operand))
+        elif isinstance(node, ast.Attribute):
+            raise ValueError("Attribute access is explicitly disallowed to prevent sandbox escape")
+        else:
+            raise ValueError(f"Unsupported AST node: {{type(node)}}")
+
+    def eval(self, expr):
+        tree = ast.parse(expr, mode='eval')
+        return self.evaluate(tree)
+
+try:
+    print(SafeMathEvaluator().eval({repr(expression)}))
+except Exception as e:
+    print(f"Error: {{e}}", file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:

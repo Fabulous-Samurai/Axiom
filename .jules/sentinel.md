@@ -1,0 +1,4 @@
+## 2024-04-27 - [CRITICAL] Fix Python sandbox code injection vulnerability
+**Vulnerability:** Code execution and Code Injection via built-in Python `eval()` function inside Python sandbox execution (`run_isolated_expression`). It allows malicious actors to run arbitrary python code within the sandbox instance wrapper like `__import__('os').listdir('.')`.
+**Learning:** Python's `eval()` function should never be used without highly restrictive safeguards when running user-generated Python expressions because standard global scoping restrictions are easily bypassed using Python built-ins like `__import__` and attribute reflection.
+**Prevention:** Always leverage `ast.parse` to break down Python expression payloads, explicitly whitelisting safe operations (like mathematical nodes: `ast.BinOp`, `ast.Constant`) while proactively denying attribute access (`ast.Attribute`, `ast.Call`) to restrict the execution completely to safe operations.
