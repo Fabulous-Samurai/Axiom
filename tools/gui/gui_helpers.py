@@ -318,7 +318,9 @@ class ResultCache:
             old = self._blocks.popleft()
             self.evicted_blocks += 1
             self.evicted_entries += len(old["entries"])
-            for key in tuple(old["entries"].keys()):
+            # Optimization: Direct dictionary iteration avoids allocating a tuple
+            # We are iterating over old["entries"] while modifying self._key_index, so it is safe
+            for key in old["entries"]:
                 if self._key_index.get(key) == old["id"]:
                     self._key_index.pop(key, None)
 
