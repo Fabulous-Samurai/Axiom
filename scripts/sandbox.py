@@ -4,6 +4,27 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    def visit_Constant(self, node):
+        return node.value
+    def visit_BinOp(self, node):
+        ops = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv, ast.Pow: operator.pow}
+        if type(node.op) not in ops:
+            raise ValueError(f"Disallowed operator {type(node.op)}")
+        return ops[type(node.op)](self.visit(node.left), self.visit(node.right))
+    def visit_UnaryOp(self, node):
+        if isinstance(node.op, ast.USub):
+            return -self.visit(node.operand)
+        raise ValueError(f"Disallowed unary operator {type(node.op)}")
+    def visit_Attribute(self, node):
+        raise ValueError("Attribute access blocked")
+    def visit_Call(self, node):
+        raise ValueError("Function calls blocked")
+    def generic_visit(self, node):
+        raise ValueError(f"Disallowed node {type(node)}")
 
 class ComplexityGuard:
     """
@@ -26,14 +47,10 @@ class ComplexityGuard:
 def run_isolated_expression(expression):
     """
     Runs an AXIOM expression in a restricted subprocess.
-    In production, this would use AppContainer (Windows) or seccomp (Linux).
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    cmd = [sys.executable, os.path.abspath(__file__), "--safe-eval", expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -54,7 +71,18 @@ def run_isolated_expression(expression):
         return f"Sandbox Exception: {str(e)}"
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2 and sys.argv[1] == "--safe-eval":
+        # Enable handling of large integers (e.g., for heavy expressions causing timeout)
+        sys.set_int_max_str_digits(0)
+        try:
+            tree = ast.parse(sys.argv[2], mode='eval')
+            evaluator = SafeMathEvaluator()
+            result = evaluator.visit(tree.body)
+            print(result)
+        except Exception as e:
+            print(e, file=sys.stderr)
+            sys.exit(1)
+    elif len(sys.argv) > 1:
         expr = sys.argv[1]
         print(run_isolated_expression(expr))
     else:
