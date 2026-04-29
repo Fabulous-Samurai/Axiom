@@ -23,17 +23,22 @@ class ComplexityGuard:
                 return
             time.sleep(0.1)
 
+import ast, operator
+class SafeMathEvaluator:
+    ops = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+           ast.Div: operator.truediv, ast.Pow: operator.pow, ast.USub: operator.neg}
+    def ev(self, n):
+        if isinstance(n, ast.Expression): return self.ev(n.body)
+        if isinstance(n, ast.Constant): return n.value
+        if isinstance(n, ast.BinOp): return self.ops[type(n.op)](self.ev(n.left), self.ev(n.right))
+        if isinstance(n, ast.UnaryOp): return self.ops[type(n.op)](self.ev(n.operand))
+        if isinstance(n, ast.Call): raise ValueError("Function calls are explicitly disallowed")
+        if isinstance(n, ast.Attribute): raise ValueError("Attribute access is explicitly disallowed")
+        raise ValueError("Disallowed node")
+
 def run_isolated_expression(expression):
-    """
-    Runs an AXIOM expression in a restricted subprocess.
-    In production, this would use AppContainer (Windows) or seccomp (Linux).
-    """
     print(f"[SANDBOX] Evaluating: {expression}")
-    
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    cmd = [sys.executable, __file__, "--safe-eval", expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -54,9 +59,11 @@ def run_isolated_expression(expression):
         return f"Sandbox Exception: {str(e)}"
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        expr = sys.argv[1]
-        print(run_isolated_expression(expr))
+    if len(sys.argv) > 1 and sys.argv[1] == "--safe-eval":
+
+        try: print(SafeMathEvaluator().ev(ast.parse(sys.argv[2], mode='eval')))
+        except Exception as e: print(f"Error: {e}", file=sys.stderr); sys.exit(1)
+    elif len(sys.argv) > 1:
+        print(run_isolated_expression(sys.argv[1]))
     else:
-        # Example adversarial expression (if eval was used directly)
         print(run_isolated_expression("__import__('os').listdir('.')"))
