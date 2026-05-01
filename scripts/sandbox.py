@@ -23,17 +23,41 @@ class ComplexityGuard:
                 return
             time.sleep(0.1)
 
+import ast
+import operator
+
+class SafeMathEvaluator:
+    ops = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+           ast.Div: operator.truediv, ast.Pow: operator.pow, ast.BitXor: operator.xor,
+           ast.USub: operator.neg, ast.UAdd: operator.pos}
+
+    def evaluate(self, expr):
+        if hasattr(sys, 'set_int_max_str_digits'):
+            sys.set_int_max_str_digits(0)
+        return self._eval(ast.parse(expr, mode='eval').body)
+
+    def _eval(self, node):
+        if isinstance(node, ast.Constant):
+            return node.value
+        if isinstance(node, ast.BinOp) and type(node.op) in self.ops:
+            return self.ops[type(node.op)](self._eval(node.left), self._eval(node.right))
+        if isinstance(node, ast.UnaryOp) and type(node.op) in self.ops:
+            return self.ops[type(node.op)](self._eval(node.operand))
+        if isinstance(node, ast.Attribute):
+            raise ValueError("Attribute access is explicitly disallowed")
+        if isinstance(node, ast.Call):
+            raise ValueError("Function calls are explicitly disallowed")
+        raise ValueError(f"Invalid node type: {type(node).__name__}")
+
+
 def run_isolated_expression(expression):
     """
-    Runs an AXIOM expression in a restricted subprocess.
-    In production, this would use AppContainer (Windows) or seccomp (Linux).
+    Runs an AXIOM expression in a restricted subprocess using an AST-based evaluator
+    to prevent Remote Code Execution (RCE) / Sandbox Escapes.
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    cmd = [sys.executable, os.path.abspath(__file__), "--safe-eval", expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -55,8 +79,15 @@ def run_isolated_expression(expression):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        expr = sys.argv[1]
-        print(run_isolated_expression(expr))
+        if sys.argv[1] == "--safe-eval" and len(sys.argv) > 2:
+            try:
+                print(SafeMathEvaluator().evaluate(sys.argv[2]))
+            except Exception as e:
+                print(f"Exception: {str(e)}", file=sys.stderr)
+                sys.exit(1)
+        else:
+            expr = sys.argv[1]
+            print(run_isolated_expression(expr))
     else:
-        # Example adversarial expression (if eval was used directly)
+        # Example adversarial expression
         print(run_isolated_expression("__import__('os').listdir('.')"))
