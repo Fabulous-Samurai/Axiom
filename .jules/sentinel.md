@@ -1,0 +1,4 @@
+## 2024-05-02 - Sandbox code execution vulnerability
+**Vulnerability:** `eval()` was used directly inside a restricted Python subprocess (`scripts/sandbox.py`) without filtering nodes. The expression `f"import os; print(eval({repr(expression)}))"` essentially executed any Python code passed to it. This allowed attackers to perform directory listings or arbitrary code execution (e.g. `__import__('os').listdir('.')`).
+**Learning:** Even in isolated environments, executing unfiltered strings using `eval()` in Python introduces critical code-execution vulnerabilities (sandbox escapes).
+**Prevention:** Always use safe, AST-based mathematical evaluators (such as `ast.parse` and explicitly matching only allowed nodes, rejecting arbitrary functions/calls and system imports) to prevent sandbox escape when mathematical expressions need to be evaluated.
