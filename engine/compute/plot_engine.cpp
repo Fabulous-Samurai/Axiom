@@ -308,13 +308,26 @@ std::string_view PlotEngine::BoxPlot(const Vector& data, const PlotConfig& confi
     if (data.empty()) return arena_.allocString("Error: Data is empty\n");
 
     Vector sorted = data;
-    std::sort(sorted.begin(), sorted.end());
 
-    const double min_val = sorted.front();
-    const double max_val = sorted.back();
-    const double q1 = sorted[sorted.size() / 4];
-    const double median = sorted[sorted.size() / 2];
-    const double q3 = sorted[3 * sorted.size() / 4];
+    // Bolt Optimization: Replace O(N log N) std::sort with O(N) std::nth_element
+    // to compute order statistics and min/max for BoxPlot.
+    const size_t n = sorted.size();
+    auto mid = sorted.begin() + n / 2;
+    std::nth_element(sorted.begin(), mid, sorted.end());
+    const double median = *mid;
+
+    auto q1_it = sorted.begin() + n / 4;
+    std::nth_element(sorted.begin(), q1_it, mid);
+    const double q1 = *q1_it;
+
+    auto q3_it = sorted.begin() + 3 * n / 4;
+    if (q3_it > mid) {
+        std::nth_element(mid + 1, q3_it, sorted.end());
+    }
+    const double q3 = *q3_it;
+
+    const double min_val = *std::min_element(sorted.begin(), q1_it + 1);
+    const double max_val = *std::max_element(q3_it, sorted.end());
 
     const int width = std::clamp(config.width, 10, 256);
     const double range = max_val - min_val;
