@@ -15,9 +15,9 @@ jobs:
     name: "Phase 0: Hygiene & Formal"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@v4.2.2
       - name: "Set up Python"
-        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: '3.12'
       - name: "Run Pre-Commit"
@@ -27,7 +27,7 @@ jobs:
       - name: "Run Zenith Pillar Verification"
         run: python3 scripts/verify_zenith_pillars.py
       - name: "Setup Java"
-        uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018 # v4.2.2
+        uses: actions/setup-java@99b807301553181616292f2c82202300392f0b57 # v4.2.2
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -47,7 +47,7 @@ jobs:
     env:
       BUILD_WRAPPER_OUT_DIR: build-wrapper-output
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
       - name: "Install System Dependencies"
@@ -95,7 +95,7 @@ jobs:
     needs: build-linux
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@v4.2.2
       - name: "Install LCOV & Dependencies"
         run: |
           sudo apt-get update && sudo apt-get install -y lcov
@@ -129,7 +129,7 @@ jobs:
     needs: lint-and-verify
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@v4.2.2
       - name: "Install Ninja & Dependencies"
         run: |
           choco install ninja ccache
@@ -153,7 +153,7 @@ jobs:
     needs: build-windows
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@v4.2.2
       - name: "Download Artifacts"
         uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.7
         with:
@@ -169,7 +169,7 @@ jobs:
     needs: [test-linux, test-windows]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0
       - name: "Download Coverage Report"
