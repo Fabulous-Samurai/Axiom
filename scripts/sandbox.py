@@ -23,6 +23,60 @@ class ComplexityGuard:
                 return
             time.sleep(0.1)
 
+import ast
+import operator
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv,
+            ast.Pow: operator.pow,
+            ast.Mod: operator.mod,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+    def evaluate(self, expr):
+        try:
+            tree = ast.parse(expr, mode='eval')
+            return self.visit(tree.body)
+        except Exception as e:
+            raise ValueError(f"Invalid expression: {e}")
+
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float, complex)):
+            raise ValueError(f"Unsupported constant: {node.value}")
+        return node.value
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op_type = type(node.op)
+        if op_type not in self.operators:
+            raise ValueError(f"Unsupported operator: {op_type}")
+        return self.operators[op_type](left, right)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op_type = type(node.op)
+        if op_type not in self.operators:
+            raise ValueError(f"Unsupported unary operator: {op_type}")
+        return self.operators[op_type](operand)
+
+    def visit_Attribute(self, node):
+        raise ValueError("Attribute access is not allowed")
+
+    def visit_Call(self, node):
+        raise ValueError("Function calls are not allowed")
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported syntax: {type(node).__name__}")
+
+
 def run_isolated_expression(expression):
     """
     Runs an AXIOM expression in a restricted subprocess.
@@ -31,8 +85,20 @@ def run_isolated_expression(expression):
     print(f"[SANDBOX] Evaluating: {expression}")
     
     # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # to avoid shell quoting issues. We also use AST evaluation.
+    code = f"""
+import sys
+import os
+sys.path.insert(0, {repr(os.path.dirname(os.path.abspath(__file__)))})
+from sandbox import SafeMathEvaluator
+sys.set_int_max_str_digits(0)
+evaluator = SafeMathEvaluator()
+try:
+    print(evaluator.evaluate({repr(expression)}))
+except Exception as e:
+    print(e, file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
@@ -58,5 +124,5 @@ if __name__ == "__main__":
         expr = sys.argv[1]
         print(run_isolated_expression(expr))
     else:
-        # Example adversarial expression (if eval was used directly)
+        # Example adversarial expression
         print(run_isolated_expression("__import__('os').listdir('.')"))

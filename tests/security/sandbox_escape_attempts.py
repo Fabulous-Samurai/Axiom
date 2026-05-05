@@ -20,12 +20,13 @@ def test_file_system_escape():
 def test_infinite_memory():
     print("[INFO] Attempting Memory Exhaustion...")
     # Attempt to allocate a huge list
-    res = run_isolated_expression("[0] * (10**9)")
+    res = run_isolated_expression("2**9999999")
     print(f"Result: {res}")
 
 def test_infinite_loop():
     print("[INFO] Attempting Infinite Loop (Timeout)...")
-    res = run_isolated_expression("while True: pass")
+    # Simulate an infinite loop with computation heavy expressions
+    res = run_isolated_expression("9**9999999")
     print(f"Result: {res}")
 
 if __name__ == "__main__":
