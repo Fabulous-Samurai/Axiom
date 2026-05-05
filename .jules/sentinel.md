@@ -1,0 +1,4 @@
+## 2024-05-18 - Fix Command Injection in Sandbox Evaluator
+**Vulnerability:** The sandbox evaluation logic (`scripts/sandbox.py`) used native Python `eval()` which is inherently insecure, allowing for command execution via crafted inputs despite running inside a separate process, and making it vulnerable to system introspection.
+**Learning:** `eval()` should never be used, even with attempts to isolate it contextually via timeouts or separate processes, as Python environment escapes and dangerous attribute accesses are trivial (e.g., `__import__('os')`).
+**Prevention:** Using an Abstract Syntax Tree (AST) evaluator that strictly whitelists safe node operations (like arithmetic operators and constants) and completely disallows function calls and attribute resolution is required for secure mathematical or expression evaluation.

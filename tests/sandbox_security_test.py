@@ -18,8 +18,8 @@ def test_safe_expression():
 def test_timeout():
     # Uzun sürecek bir işlem ile zaman aşımı (timeout) kontrolü
     print("[INFO] Testing timeout mechanism...")
-    # sleep kullanarak CPU'yu yormadan garanti bir timeout sağlıyoruz
-    res = run_isolated_expression("__import__('time').sleep(10)")
+    # Fonksiyon çagrisi engellendigi icin devasa bir islem yapiyoruz.
+    res = run_isolated_expression("9**9999999")
     
     # Beklentimiz bir hata, timeout veya termination mesajı almaktır.
     is_timeout = "Timeout" in res or "Terminating" in res or "Error" in res or "Exception" in res
@@ -31,9 +31,10 @@ def test_file_access():
     print("[INFO] Testing OS access restriction...")
     res = run_isolated_expression("__import__('os').listdir('.')")
     print(f"File access result: {res}")
-    # Python eval üzerinde basit bir test yapıyoruz. 
-    # Gerçek sistemde seccomp/AppContainer engeller ancak burada Python eval()'in döndürdüğü sonucu logluyoruz.
-    print("[PASS] OS access test executed.")
+    # Beklentimiz attribute access / function calls engellenmesi sonucu hata vermesidir.
+    is_blocked = "Error" in res or "Exception" in res or "not allowed" in res
+    assert is_blocked, f"Expected access blocked, got: {res}"
+    print("[PASS] OS access restriction verified.")
 
 if __name__ == "__main__":
     test_safe_expression()
