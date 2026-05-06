@@ -4,6 +4,8 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
 
 class ComplexityGuard:
     """
@@ -23,6 +25,37 @@ class ComplexityGuard:
                 return
             time.sleep(0.1)
 
+class SafeMathEvaluator:
+    """Evaluates mathematical expressions safely using ast."""
+    def __init__(self):
+        self.operators = {
+            ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+            ast.Div: operator.truediv, ast.Pow: operator.pow, ast.USub: operator.neg
+        }
+
+    def eval(self, expr):
+        tree = ast.parse(expr, mode='eval')
+        return self._eval(tree.body)
+
+    def _eval(self, node):
+        if isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.BinOp):
+            left = self._eval(node.left)
+            right = self._eval(node.right)
+            if type(node.op) not in self.operators:
+                raise ValueError(f"Unsupported operator: {type(node.op)}")
+            return self.operators[type(node.op)](left, right)
+        elif isinstance(node, ast.UnaryOp):
+            operand = self._eval(node.operand)
+            if type(node.op) not in self.operators:
+                raise ValueError(f"Unsupported unary operator: {type(node.op)}")
+            return self.operators[type(node.op)](operand)
+        elif isinstance(node, ast.Call) or isinstance(node, ast.Attribute):
+            raise ValueError("Function calls and attribute access are disabled for security.")
+        else:
+            raise TypeError(f"Unsupported node type: {type(node)}")
+
 def run_isolated_expression(expression):
     """
     Runs an AXIOM expression in a restricted subprocess.
@@ -30,10 +63,7 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    cmd = [sys.executable, os.path.abspath(__file__), "--safe-eval", expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -54,7 +84,17 @@ def run_isolated_expression(expression):
         return f"Sandbox Exception: {str(e)}"
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2 and sys.argv[1] == "--safe-eval":
+        # Evaluator subprocess
+        sys.set_int_max_str_digits(0)  # Prevent string conversion limits during heavy eval
+        try:
+            evaluator = SafeMathEvaluator()
+            result = evaluator.eval(sys.argv[2])
+            print(result)
+        except Exception as e:
+            print(f"Eval Error: {e}", file=sys.stderr)
+            sys.exit(1)
+    elif len(sys.argv) > 1:
         expr = sys.argv[1]
         print(run_isolated_expression(expr))
     else:
