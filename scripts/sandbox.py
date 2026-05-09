@@ -4,6 +4,22 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.safe_nodes = (
+            ast.Expression, ast.BinOp, ast.UnaryOp, ast.Constant,
+            ast.Name, ast.Load, ast.Add, ast.Sub, ast.Mult, ast.Div,
+            ast.FloorDiv, ast.Mod, ast.Pow, ast.USub, ast.UAdd,
+            ast.BitXor, ast.BitOr, ast.BitAnd, ast.LShift, ast.RShift,
+            ast.List, ast.Tuple, ast.Set, ast.Dict, ast.Store
+        )
+
+    def generic_visit(self, node):
+        if not isinstance(node, self.safe_nodes):
+            raise ValueError(f"Disallowed node type: {type(node).__name__}")
+        super().generic_visit(node)
 
 class ComplexityGuard:
     """
@@ -30,9 +46,15 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
+    try:
+        tree = ast.parse(expression, mode='eval')
+        SafeMathEvaluator().visit(tree)
+    except Exception as e:
+        return f"Sandbox Exception: {str(e)}"
+
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"import sys; print(eval({repr(expression)}))"
     cmd = [sys.executable, "-c", code]
     
     try:
