@@ -1,0 +1,3 @@
+## 2024-05-18 - [Optimize Dictionary Iteration in Cache Eviction]
+**Learning:** During cache eviction cycles in `ResultCache`, using `tuple(d.keys())` creates unnecessary overhead by allocating a new tuple object on the heap. If the dictionary being iterated (`old["entries"]`) is not being modified inside the loop (even if other dictionaries like `_key_index` are), direct dictionary iteration (`for key in d:`) is perfectly safe and significantly faster, avoiding O(N) allocation overhead.
+**Action:** Always prefer direct dictionary iteration over `list(d.keys())` or `tuple(d.keys())` in hot paths or tight loops where the iterated dictionary itself is not mutated.
