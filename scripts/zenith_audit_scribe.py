@@ -2,10 +2,11 @@ import subprocess
 import json
 import os
 import time
+import sys
 
 def run_cmd(cmd):
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+        result = subprocess.run(cmd, shell=False, capture_output=True, text=True, timeout=300)
         return {
             "cmd": cmd,
             "success": result.returncode == 0,
@@ -28,23 +29,23 @@ def main():
 
     checks = [
         # TLA+ (Using relative path to jar)
-        "java -jar tools/tla/tla2tools.jar -config formal/tla/MantisAStarCorrectness.cfg formal/tla/MantisAStarCorrectness.tla",
-        "java -jar tools/tla/tla2tools.jar -config formal/tla/MantisHeuristicDispatch.cfg formal/tla/MantisHeuristicDispatch.tla",
-        "java -jar tools/tla/tla2tools.jar -config formal/tla/HarmonicArenaSafety.cfg formal/tla/HarmonicArenaSafety.tla",
-        "java -jar tools/tla/tla2tools.jar -config formal/tla/MantisSecureVaultSafety.cfg formal/tla/MantisSecureVaultSafety.tla",
+        ["java", "-jar", "tools/tla/tla2tools.jar", "-config", "formal/tla/MantisAStarCorrectness.cfg", "formal/tla/MantisAStarCorrectness.tla"],
+        ["java", "-jar", "tools/tla/tla2tools.jar", "-config", "formal/tla/MantisHeuristicDispatch.cfg", "formal/tla/MantisHeuristicDispatch.tla"],
+        ["java", "-jar", "tools/tla/tla2tools.jar", "-config", "formal/tla/HarmonicArenaSafety.cfg", "formal/tla/HarmonicArenaSafety.tla"],
+        ["java", "-jar", "tools/tla/tla2tools.jar", "-config", "formal/tla/MantisSecureVaultSafety.cfg", "formal/tla/MantisSecureVaultSafety.tla"],
         
         # Pillars
-        "python scripts/verify_zenith_pillars.py",
+        [sys.executable, "scripts/verify_zenith_pillars.py"],
         
         # C++ Tests
-        "build\\run_tests.exe",
+        ["build\\run_tests.exe"],
         
         # Python Packaging
-        "python -m build --wheel"
+        [sys.executable, "-m", "build", "--wheel"]
     ]
 
     for check in checks:
-        print(f"Executing: {check}")
+        print(f"Executing: {' '.join(check)}")
         res = run_cmd(check)
         report["audit_results"].append(res)
 
