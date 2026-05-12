@@ -120,8 +120,14 @@ class LargeScaleVarStore:
             yield from self._tier1
             return
         self._flush_write_buf()
-        for (k,) in self._conn.execute("SELECT key FROM vars ORDER BY rowid"):
-            yield k
+        # ⚡ Bolt: Fetch in batches to reduce Python/C boundary crossing overhead
+        cursor = self._conn.execute("SELECT key FROM vars ORDER BY rowid")
+        while True:
+            batch = cursor.fetchmany(1000)
+            if not batch:
+                break
+            for (k,) in batch:
+                yield k
 
     def clear(self) -> None:
         self._tier1.clear()
