@@ -1,0 +1,4 @@
+## 2024-05-13 - [Sandbox Escape Fix via AST Whitelist]
+**Vulnerability:** A critical Remote Code Execution (RCE) and Sandbox Escape vulnerability existed in `scripts/sandbox.py` due to the use of `eval()` on unsanitized user expressions in a subprocess. An attacker could trivially bypass this by passing expressions like `__import__('os').system(...)`.
+**Learning:** Even when running inside an isolated subprocess monitored by a `ComplexityGuard`, `eval()` in Python remains inherently dangerous because the child process still operates with the permissions of the host user running it.
+**Prevention:** To safely evaluate mathematical or logical expressions provided by users without a full virtualization layer, always use `ast.parse(expr, mode='eval')` with an explicit, restrictive NodeVisitor (like `SafeMathEvaluator`) that only allows a strictly defined whitelist of operators and rejects functions, attribute accesses, and arbitrary calls.
