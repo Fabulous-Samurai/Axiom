@@ -1,0 +1,4 @@
+## 2024-05-15 - [Python `eval()` Code Injection in Sandbox]
+**Vulnerability:** The sandbox evaluation logic in `scripts/sandbox.py` dynamically evaluated user-provided input strings using Python's `eval()` function by shelling out to `[sys.executable, "-c", f"print(eval({repr(expression)}))"]`. This permitted arbitrary code execution via string interpolation.
+**Learning:** Directly passing user-input data into `eval()` allows adversarial manipulation, bypassing execution limitations. It's an anti-pattern even if the parent environment claims to be isolated (e.g. relying on seccomp or AppContainer alone).
+**Prevention:** Rather than trusting isolation constraints on a vulnerable execution path, implement defense in depth by restricting executable capabilities with an AST whitelist. Parse untrusted mathematical expressions using `ast.parse` and walk the AST nodes explicitly filtering for whitelisted mathematical operators (e.g. `ast.Add`, `ast.Sub`).
