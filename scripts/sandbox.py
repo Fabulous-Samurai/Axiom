@@ -4,6 +4,49 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv,
+            ast.Pow: operator.pow,
+            ast.Mod: operator.mod,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float, complex)):
+            raise ValueError(f"Unsupported constant type: {type(node.value)}")
+        return node.value
+
+    def visit_BinOp(self, node):
+        op = type(node.op)
+        if op not in self.allowed_operators:
+            raise ValueError(f"Unsupported operator: {op}")
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        return self.allowed_operators[op](left, right)
+
+    def visit_UnaryOp(self, node):
+        op = type(node.op)
+        if op not in self.allowed_operators:
+            raise ValueError(f"Unsupported operator: {op}")
+        operand = self.visit(node.operand)
+        return self.allowed_operators[op](operand)
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported node type: {type(node).__name__}")
+
+    def evaluate(self, expression):
+        tree = ast.parse(expression, mode='eval')
+        return self.visit(tree.body)
 
 class ComplexityGuard:
     """
@@ -30,10 +73,7 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    cmd = [sys.executable, __file__, "--safe-eval", expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -55,8 +95,17 @@ def run_isolated_expression(expression):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        expr = sys.argv[1]
-        print(run_isolated_expression(expr))
+        if sys.argv[1] == "--safe-eval" and len(sys.argv) > 2:
+            expr = sys.argv[2]
+            try:
+                evaluator = SafeMathEvaluator()
+                print(evaluator.evaluate(expr))
+            except Exception as e:
+                print(f"Error: {e}", file=sys.stderr)
+                sys.exit(1)
+        else:
+            expr = sys.argv[1]
+            print(run_isolated_expression(expr))
     else:
-        # Example adversarial expression (if eval was used directly)
+        # Example adversarial expression
         print(run_isolated_expression("__import__('os').listdir('.')"))
