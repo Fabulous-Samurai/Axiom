@@ -2,6 +2,7 @@ import json
 import os
 import argparse
 import subprocess
+import shutil
 import sys
 
 def list_issues(issues):
@@ -38,14 +39,16 @@ def open_issue(issue, ide_cmd="code"):
 
     if ide_cmd == "code":
         # VS Code goto syntax: code --goto file:line
-        cmd = ["code", "--goto", f"{file_path}:{line}"]
+        executable = shutil.which("code") or "code"
+        cmd = [executable, "--goto", f"{file_path}:{line}"]
     else:
         # Generic fallback: just open the file
-        cmd = [ide_cmd, file_path]
+        executable = shutil.which(ide_cmd) or ide_cmd
+        cmd = [executable, file_path]
     
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        subprocess.run(cmd, check=True, shell=False)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
