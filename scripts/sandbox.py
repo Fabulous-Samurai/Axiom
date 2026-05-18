@@ -1,9 +1,48 @@
+import ast
+import operator
 import os
 import sys
 import time
 import threading
 import subprocess
 import signal
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    def evaluate(self, expr):
+        node = ast.parse(expr, mode='eval')
+        return self.visit(node.body)
+
+    def visit_Constant(self, node):
+        if isinstance(node.value, (int, float)):
+            return node.value
+        raise ValueError("Only numeric constants are allowed")
+
+    def visit_BinOp(self, node):
+        ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.BitXor: operator.xor
+        }
+        op_type = type(node.op)
+        if op_type in ops:
+            return ops[op_type](self.visit(node.left), self.visit(node.right))
+        raise ValueError(f"Unsupported binary operator: {op_type.__name__}")
+
+    def visit_UnaryOp(self, node):
+        ops = {
+            ast.UAdd: operator.pos,
+            ast.USub: operator.neg
+        }
+        op_type = type(node.op)
+        if op_type in ops:
+            return ops[op_type](self.visit(node.operand))
+        raise ValueError(f"Unsupported unary operator: {op_type.__name__}")
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported expression node: {type(node).__name__}")
 
 class ComplexityGuard:
     """
@@ -32,8 +71,7 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    cmd = [sys.executable, os.path.abspath(__file__), "--safe-eval", expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -55,8 +93,18 @@ def run_isolated_expression(expression):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        expr = sys.argv[1]
-        print(run_isolated_expression(expr))
+        if sys.argv[1] == "--safe-eval":
+            if len(sys.argv) > 2:
+                expr = sys.argv[2]
+                try:
+                    result = SafeMathEvaluator().evaluate(expr)
+                    print(result)
+                except Exception as e:
+                    print(f"Error: {e}", file=sys.stderr)
+                    sys.exit(1)
+        else:
+            expr = sys.argv[1]
+            print(run_isolated_expression(expr))
     else:
         # Example adversarial expression (if eval was used directly)
         print(run_isolated_expression("__import__('os').listdir('.')"))
