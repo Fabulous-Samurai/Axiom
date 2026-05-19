@@ -109,10 +109,12 @@ class LargeScaleVarStore:
         if self._conn is None:
             return self._tier1.keys()
         self._flush_write_buf()
-        rows = self._conn.execute(
+        # Optimization: use direct cursor iteration instead of .fetchall() to avoid
+        # materializing intermediate rows into a list, saving memory and improving performance.
+        cursor = self._conn.execute(
             f"SELECT key FROM vars ORDER BY rowid LIMIT {self.TABLE_VIEW_CAP}"
-        ).fetchall()
-        return [r[0] for r in rows]
+        )
+        return [r[0] for r in cursor]
 
     def all_keys(self):
         """Generator yielding ALL keys in insertion order (bypasses UI cap)."""
