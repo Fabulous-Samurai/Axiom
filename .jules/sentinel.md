@@ -1,0 +1,4 @@
+## 2024-05-20 - Sandbox Arbitrary Code Execution
+**Vulnerability:** The Python `eval()` function was used directly inside the sandbox to evaluate user expressions, leading to a critical arbitrary code execution vulnerability (e.g. `__import__('os').listdir('.')`).
+**Learning:** Even within an isolated subprocess, `eval()` remains highly dangerous for handling unvalidated input because sandbox barriers (like basic limits) cannot prevent access to system modules or resources. Relying purely on process isolation without restricting the execution language environment is inadequate.
+**Prevention:** Instead of using `eval()`, parse the input expression into an Abstract Syntax Tree (AST) using `ast.parse` and securely evaluate it using a custom `ast.NodeVisitor` that only supports a whitelist of safe operators (e.g., math operations), thereby explicitly preventing code injection.

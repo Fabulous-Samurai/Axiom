@@ -4,6 +4,8 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
 
 class ComplexityGuard:
     """
@@ -18,7 +20,7 @@ class ComplexityGuard:
         start_time = time.time()
         while process.poll() is None:
             if (time.time() - start_time) > self.timeout:
-                print(f"[SANDBOX] Timeout exceeded ({self.timeout}s). Terminating.")
+                print(f"[SANDBOX] Timeout exceeded ({self.timeout}s). Terminating.", file=sys.stderr)
                 process.kill()
                 return
             time.sleep(0.1)
@@ -32,7 +34,37 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"""import sys
+import ast
+import operator
+class SafeMathEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.operators = {{
+            ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+            ast.Div: operator.truediv, ast.Pow: operator.pow, ast.BitXor: operator.xor,
+            ast.USub: operator.neg, ast.Mod: operator.mod, ast.FloorDiv: operator.floordiv
+        }}
+    def visit(self, node):
+        if isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.BinOp):
+            left = self.visit(node.left)
+            right = self.visit(node.right)
+            return self.operators[type(node.op)](left, right)
+        elif isinstance(node, ast.UnaryOp):
+            operand = self.visit(node.operand)
+            return self.operators[type(node.op)](operand)
+        elif isinstance(node, ast.Expression):
+            return self.visit(node.body)
+        else:
+            raise ValueError("Unsupported syntax")
+
+try:
+    print(SafeMathEvaluator().visit(ast.parse({repr(expression)}, mode='eval')))
+except Exception as e:
+    print(str(e), file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
@@ -58,5 +90,5 @@ if __name__ == "__main__":
         expr = sys.argv[1]
         print(run_isolated_expression(expr))
     else:
-        # Example adversarial expression (if eval was used directly)
+        # Example adversarial expression
         print(run_isolated_expression("__import__('os').listdir('.')"))

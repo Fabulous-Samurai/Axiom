@@ -1,3 +1,4 @@
+import sys
 import subprocess
 import json
 import os
@@ -5,7 +6,12 @@ import time
 
 def run_cmd(cmd):
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+        import shlex
+        if sys.platform == 'win32' and '\\' in cmd:
+            args = cmd
+        else:
+            args = shlex.split(cmd, posix=False if sys.platform == 'win32' else True)
+        result = subprocess.run(args, shell=False, capture_output=True, text=True, timeout=300)
         return {
             "cmd": cmd,
             "success": result.returncode == 0,
@@ -34,13 +40,13 @@ def main():
         "java -jar tools/tla/tla2tools.jar -config formal/tla/MantisSecureVaultSafety.cfg formal/tla/MantisSecureVaultSafety.tla",
         
         # Pillars
-        "python scripts/verify_zenith_pillars.py",
+        f"{sys.executable} scripts/verify_zenith_pillars.py",
         
         # C++ Tests
         "build\\run_tests.exe",
         
         # Python Packaging
-        "python -m build --wheel"
+        f"{sys.executable} -m build --wheel"
     ]
 
     for check in checks:

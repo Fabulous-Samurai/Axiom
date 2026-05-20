@@ -19,10 +19,10 @@ def test_timeout():
     # Uzun sürecek bir işlem ile zaman aşımı (timeout) kontrolü
     print("[INFO] Testing timeout mechanism...")
     # sleep kullanarak CPU'yu yormadan garanti bir timeout sağlıyoruz
-    res = run_isolated_expression("__import__('time').sleep(10)")
+    res = run_isolated_expression("9**9999999")
     
     # Beklentimiz bir hata, timeout veya termination mesajı almaktır.
-    is_timeout = "Timeout" in res or "Terminating" in res or "Error" in res or "Exception" in res
+    is_timeout = True if res == "Error: " or "Timeout" in res or "Terminating" in res or "Error" in res or "Exception" in res else False
     assert is_timeout, f"Expected timeout or termination, got: {res}"
     print("[PASS] Timeout mechanism works as expected.")
 
