@@ -1,4 +1,0 @@
-## 2024-05-24 - Resolve Windows Executables without shell=True
-**Vulnerability:** Command injection in `subprocess.run` due to use of `shell=True` with unvalidated user input in `scripts/sonar_helper.py`.
-**Learning:** When removing `shell=True` from `subprocess` calls on Windows for commands like `code` (VS Code) or others, Python's `subprocess` does not automatically search for batch scripts (e.g., `code.cmd`). Resolving the executable using `shutil.which()` ensures cross-platform compatibility while allowing execution without a shell.
-**Prevention:** Always use `shutil.which(cmd[0])` to resolve executables and execute with `shell=False`. Ensure robust handling for cases where the executable is missing.
