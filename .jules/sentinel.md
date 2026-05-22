@@ -1,0 +1,4 @@
+## 2024-05-18 - [Fix Python Sandbox Arbitrary Code Execution]
+**Vulnerability:** The `scripts/sandbox.py` utility used Python's `eval()` function directly on user-provided strings inside a subprocess. This allowed trivial Remote Code Execution (RCE) via payloads like `__import__('os').system(...)`.
+**Learning:** Even though the execution was happening in a subprocess, `eval()` allowed execution of arbitrary Python code, negating the intended isolation. When sandboxing math expressions, string evaluation must be completely avoided.
+**Prevention:** Replaced `eval()` with `ast.parse` and a custom `NodeVisitor` (`SafeMathEvaluator`) that strictly whitelists safe mathematical nodes (`BinOp`, `UnaryOp`, `Constant`) and explicitly rejects any complex types, attributes, or function calls. Modified the subprocess execution to call itself with a `--safe-eval` flag to evaluate the AST rather than passing a raw string to python.
