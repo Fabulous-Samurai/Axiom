@@ -3,6 +3,7 @@ import os
 import argparse
 import subprocess
 import sys
+import shutil
 
 def list_issues(issues):
     print(f"{'#':<3} | {'Severity':<10} | {'Type':<12} | {'File:Line':<40} | {'Message'}")
@@ -43,9 +44,14 @@ def open_issue(issue, ide_cmd="code"):
         # Generic fallback: just open the file
         cmd = [ide_cmd, file_path]
     
+    # Secure: resolve the executable path to handle Windows aliases when using shell=False
+    executable = shutil.which(cmd[0])
+    if executable:
+        cmd[0] = executable
+
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        subprocess.run(cmd, check=True, shell=False)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
