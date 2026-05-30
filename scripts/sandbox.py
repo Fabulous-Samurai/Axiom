@@ -4,6 +4,47 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.BitXor: operator.xor,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos
+        }
+
+    def evaluate(self, expr_str):
+        tree = ast.parse(expr_str, mode='eval')
+        return self.visit(tree.body)
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        if type(node.op) not in self.allowed_operators:
+            raise ValueError(f"Unsupported operator: {type(node.op)}")
+        return self.allowed_operators[type(node.op)](left, right)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        if type(node.op) not in self.allowed_operators:
+            raise ValueError(f"Unsupported operator: {type(node.op)}")
+        return self.allowed_operators[type(node.op)](operand)
+
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float, str)):
+            raise ValueError("Only numbers and strings are allowed")
+        return node.value
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported syntax: {type(node).__name__}")
+
 
 class ComplexityGuard:
     """
@@ -29,11 +70,11 @@ def run_isolated_expression(expression):
     In production, this would use AppContainer (Windows) or seccomp (Linux).
     """
     print(f"[SANDBOX] Evaluating: {expression}")
-    
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+
+    # To isolate, we call this script itself with the --safe-eval flag
+    # This keeps the ComplexityGuard wrapping the execution process
+    # but removes the dangerous `eval` directly in Python.
+    cmd = [sys.executable, os.path.abspath(__file__), "--safe-eval", expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -54,7 +95,14 @@ def run_isolated_expression(expression):
         return f"Sandbox Exception: {str(e)}"
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
+    if "--safe-eval" in sys.argv:
+        expr = sys.argv[-1]
+        try:
+            print(SafeMathEvaluator().evaluate(expr))
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+    elif len(sys.argv) > 1:
         expr = sys.argv[1]
         print(run_isolated_expression(expr))
     else:
