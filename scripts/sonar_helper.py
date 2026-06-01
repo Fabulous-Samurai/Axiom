@@ -3,6 +3,7 @@ import os
 import argparse
 import subprocess
 import sys
+import shutil
 
 def list_issues(issues):
     print(f"{'#':<3} | {'Severity':<10} | {'Type':<12} | {'File:Line':<40} | {'Message'}")
@@ -38,14 +39,22 @@ def open_issue(issue, ide_cmd="code"):
 
     if ide_cmd == "code":
         # VS Code goto syntax: code --goto file:line
-        cmd = ["code", "--goto", f"{file_path}:{line}"]
+        ide_path = shutil.which("code")
+        if not ide_path:
+            print("Error: IDE executable 'code' not found on PATH.")
+            return
+        cmd = [ide_path, "--goto", f"{file_path}:{line}"]
     else:
         # Generic fallback: just open the file
-        cmd = [ide_cmd, file_path]
+        ide_path = shutil.which(ide_cmd)
+        if not ide_path:
+            print(f"Error: IDE executable '{ide_cmd}' not found on PATH.")
+            return
+        cmd = [ide_path, file_path]
     
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        subprocess.run(cmd, check=True, shell=False)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 

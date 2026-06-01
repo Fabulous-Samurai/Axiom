@@ -1,0 +1,4 @@
+## 2024-06-01 - Subprocess Shell Injection in Utility Scripts
+**Vulnerability:** Command injection vulnerability in `scripts/sonar_helper.py` through the `--ide` parameter being passed to `subprocess.run(cmd, shell=True)`.
+**Learning:** Using `shell=True` with user-provided arguments in CLI tools allows arbitrary command execution. When refactoring `subprocess.run` to use `shell=False` on Windows for commands like `code` (VS Code), use `shutil.which('code')` to resolve the executable path, and handle the case where it returns `None` (e.g., if the IDE is not found on PATH). Python's `subprocess` does not automatically search for batch scripts (e.g., `code.cmd`) without `shell=True`.
+**Prevention:** Always use `shell=False` and pass arguments as a list. Resolve executable paths explicitly using `shutil.which()` to maintain cross-platform compatibility, especially for commands that might be batch scripts on Windows.
