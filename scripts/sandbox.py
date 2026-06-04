@@ -4,6 +4,37 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
+
+class SafeMathEvaluator:
+    def __init__(self):
+        self.operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv,
+            ast.Pow: operator.pow,
+            ast.BitXor: operator.xor,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+    def evaluate(self, node):
+        if isinstance(node, ast.Expression):
+            return self.evaluate(node.body)
+        elif isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.BinOp):
+            left = self.evaluate(node.left)
+            right = self.evaluate(node.right)
+            return self.operators[type(node.op)](left, right)
+        elif isinstance(node, ast.UnaryOp):
+            operand = self.evaluate(node.operand)
+            return self.operators[type(node.op)](operand)
+        else:
+            raise ValueError(f"Unsupported AST node: {type(node).__name__}")
 
 class ComplexityGuard:
     """
@@ -30,10 +61,7 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    cmd = [sys.executable, os.path.abspath(__file__), "--safe-eval", expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -55,8 +83,19 @@ def run_isolated_expression(expression):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        expr = sys.argv[1]
-        print(run_isolated_expression(expr))
+        if sys.argv[1] == "--safe-eval" and len(sys.argv) > 2:
+            expr = sys.argv[2]
+            try:
+                node = ast.parse(expr, mode='eval')
+                evaluator = SafeMathEvaluator()
+                result = evaluator.evaluate(node)
+                print(result)
+            except Exception as e:
+                print(f"Error: {e}", file=sys.stderr)
+                sys.exit(1)
+        else:
+            expr = sys.argv[1]
+            print(run_isolated_expression(expr))
     else:
         # Example adversarial expression (if eval was used directly)
         print(run_isolated_expression("__import__('os').listdir('.')"))
