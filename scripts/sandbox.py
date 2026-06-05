@@ -30,9 +30,41 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # Sentinel Security Fix: Replace dangerous eval() with SafeMathEvaluator
+    # Evaluate securely in the isolated subprocess.
+    code = f"""import ast, sys, operator
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    allowed_operators = {{
+        ast.Add: operator.add, ast.Sub: operator.sub,
+        ast.Mult: operator.mul, ast.Div: operator.truediv,
+        ast.FloorDiv: operator.floordiv, ast.Pow: operator.pow,
+        ast.BitXor: operator.xor, ast.USub: operator.neg,
+        ast.UAdd: operator.pos,
+    }}
+    def visit_BinOp(self, node):
+        op_type = type(node.op)
+        if op_type not in self.allowed_operators:
+            raise ValueError(f"Unsupported operator: {{op_type.__name__}}")
+        return self.allowed_operators[op_type](self.visit(node.left), self.visit(node.right))
+    def visit_UnaryOp(self, node):
+        op_type = type(node.op)
+        if op_type not in self.allowed_operators:
+            raise ValueError(f"Unsupported operator: {{op_type.__name__}}")
+        return self.allowed_operators[op_type](self.visit(node.operand))
+    def visit_Constant(self, node): return node.value
+    def visit_Expr(self, node): return self.visit(node.value)
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported syntax: {{type(node).__name__}}")
+    def evaluate(self, expression):
+        return self.visit(ast.parse(expression, mode='eval').body)
+
+try:
+    print(SafeMathEvaluator().evaluate({repr(expression)}))
+except Exception as e:
+    print(f"{{type(e).__name__}}: {{str(e)}}", file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
