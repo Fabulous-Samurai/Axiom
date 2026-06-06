@@ -28,12 +28,66 @@ def run_isolated_expression(expression):
     Runs an AXIOM expression in a restricted subprocess.
     In production, this would use AppContainer (Windows) or seccomp (Linux).
     """
-    print(f"[SANDBOX] Evaluating: {expression}")
+    print(f"[SANDBOX] Evaluating: {expression}", file=sys.stderr)
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    evaluator_code = """import ast
+import operator
+import sys
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv,
+            ast.Pow: operator.pow,
+            ast.Mod: operator.mod,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op_type = type(node.op)
+        if op_type not in self.allowed_ops:
+            raise ValueError(f"Unsupported operation: {op_type.__name__}")
+        return self.allowed_ops[op_type](left, right)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op_type = type(node.op)
+        if op_type not in self.allowed_ops:
+            raise ValueError(f"Unsupported operation: {op_type.__name__}")
+        return self.allowed_ops[op_type](operand)
+
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float)):
+            raise ValueError("Only numeric constants are allowed")
+        return node.value
+
+    def visit_Expr(self, node):
+        return self.visit(node.value)
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported node type: {type(node).__name__}")
+
+def safe_eval(expr):
+    tree = ast.parse(expr, mode='eval')
+    evaluator = SafeMathEvaluator()
+    return evaluator.visit(tree.body)
+
+try:
+    print(safe_eval(%s))
+except Exception as e:
+    print(str(e), file=sys.stderr)
+    sys.exit(1)
+"""
+    cmd = [sys.executable, "-c", evaluator_code % repr(expression)]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
