@@ -23,7 +23,7 @@ add_library(axiom_engine_core STATIC
 )
 enforce_zenith_pillars(axiom_engine_core)
 target_include_directories(axiom_engine_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(axiom_engine_core PUBLIC mimalloc Threads::Threads asmjit::asmjit)
+target_link_libraries(axiom_engine_core PRIVATE numa PRIVATE numa numa PUBLIC mimalloc Threads::Threads asmjit::asmjit)
 target_compile_definitions(axiom_engine_core PUBLIC ASMJIT_STATIC AXIOM_ENGINE_EXPORTS)
 
 # ─── AXIOM Engine Compute (The Sealed Block) ────────────────────────────

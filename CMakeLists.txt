@@ -56,7 +56,7 @@ if(MSVC)
     add_compile_options(/arch:AVX2 /W0 /Zc:__cplusplus)
     add_definitions(-DASMJIT_STATIC)
 else()
-    add_compile_options(-mavx2 -mfma -w)
+    add_compile_options(-mavx2 -mfma -w -mcmodel=large)
     add_definitions(-DASMJIT_STATIC)
 endif()
 
