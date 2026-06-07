@@ -18,8 +18,8 @@ def test_safe_expression():
 def test_timeout():
     # Uzun sürecek bir işlem ile zaman aşımı (timeout) kontrolü
     print("[INFO] Testing timeout mechanism...")
-    # sleep kullanarak CPU'yu yormadan garanti bir timeout sağlıyoruz
-    res = run_isolated_expression("__import__('time').sleep(10)")
+    # sleep yerine ağır bir matematiksel işlem (üst alma) ile timeout sağlanıyor
+    res = run_isolated_expression("9**9999999")
     
     # Beklentimiz bir hata, timeout veya termination mesajı almaktır.
     is_timeout = "Timeout" in res or "Terminating" in res or "Error" in res or "Exception" in res
@@ -31,8 +31,9 @@ def test_file_access():
     print("[INFO] Testing OS access restriction...")
     res = run_isolated_expression("__import__('os').listdir('.')")
     print(f"File access result: {res}")
-    # Python eval üzerinde basit bir test yapıyoruz. 
-    # Gerçek sistemde seccomp/AppContainer engeller ancak burada Python eval()'in döndürdüğü sonucu logluyoruz.
+    # Python eval yerine SafeMathEvaluator kullanıldığı için AST parse hatası dönmeli
+    is_restricted = "Error" in res or "Unsupported AST node type" in res
+    assert is_restricted, f"Expected restriction error, got: {res}"
     print("[PASS] OS access test executed.")
 
 if __name__ == "__main__":

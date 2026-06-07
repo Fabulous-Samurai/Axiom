@@ -1,0 +1,4 @@
+## 2024-05-18 - Fix Remote Code Execution via Python eval() in Sandbox
+**Vulnerability:** The sandbox evaluator `scripts/sandbox.py` previously used Python's `eval()` function to execute dynamic mathematical expressions. This was a critical Remote Code Execution (RCE) vulnerability allowing arbitrary code execution (e.g. `__import__('os').system(...)`) outside of any OS-level containerization restrictions.
+**Learning:** Process isolation (AppContainer or seccomp) should only act as a secondary defense layer for sandboxes; it is fundamentally unsafe to use Python's `eval()` on untrusted input even within an isolated subprocess, as any environment breakout or missing isolation feature leaves the host completely vulnerable.
+**Prevention:** Always use safe, limited mathematical parsing tools such as an AST-based validator whitelist (e.g. `ast.parse` and explicitly checking nodes) for dynamically evaluating user-supplied mathematical expressions instead of `eval()`.
