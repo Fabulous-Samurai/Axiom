@@ -18,7 +18,7 @@ class ComplexityGuard:
         start_time = time.time()
         while process.poll() is None:
             if (time.time() - start_time) > self.timeout:
-                print(f"[SANDBOX] Timeout exceeded ({self.timeout}s). Terminating.")
+                print(f"[SANDBOX] Timeout exceeded ({self.timeout}s). Terminating.", file=sys.stderr)
                 process.kill()
                 return
             time.sleep(0.1)
@@ -32,7 +32,28 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # Replaced eval() with a safe AST-based math evaluator
+    code = f"""
+import sys, ast, operator
+class SafeMathEvaluator:
+    def __init__(self):
+        self.ops = {{
+            ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+            ast.Div: operator.truediv, ast.FloorDiv: operator.floordiv, ast.Pow: operator.pow,
+            ast.BitXor: operator.xor, ast.USub: operator.neg, ast.Mod: operator.mod
+        }}
+    def evaluate(self, node):
+        if isinstance(node, ast.Expression): return self.evaluate(node.body)
+        elif isinstance(node, ast.Constant): return node.value
+        elif isinstance(node, ast.BinOp): return self.ops[type(node.op)](self.evaluate(node.left), self.evaluate(node.right))
+        elif isinstance(node, ast.UnaryOp): return self.ops[type(node.op)](self.evaluate(node.operand))
+        raise ValueError(f"Unsupported AST node type: {{type(node).__name__}}")
+try:
+    print(SafeMathEvaluator().evaluate(ast.parse({repr(expression)}, mode='eval')))
+except Exception as e:
+    print(f"Error: {{str(e)}}", file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
