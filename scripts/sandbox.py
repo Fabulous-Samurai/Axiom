@@ -32,7 +32,24 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = """
+import ast, operator, sys
+class SafeMathEvaluator(ast.NodeVisitor):
+    ops = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+           ast.Div: operator.truediv, ast.FloorDiv: operator.floordiv,
+           ast.Mod: operator.mod, ast.Pow: operator.pow,
+           ast.USub: operator.neg, ast.UAdd: operator.pos}
+    def visit_BinOp(self, n): return self.ops[type(n.op)](self.visit(n.left), self.visit(n.right))
+    def visit_UnaryOp(self, n): return self.ops[type(n.op)](self.visit(n.operand))
+    def visit_Constant(self, n): return n.value
+    def visit_Expression(self, n): return self.visit(n.body)
+    def generic_visit(self, n): raise ValueError('Unsupported node type')
+try:
+    print(SafeMathEvaluator().visit(ast.parse(%r, mode='eval')))
+except Exception as e:
+    print('Error: ' + str(e), file=sys.stderr)
+    sys.exit(1)
+""" % (expression,)
     cmd = [sys.executable, "-c", code]
     
     try:

@@ -19,7 +19,7 @@ def test_timeout():
     # Uzun sürecek bir işlem ile zaman aşımı (timeout) kontrolü
     print("[INFO] Testing timeout mechanism...")
     # sleep kullanarak CPU'yu yormadan garanti bir timeout sağlıyoruz
-    res = run_isolated_expression("__import__('time').sleep(10)")
+    res = run_isolated_expression("9**9999999")
     
     # Beklentimiz bir hata, timeout veya termination mesajı almaktır.
     is_timeout = "Timeout" in res or "Terminating" in res or "Error" in res or "Exception" in res
@@ -33,6 +33,7 @@ def test_file_access():
     print(f"File access result: {res}")
     # Python eval üzerinde basit bir test yapıyoruz. 
     # Gerçek sistemde seccomp/AppContainer engeller ancak burada Python eval()'in döndürdüğü sonucu logluyoruz.
+    assert "Error" in res or "Exception" in res, "Expected error due to blocked access"
     print("[PASS] OS access test executed.")
 
 if __name__ == "__main__":
