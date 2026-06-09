@@ -32,7 +32,7 @@ target_include_directories(axui_compiler PUBLIC
 
 target_link_libraries(axui_compiler PUBLIC
     simdjson
-    axiom_engine_core numa
+    axiom_engine_core
 )
 
 # Test executable
@@ -45,7 +45,7 @@ add_executable(axui_tests
 
 target_link_libraries(axui_tests PRIVATE
     axui_compiler
-    axiom_engine_core numa
+    axiom_engine_core
 )
 
 set_property(TARGET axui_tests PROPERTY CXX_STANDARD 20)
@@ -57,7 +57,7 @@ add_executable(axui_bench
 
 target_link_libraries(axui_bench PRIVATE
     axui_compiler
-    axiom_engine_core numa
+    axiom_engine_core
 )
 
 set_property(TARGET axui_bench PROPERTY CXX_STANDARD 20)
