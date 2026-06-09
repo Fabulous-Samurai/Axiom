@@ -1,0 +1,4 @@
+## 2025-03-09 - Fix Command Injection in Utility Scripts
+**Vulnerability:** Found instances of `subprocess.run` using `shell=True` with dynamically generated command strings containing user inputs or external paths. This exposes the system to command injection attacks.
+**Learning:** Python's default POSIX mode in `shlex.split` mishandles Windows paths (e.g. `build\\run_tests.exe`), and passing user input safely requires resolving executable paths (like VS Code) explicitly using `shutil.which()` instead of relying on `shell=True` to resolve the path on Windows CMD or bash.
+**Prevention:** Always use `shell=False` and pass arguments as a list. When calling IDEs or executables not in the current dir, resolve the path securely via `shutil.which()`. Do not use `shlex.split` blindly on strings that might contain Windows paths.
