@@ -23,6 +23,65 @@ class ComplexityGuard:
                 return
             time.sleep(0.1)
 
+EVALUATOR_CODE = """
+import ast
+import operator
+import sys
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv,
+            ast.Pow: operator.pow,
+            ast.BitXor: operator.xor,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+    def evaluate(self, expr):
+        try:
+            node = ast.parse(expr, mode='eval')
+            return self.visit(node.body)
+        except SyntaxError:
+            print("Syntax Error", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print("Eval Error: " + str(e), file=sys.stderr)
+            sys.exit(1)
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op = type(node.op)
+        if op in self.operators:
+            return self.operators[op](left, right)
+        print("Unsupported operator", file=sys.stderr)
+        sys.exit(1)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op = type(node.op)
+        if op in self.operators:
+            return self.operators[op](operand)
+        print("Unsupported operator", file=sys.stderr)
+        sys.exit(1)
+
+    def generic_visit(self, node):
+        print("Unsupported node type: " + str(type(node)), file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == '__main__':
+    evaluator = SafeMathEvaluator()
+    print(evaluator.evaluate(%s))
+"""
+
 def run_isolated_expression(expression):
     """
     Runs an AXIOM expression in a restricted subprocess.
@@ -30,9 +89,8 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # Use SafeMathEvaluator instead of eval() to prevent code injection
+    code = EVALUATOR_CODE % repr(expression)
     cmd = [sys.executable, "-c", code]
     
     try:
