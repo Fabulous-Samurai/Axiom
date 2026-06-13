@@ -29,27 +29,72 @@ def run_isolated_expression(expression):
     In production, this would use AppContainer (Windows) or seccomp (Linux).
     """
     print(f"[SANDBOX] Evaluating: {expression}")
-    
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+
+    # We use an AST-based SafeMathEvaluator embedded directly into the subprocess
+    # instead of eval() to prevent arbitrary code execution vulnerabilities.
+    code = """
+import ast
+import operator
+import sys
+
+class SafeMathEvaluator:
+    def __init__(self):
+        self.operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.BitXor: operator.xor,
+            ast.USub: operator.neg
+        }
+
+    def evaluate(self, expr):
+        try:
+            tree = ast.parse(expr, mode='eval')
+            return self._eval(tree.body)
+        except Exception as e:
+            print("Error: " + str(e), file=sys.stderr)
+            sys.exit(1)
+
+    def _eval(self, node):
+        if isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.BinOp):
+            left = self._eval(node.left)
+            right = self._eval(node.right)
+            if type(node.op) in self.operators:
+                return self.operators[type(node.op)](left, right)
+            raise ValueError("Unsupported operator: " + str(type(node.op)))
+        elif isinstance(node, ast.UnaryOp):
+            operand = self._eval(node.operand)
+            if type(node.op) in self.operators:
+                return self.operators[type(node.op)](operand)
+            raise ValueError("Unsupported operator: " + str(type(node.op)))
+        else:
+            raise ValueError("Unsupported node type: " + str(type(node)))
+
+evaluator = SafeMathEvaluator()
+print(evaluator.evaluate(%s))
+""" % repr(expression)
+
     cmd = [sys.executable, "-c", code]
-    
+
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        
+
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
         monitor_thread.start()
-        
+
         stdout, stderr = proc.communicate()
         monitor_thread.join()
-        
+
         if proc.returncode == 0:
             return stdout.strip()
         else:
             return f"Error: {stderr.strip()}"
-            
+
     except Exception as e:
         return f"Sandbox Exception: {str(e)}"
 
