@@ -30,9 +30,49 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = """
+import ast
+import operator
+import sys
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.operators = {
+            ast.Add: operator.add, ast.Sub: operator.sub,
+            ast.Mult: operator.mul, ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv, ast.Pow: operator.pow,
+            ast.Mod: operator.mod, ast.USub: operator.neg,
+            ast.UAdd: operator.pos
+        }
+
+    def evaluate(self, expr):
+        tree = ast.parse(expr, mode='eval')
+        return self.visit(tree.body)
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        return self.operators[type(node.op)](left, right)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        return self.operators[type(node.op)](operand)
+
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float, str)):
+            raise ValueError("Unsupported constant")
+        return node.value
+
+    def generic_visit(self, node):
+        raise ValueError("Unsupported node type: " + type(node).__name__)
+
+try:
+    e = SafeMathEvaluator()
+    print(e.evaluate(%s))
+except Exception as exc:
+    print("Error: " + str(exc), file=sys.stderr)
+    sys.exit(1)
+""" % repr(expression)
     cmd = [sys.executable, "-c", code]
     
     try:
