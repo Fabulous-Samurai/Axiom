@@ -32,7 +32,61 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    evaluator_code = """
+import ast
+import operator
+import sys
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.BitXor: operator.xor,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos
+        }
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op_type = type(node.op)
+        if op_type in self.operators:
+            return self.operators[op_type](left, right)
+        raise ValueError('Unsupported operator: ' + str(op_type))
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op_type = type(node.op)
+        if op_type in self.operators:
+            return self.operators[op_type](operand)
+        raise ValueError('Unsupported operator: ' + str(op_type))
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+    def evaluate(self, expr_str):
+        tree = ast.parse(expr_str, mode='eval')
+        return self.visit(tree.body)
+
+    def generic_visit(self, node):
+        raise ValueError('Unsupported node type: ' + str(type(node)))
+
+if __name__ == '__main__':
+    try:
+        evaluator = SafeMathEvaluator()
+        print(evaluator.evaluate(%s))
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+"""
+    code = evaluator_code % repr(expression)
     cmd = [sys.executable, "-c", code]
     
     try:
