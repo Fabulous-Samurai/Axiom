@@ -31,8 +31,8 @@ def run_isolated_expression(expression):
     print(f"[SANDBOX] Evaluating: {expression}")
     
     # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues. We also restrict the environment.
-    code = f"import os; print(eval({repr(expression)}, {{'__builtins__': {{}}}}, {{}}))"
+    # to avoid shell quoting issues.
+    code = f"import os; print(eval({repr(expression)}))"
     cmd = [sys.executable, "-c", code]
     
     try:
