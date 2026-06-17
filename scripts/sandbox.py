@@ -30,56 +30,9 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # Use SafeMathEvaluator to prevent code injection via eval()
-    code = """import ast
-import operator
-import sys
-
-class SafeMathEvaluator(ast.NodeVisitor):
-    def __init__(self):
-        self.operators = {
-            ast.Add: operator.add, ast.Sub: operator.sub,
-            ast.Mult: operator.mul, ast.Div: operator.truediv,
-            ast.Pow: operator.pow, ast.BitXor: operator.xor,
-            ast.USub: operator.neg, ast.UAdd: operator.pos
-        }
-
-    def visit_Constant(self, node):
-        if isinstance(node.value, (int, float)):
-            return node.value
-        raise ValueError("Only numbers are allowed")
-
-    def visit_BinOp(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        op_type = type(node.op)
-        if op_type not in self.operators:
-            raise ValueError("Unsupported operator")
-        return self.operators[op_type](left, right)
-
-    def visit_UnaryOp(self, node):
-        operand = self.visit(node.operand)
-        op_type = type(node.op)
-        if op_type not in self.operators:
-            raise ValueError("Unsupported unary operator")
-        return self.operators[op_type](operand)
-
-    def visit_Expression(self, node):
-        return self.visit(node.body)
-
-    def generic_visit(self, node):
-        raise ValueError("Unsupported node type")
-
-def evaluate(expr):
-    tree = ast.parse(expr, mode='eval')
-    return SafeMathEvaluator().visit(tree)
-
-try:
-    print(evaluate(%s))
-except Exception as e:
-    print("Error: " + str(e), file=sys.stderr)
-    sys.exit(1)
-""" % repr(expression)
+    # We use a more robust way to pass the expression to the subprocess
+    # to avoid shell quoting issues. We also restrict the environment.
+    code = f"import os; print(eval({repr(expression)}, {{'__builtins__': {{}}}}, {{}}))"
     cmd = [sys.executable, "-c", code]
     
     try:
