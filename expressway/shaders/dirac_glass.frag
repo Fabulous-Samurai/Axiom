@@ -22,13 +22,13 @@ void main() {
     // 2. Sample Background with slight offset for "refraction"
     // In Phase 7, this will be a real blur pass. For now, we simulate.
     vec3 background = texture(texSampler, fragTexCoord).rgb;
-    
+
     // 3. Dirac Accent Glow (Edge highlighting)
     float edge = smoothstep(0.0, 0.05, fragTexCoord.x) * (1.0 - smoothstep(0.95, 1.0, fragTexCoord.x));
     edge *= smoothstep(0.0, 0.05, fragTexCoord.y) * (1.0 - smoothstep(0.95, 1.0, fragTexCoord.y));
-    
+
     vec3 finalColor = mix(DIRAC_INDIGO * 0.8, background, 0.3);
-    
+
     // 4. Neon Edge Polish
     if (edge < 0.1) {
         finalColor = mix(finalColor, DIRAC_CYAN, 0.4);

@@ -32,7 +32,7 @@ pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x
 ```
 
 ### 9.2 Build System & Quality
-- **CMake Targets:** 
+- **CMake Targets:**
     - `axiom_engine`: Core compute library.
     - `axiom_dashboard`: Visual monitor.
     - `axiom_studio`: Integrated IDE.

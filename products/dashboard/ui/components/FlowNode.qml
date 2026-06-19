@@ -3,7 +3,7 @@ import QtQuick.Layouts 1.15
 
 /*
  * FlowNode — Simatic-style pipeline stage indicator
- * 
+ *
  * Görünüm:
  * ┌──────────────────────────┐
  * │  ◉ INPUT SOURCE          │
@@ -95,8 +95,8 @@ Rectangle {
     antialiasing: true
 
     // Glass background
-    color: Qt.rgba(0.12, 0.15, 0.2, 0.95) 
-    
+    color: Qt.rgba(0.12, 0.15, 0.2, 0.95)
+
     // Subtle gradient for glass effect (P3.2)
     Rectangle {
         anchors.fill: parent
@@ -110,7 +110,7 @@ Rectangle {
 
     border.color: errorMessage !== "" ? "#EF4444" : healthColor
     border.width: 1.5
-    
+
     // Backpressure Vibration (Sprint 2)
     SequentialAnimation on x {
         running: queueFillRatio > 0.8
