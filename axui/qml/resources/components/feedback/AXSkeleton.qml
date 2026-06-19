@@ -4,10 +4,10 @@ Rectangle {
     id: root
     property string variant: "rect"
     property bool animated: true
-    
+
     color: "#334155"
     radius: variant === "circle" ? width / 2 : 4
-    
+
     SequentialAnimation on opacity {
         running: root.animated
         loops: Animation.Infinite

@@ -355,5 +355,5 @@ def run_all_platforms(config: dict = None) -> CIResult:
         platform_result = run_platform_ci(p.name, config)
         for stage in platform_result.stages:
             combined_result.add_stage(stage)
-    
+
     return combined_result

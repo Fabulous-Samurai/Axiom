@@ -26,12 +26,12 @@ Window {
             height: 200
             color: "#000000"
             border.color: "#333333"
-            
+
             Flickable {
                 anchors.fill: parent
                 contentHeight: logText.height
                 clip: true
-                
+
                 Text {
                     id: logText
                     width: parent.width - 10

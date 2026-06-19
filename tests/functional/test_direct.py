@@ -30,7 +30,7 @@ if proc.stdin is None or proc.stdout is None:
 
 commands = [
     "ln(10)",
-    "log(10)",  
+    "log(10)",
     "log2(8)",
     "sqrt(16)"
 ]
@@ -39,7 +39,7 @@ for cmd in commands:
     print(f"\nTesting: {cmd}")
     proc.stdin.write(cmd + "\n")
     proc.stdin.flush()
-    
+
     output_lines = []
     while True:
         line = proc.stdout.readline()
@@ -48,7 +48,7 @@ for cmd in commands:
         if "__END__" in line:
             break
         output_lines.append(line.rstrip())
-    
+
     print(f"Result: {' '.join(output_lines)}")
 
 proc.stdin.write("exit\n")
