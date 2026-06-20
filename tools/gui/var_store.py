@@ -112,6 +112,8 @@ class LargeScaleVarStore:
         cursor = self._conn.execute(
             f"SELECT key FROM vars ORDER BY rowid LIMIT {self.TABLE_VIEW_CAP}"
         )
+        # Bolt optimization: iterate directly over the cursor instead of using .fetchall()
+        # This avoids an intermediate list allocation in memory, reducing peak memory usage.
         return [r[0] for r in cursor]
 
     def all_keys(self):
