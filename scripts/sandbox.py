@@ -32,7 +32,13 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = """import sys
+try:
+    print(eval(%s, {'__builtins__': {}}, {}))
+except Exception as e:
+    print('Sandbox Exception: ' + str(e), file=sys.stderr)
+    sys.exit(1)
+""" % repr(expression)
     cmd = [sys.executable, "-c", code]
     
     try:
