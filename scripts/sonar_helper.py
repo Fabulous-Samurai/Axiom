@@ -37,15 +37,20 @@ def open_issue(issue, ide_cmd="code"):
             return
 
     if ide_cmd == "code":
+        import shutil
+        code_path = shutil.which("code")
+        if code_path is None:
+            print("Error: 'code' executable not found in PATH.")
+            return
         # VS Code goto syntax: code --goto file:line
-        cmd = ["code", "--goto", f"{file_path}:{line}"]
+        cmd = [code_path, "--goto", f"{file_path}:{line}"]
     else:
         # Generic fallback: just open the file
         cmd = [ide_cmd, file_path]
     
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        subprocess.run(cmd, check=True, shell=False)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
