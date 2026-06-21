@@ -37,20 +37,15 @@ def open_issue(issue, ide_cmd="code"):
             return
 
     if ide_cmd == "code":
-        import shutil
-        code_path = shutil.which("code")
-        if code_path is None:
-            print("Error: 'code' executable not found in PATH.")
-            return
         # VS Code goto syntax: code --goto file:line
-        cmd = [code_path, "--goto", f"{file_path}:{line}"]
+        cmd = ["code", "--goto", f"{file_path}:{line}"]
     else:
         # Generic fallback: just open the file
         cmd = [ide_cmd, file_path]
     
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=False)
+        subprocess.run(cmd, check=True, shell=True)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
@@ -65,11 +60,6 @@ def main():
 
     if not os.path.exists(args.json):
         print(f"Error: {args.json} not found. Run sonar_issues.py first.")
-        sys.exit(1)
-
-    # Prevent path traversal vulnerabilities by enforcing the json file is in the current directory or explicitly validated
-    if not os.path.abspath(args.json).startswith(os.getcwd()):
-        print("Error: Invalid JSON file path. Cannot escape current working directory.")
         sys.exit(1)
 
     with open(args.json, "r", encoding="utf-8") as f:
