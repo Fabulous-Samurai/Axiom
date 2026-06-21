@@ -67,6 +67,11 @@ def main():
         print(f"Error: {args.json} not found. Run sonar_issues.py first.")
         sys.exit(1)
 
+    # Prevent path traversal vulnerabilities by enforcing the json file is in the current directory or explicitly validated
+    if not os.path.abspath(args.json).startswith(os.getcwd()):
+        print("Error: Invalid JSON file path. Cannot escape current working directory.")
+        sys.exit(1)
+
     with open(args.json, "r", encoding="utf-8") as f:
         issues = json.load(f)
 
