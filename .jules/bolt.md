@@ -1,0 +1,3 @@
+## 2024-06-22 - [SQLite direct cursor iteration instead of fetchall]
+**Learning:** Using `.fetchall()` materializes intermediate rows into a list before iterating over them (e.g., `[r[0] for r in cursor.fetchall()]`), which is a memory and performance anti-pattern. Direct cursor iteration in a comprehension (e.g., `[r[0] for r in cursor]`) avoids intermediate tuple list allocations, significantly reducing peak memory usage and improving execution time.
+**Action:** Always prefer direct cursor iteration when list comprehensions are applied immediately over SQLite query results, especially for large result sets.
