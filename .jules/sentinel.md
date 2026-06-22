@@ -1,0 +1,4 @@
+## 2024-05-24 - Restrict eval in Sandbox Subprocesses
+**Vulnerability:** The isolated python subprocess script (`scripts/sandbox.py`) executes `eval(expression)` on user input directly without stripping the `__builtins__` dictionary. While process isolation and timeouts offer defense-in-depth, direct eval allows arbitrary code execution (e.g. `__import__('os').listdir('.')`) enabling attackers to browse files, steal tokens, or execute malicious payloads if other isolation layers fail.
+**Learning:** Subprocess isolation and timeouts alone are not a replacement for defense-in-depth input sanitization when `eval` is used.
+**Prevention:** Always restrict the `eval` execution environment by explicitly stripping out builtins using the syntax `eval(expr, {'__builtins__': {}}, {})` to restrict the evaluation strictly to mathematical logic rather than allowing execution of system commands.
