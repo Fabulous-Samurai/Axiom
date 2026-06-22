@@ -2,7 +2,7 @@
 #include "statistics_engine.h"
 #include <algorithm>
 #include <cmath>
-#include <map>
+#include <tsl/robin_map.h>
 
 namespace AXIOM {
 
@@ -33,7 +33,7 @@ EngineResult StatisticsEngine::Median(Vector data) {
 EngineResult StatisticsEngine::Mode(const Vector& data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
-    std::map<double, int> frequency;
+    tsl::robin_map<double, int> frequency;
     for (double val : data) {
         frequency[val]++;
     }
