@@ -56,7 +56,7 @@ add_library(axiom_engine_lib STATIC
 enforce_zenith_pillars(axiom_engine_lib)
 set_source_files_properties(api/python_bindings.cpp api/nanobind_interface.cpp PROPERTIES COMPILE_FLAGS "-fexceptions -frtti")
 target_link_libraries(axiom_engine_lib PUBLIC axiom_engine_core Python::Python Eigen3::Eigen asmjit::asmjit simdjson sleef atomic)
-target_include_directories(axiom_engine_lib PRIVATE ${nanobind_SOURCE_DIR}/include)
+target_include_directories(axiom_engine_lib PRIVATE ${nanobind_SOURCE_DIR}/include ${CMAKE_BINARY_DIR}/_deps/robin-map-src/include)
 
 # [MANDATORY ALIASES]: Solve transitive dependency issues
 add_library(axiom_engine_api ALIAS axiom_engine_lib)
