@@ -32,7 +32,7 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = "import sys\ntry:\n    print(eval(" + repr(expression) + ", {'__builtins__': {}}, {}))\nexcept Exception as e:\n    print(str(e), file=sys.stderr)\n    sys.exit(1)\n"
     cmd = [sys.executable, "-c", code]
     
     try:
