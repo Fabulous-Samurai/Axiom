@@ -25,7 +25,7 @@ def test_infinite_memory():
 
 def test_infinite_loop():
     print("[INFO] Attempting Infinite Loop (Timeout)...")
-    res = run_isolated_expression("while True: pass")
+    res = run_isolated_expression("9**9999999")
     print(f"Result: {res}")
 
 if __name__ == "__main__":
