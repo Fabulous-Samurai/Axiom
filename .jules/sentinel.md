@@ -1,0 +1,4 @@
+## 2024-06-28 - Command Injection via List Arguments in Subprocess
+**Vulnerability:** Command injection vulnerability in `scripts/sonar_helper.py` through the user-controlled `ide_cmd` parameter.
+**Learning:** Using `shell=True` with a list of arguments in `subprocess.run()` is deceptive. On POSIX, only the first element is executed by the shell, while the rest are treated as arguments to the shell itself. When user input controls the first element (like `--ide`), it allows arbitrary command execution. Additionally, safely refactoring to `shell=False` cross-platform requires `shutil.which()` to resolve paths for executables that are actually batch scripts (e.g., `code.cmd` on Windows).
+**Prevention:** Always use `shell=False` and pass arguments as a list. When executing commands that may rely on the PATH or batch script extensions on Windows, use `shutil.which()` to resolve the executable path first.

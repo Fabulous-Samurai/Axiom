@@ -3,6 +3,7 @@ import os
 import argparse
 import subprocess
 import sys
+import shutil
 
 def list_issues(issues):
     print(f"{'#':<3} | {'Severity':<10} | {'Type':<12} | {'File:Line':<40} | {'Message'}")
@@ -36,16 +37,24 @@ def open_issue(issue, ide_cmd="code"):
             print(f"Error: Could not find file {component}")
             return
 
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Removed shell=True from subprocess.run and resolved executable path with shutil.which.
+    # Why: shell=True with user-controlled first arguments allows command injection.
+    resolved_ide = shutil.which(ide_cmd)
+    if not resolved_ide:
+        print(f"Error: Could not resolve IDE command '{ide_cmd}'")
+        return
+
     if ide_cmd == "code":
         # VS Code goto syntax: code --goto file:line
-        cmd = ["code", "--goto", f"{file_path}:{line}"]
+        cmd = [resolved_ide, "--goto", f"{file_path}:{line}"]
     else:
         # Generic fallback: just open the file
-        cmd = [ide_cmd, file_path]
+        cmd = [resolved_ide, file_path]
     
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        subprocess.run(cmd, check=True, shell=False)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
