@@ -1,5 +1,4 @@
-// [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO
-// .agents/workflows/agent_must_obey.md
+// [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
 /**
  * @file secure_vault.h
  * @brief Phase H: Hardware Security Enclaves
@@ -9,9 +8,8 @@
  */
 #pragma once
 
-#include <cstdint>
 #include <memory>
-
+#include <cstdint>
 #include "arena_allocator.h"
 #include "axiom_export.h"
 
@@ -21,32 +19,32 @@ namespace AXIOM {
  * @brief Secure Vault for Enclave-protected State Machine
  */
 class AXIOM_EXPORT SecureMantisVault {
-  std::unique_ptr<std::byte[]> encrypted_storage_;
-  size_t storage_size_{0};
-  bool enclave_active_{false};
+    std::unique_ptr<std::byte[]> encrypted_storage_;
+    size_t storage_size_{0};
+    bool enclave_active_{false};
 
- public:
-  SecureMantisVault() = default;
+public:
+    SecureMantisVault() = default;
 
-  /**
-   * @brief Initialize hardware enclave (SGX/TrustZone)
-   */
-  bool initialize_enclave() noexcept;
+    /**
+     * @brief Initialize hardware enclave (SGX/TrustZone)
+     */
+    bool initialize_enclave() noexcept;
 
-  /**
-   * @brief Seal the state machine into encrypted memory
-   */
-  bool seal(const void* src, size_t size) noexcept;
+    /**
+     * @brief Seal the state machine into encrypted memory
+     */
+    bool seal(const void* src, size_t size) noexcept;
 
-  /**
-   * @brief Unseal the state machine into a protected buffer
-   */
-  bool unseal(void* dst, size_t size) noexcept;
+    /**
+     * @brief Unseal the state machine into a protected buffer
+     */
+    bool unseal(void* dst, size_t size) noexcept;
 
-  /**
-   * @brief Perform a secure computation transition (Enclave ECALL)
-   */
-  void secure_transition() noexcept;
+    /**
+     * @brief Perform a secure computation transition (Enclave ECALL)
+     */
+    void secure_transition() noexcept;
 };
 
-}  // namespace AXIOM
+} // namespace AXIOM

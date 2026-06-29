@@ -12,7 +12,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-
 #include "axiom_export.h"
 
 #ifdef __cplusplus
@@ -28,12 +27,13 @@ AXIOM_EXPORT void AxiomExecution_Destroy(AxiomExecutionHandle handle);
 
 // --- ZERO-COPY DATA BRIDGE ---
 AXIOM_EXPORT int AxiomExecution_DispatchMatrix(AxiomExecutionHandle handle,
-                                               const char* operation_name,
-                                               const double* raw_data,
-                                               size_t rows, size_t cols);
+                                              const char* operation_name,
+                                              const double* raw_data,
+                                              size_t rows,
+                                              size_t cols);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // EXECUTION_ORCHESTRATOR_CAPI_H
+#endif // EXECUTION_ORCHESTRATOR_CAPI_H

@@ -1,11 +1,10 @@
+#include "axui/resolver.h"
+#include "axui/compiler.h"
 #include <cassert>
 #include <cmath>
 #include <fstream>
-#include <iostream>
 #include <sstream>
-
-#include "axui/compiler.h"
-#include "axui/resolver.h"
+#include <iostream>
 
 static const char* MINI_THEME = R"({
     "name": "test_theme",
@@ -44,41 +43,40 @@ static const char* MINI_THEME = R"({
 })";
 
 void test_resolver_load_theme() {
-  axui::ThemeResolver resolver;
-  resolver.loadTheme(MINI_THEME);
-  assert(resolver.isLoaded());
-  assert(resolver.currentTheme().name == "test_theme");
+    axui::ThemeResolver resolver;
+    resolver.loadTheme(MINI_THEME);
+    assert(resolver.isLoaded());
+    assert(resolver.currentTheme().name == "test_theme");
 }
 
 void test_resolver_color_lookup() {
-  axui::ThemeResolver resolver;
-  resolver.loadTheme(MINI_THEME);
-  auto primary = resolver.resolveColor("@colors.primary");
-  assert(primary.r == 125);
+    axui::ThemeResolver resolver;
+    resolver.loadTheme(MINI_THEME);
+    auto primary = resolver.resolveColor("@colors.primary");
+    assert(primary.r == 125);
 }
 
 void test_resolver_number_lookup() {
-  axui::ThemeResolver resolver;
-  resolver.loadTheme(MINI_THEME);
-  assert(std::abs(resolver.resolveNumber("@typography.h1") - 32.0) < 0.01);
+    axui::ThemeResolver resolver;
+    resolver.loadTheme(MINI_THEME);
+    assert(std::abs(resolver.resolveNumber("@typography.h1") - 32.0) < 0.01);
 }
 
 void test_resolver_string_lookup() {
-  axui::ThemeResolver resolver;
-  resolver.loadTheme(MINI_THEME);
-  assert(resolver.resolveString("@typography.headingFamily") ==
-         "JetBrains Mono");
+    axui::ThemeResolver resolver;
+    resolver.loadTheme(MINI_THEME);
+    assert(resolver.resolveString("@typography.headingFamily") == "JetBrains Mono");
 }
 
 void test_resolver_token_parsing() {
-  auto parts = axui::ThemeResolver::parseToken("@colors.primary");
-  assert(parts.category == "colors");
-  assert(parts.key == "primary");
+    auto parts = axui::ThemeResolver::parseToken("@colors.primary");
+    assert(parts.category == "colors");
+    assert(parts.key == "primary");
 }
 
 void test_resolver_resolve_tree() {
-  axui::Compiler compiler;
-  auto result = compiler.compile(R"({
+    axui::Compiler compiler;
+    auto result = compiler.compile(R"({
         "root": {
             "component": "Column",
             "props": {
@@ -86,55 +84,53 @@ void test_resolver_resolve_tree() {
                 "fontSize": "@typography.h2"
             }
         }
-    })",
-                                 MINI_THEME);
+    })", MINI_THEME);
 
-  assert(result.success);
-  assert(result.root != nullptr);
-  auto* bg = result.root->getProperty("background");
-  assert(bg != nullptr);
-  auto* bgColor = std::get_if<axui::Color>(bg);
-  assert(bgColor != nullptr);
-  assert(bgColor->r == 30);
+    assert(result.success);
+    assert(result.root != nullptr);
+    auto* bg = result.root->getProperty("background");
+    assert(bg != nullptr);
+    auto* bgColor = std::get_if<axui::Color>(bg);
+    assert(bgColor != nullptr);
+    assert(bgColor->r == 30);
 }
 
 void test_resolver_theme_swap() {
-  axui::ThemeResolver resolver;
-  resolver.loadTheme(MINI_THEME);
-  axui::UINode dummy;
-  resolver.swapTheme(dummy, MINI_THEME);
-  assert(resolver.isLoaded());
+    axui::ThemeResolver resolver;
+    resolver.loadTheme(MINI_THEME);
+    axui::UINode dummy;
+    resolver.swapTheme(dummy, MINI_THEME);
+    assert(resolver.isLoaded());
 }
 
 void test_resolver_unknown_token() {
-  axui::ThemeResolver resolver;
-  resolver.loadTheme(MINI_THEME);
-  auto unknown = resolver.resolveColor("@colors.nonexistent");
-  assert(unknown.r == 0);
+    axui::ThemeResolver resolver;
+    resolver.loadTheme(MINI_THEME);
+    auto unknown = resolver.resolveColor("@colors.nonexistent");
+    assert(unknown.r == 0);
 }
 
 void test_resolver_is_token() {
-  axui::ThemeResolver resolver;
-  assert(resolver.isToken("@colors.primary") == true);
-  assert(resolver.isToken("hello") == false);
+    axui::ThemeResolver resolver;
+    assert(resolver.isToken("@colors.primary") == true);
+    assert(resolver.isToken("hello") == false);
 }
 
 void test_resolver_glass_defaults() {
-  axui::Compiler compiler;
-  auto result = compiler.compile(R"({
+    axui::Compiler compiler;
+    auto result = compiler.compile(R"({
         "root": {
             "component": "GlassPanel",
             "glass": true
         }
-    })",
-                                 MINI_THEME);
-  assert(result.success);
-  assert(result.root->glass.enabled == true);
+    })", MINI_THEME);
+    assert(result.success);
+    assert(result.root->glass.enabled == true);
 }
 
 void test_resolver_binding_preserved() {
-  axui::Compiler compiler;
-  auto result = compiler.compile(R"({
+    axui::Compiler compiler;
+    auto result = compiler.compile(R"({
         "root": {
             "component": "KPICard",
             "props": {
@@ -142,15 +138,14 @@ void test_resolver_binding_preserved() {
                 "bind": " @engine.throughput"
             }
         }
-    })",
-                                 MINI_THEME);
+    })", MINI_THEME);
 
-  assert(result.success);
-  assert(result.root != nullptr);
+    assert(result.success);
+    assert(result.root != nullptr);
 
-  auto* bind = result.root->getProperty("bind");
-  assert(bind != nullptr);
-  auto* binding = std::get_if<axui::Binding>(bind);
-  assert(binding != nullptr);
-  assert(binding->is_bound == true);
+    auto* bind = result.root->getProperty("bind");
+    assert(bind != nullptr);
+    auto* binding = std::get_if<axui::Binding>(bind);
+    assert(binding != nullptr);
+    assert(binding->is_bound == true);
 }

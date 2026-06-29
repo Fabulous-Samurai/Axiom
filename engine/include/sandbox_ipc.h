@@ -1,5 +1,4 @@
-// [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO
-// .agents/workflows/agent_must_obey.md
+// [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
 /**
  * @file sandbox_ipc.h
  * @brief Lock-Free Shared Memory IPC for Axiom Sandbox.
@@ -7,11 +6,10 @@
 
 #pragma once
 
-#include <array>
+#include "lock_free_ring_buffer.h"
 #include <atomic>
 #include <cstdint>
-
-#include "lock_free_ring_buffer.h"
+#include <array>
 
 namespace AXIOM::Sandbox {
 
@@ -19,16 +17,16 @@ static constexpr size_t MAX_CMD_LEN = 512;
 static constexpr size_t MAX_RES_LEN = 2048;
 
 struct SandboxRequest {
-  uint64_t request_id;
-  std::array<char, MAX_CMD_LEN> command;
+    uint64_t request_id;
+    std::array<char, MAX_CMD_LEN> command;
 };
 
 struct SandboxResponse {
-  uint64_t request_id;
-  bool success;
-  std::array<char, MAX_RES_LEN> result;
-  std::array<char, 256> error;
-  double execution_time_ms;
+    uint64_t request_id;
+    bool success;
+    std::array<char, MAX_RES_LEN> result;
+    std::array<char, 256> error;
+    double execution_time_ms;
 };
 
 /**
@@ -36,19 +34,19 @@ struct SandboxResponse {
  * This structure lives directly in the mmap'd region.
  */
 struct alignas(64) SandboxIPCLayout {
-  // Magic signature to verify segment integrity
-  uint64_t magic_signature = 0x4158494F4D534258;  // "AXIOMSBX"
+    // Magic signature to verify segment integrity
+    uint64_t magic_signature = 0x4158494F4D534258; // "AXIOMSBX"
 
-  // Heartbeats for Sentry/Watchdog
-  std::atomic<uint64_t> worker_heartbeat{0};
-  std::atomic<uint32_t> worker_pid{0};
+    // Heartbeats for Sentry/Watchdog
+    std::atomic<uint64_t> worker_heartbeat{0};
+    std::atomic<uint32_t> worker_pid{0};
 
-  // Lock-Free Queues
-  // Main process pushes to req_queue, Worker pops.
-  SPSCQueue<SandboxRequest, 128> req_queue;
+    // Lock-Free Queues
+    // Main process pushes to req_queue, Worker pops.
+    SPSCQueue<SandboxRequest, 128> req_queue;
 
-  // Worker pushes to res_queue, Main process pops.
-  SPSCQueue<SandboxResponse, 128> res_queue;
+    // Worker pushes to res_queue, Main process pops.
+    SPSCQueue<SandboxResponse, 128> res_queue;
 };
 
-}  // namespace AXIOM::Sandbox
+} // namespace AXIOM::Sandbox

@@ -1,10 +1,9 @@
-#include <chrono>
-#include <iostream>
-
 #include "axui/compiler.h"
+#include <iostream>
+#include <chrono>
 
 int main() {
-  std::string minimal = R"({
+    std::string minimal = R"({
         "root": {
             "component": "Column",
             "layout": { "fill": true, "padding": 24, "gap": 16 },
@@ -22,41 +21,38 @@ int main() {
         }
     })";
 
-  axui::Compiler compiler;
+    axui::Compiler compiler;
 
-  // Warmup
-  for (int i = 0; i < 10; i++) {
-    compiler.compile(minimal);
-  }
-
-  // Benchmark
-  int iterations = 10000;
-  auto start = std::chrono::high_resolution_clock::now();
-  for (int i = 0; i < iterations; i++) {
-    auto result = compiler.compile(minimal);
-    if (!result.success) {
-      std::cerr << "Compile failed!\n";
-      return 1;
+    // Warmup
+    for (int i = 0; i < 10; i++) {
+        compiler.compile(minimal);
     }
-  }
-  auto end = std::chrono::high_resolution_clock::now();
 
-  auto total_us =
-      std::chrono::duration_cast<std::chrono::microseconds>(end - start)
-          .count();
-  double avg_us = static_cast<double>(total_us) / iterations;
+    // Benchmark
+    int iterations = 10000;
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < iterations; i++) {
+        auto result = compiler.compile(minimal);
+        if (!result.success) {
+            std::cerr << "Compile failed!\n";
+            return 1;
+        }
+    }
+    auto end = std::chrono::high_resolution_clock::now();
 
-  auto single = compiler.compile(minimal);
+    auto total_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    double avg_us = static_cast<double>(total_us) / iterations;
 
-  std::cout << "═══ AXUI Parser Benchmark ═══\n";
-  std::cout << "  Iterations:     " << iterations << "\n";
-  std::cout << "  Total time:     " << total_us / 1000.0 << " ms\n";
-  std::cout << "  Average parse:  " << avg_us << " µs\n";
-  std::cout << "  Node count:     " << single.node_count << "\n";
-  std::cout << "  Compile time:   " << single.compile_time_ms << " ms\n";
-  std::cout << "  Target:         < 500 µs ("
-            << (avg_us < 500 ? "✅ PASS" : "❌ FAIL") << ")\n";
-  std::cout << "═════════════════════════════\n";
+    auto single = compiler.compile(minimal);
 
-  return avg_us < 500 ? 0 : 1;
+    std::cout << "═══ AXUI Parser Benchmark ═══\n";
+    std::cout << "  Iterations:     " << iterations << "\n";
+    std::cout << "  Total time:     " << total_us / 1000.0 << " ms\n";
+    std::cout << "  Average parse:  " << avg_us << " µs\n";
+    std::cout << "  Node count:     " << single.node_count << "\n";
+    std::cout << "  Compile time:   " << single.compile_time_ms << " ms\n";
+    std::cout << "  Target:         < 500 µs (" << (avg_us < 500 ? "✅ PASS" : "❌ FAIL") << ")\n";
+    std::cout << "═════════════════════════════\n";
+
+    return avg_us < 500 ? 0 : 1;
 }
