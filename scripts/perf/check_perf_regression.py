@@ -3,6 +3,17 @@ import sys
 import os
 
 def check_perf(current_file, baseline_file, threshold=0.05):
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Add basic path traversal mitigation.
+    # Why: Prevent reading or writing to arbitrary directories via CLI arguments.
+    current_file = os.path.abspath(current_file)
+    baseline_file = os.path.abspath(baseline_file)
+    base_dir = os.path.abspath(os.getcwd())
+
+    if not current_file.startswith(base_dir) or not baseline_file.startswith(base_dir):
+        print("Error: Path traversal attempt detected.")
+        return 1
+
     if not os.path.exists(current_file):
         print(f"Error: Current benchmark file {current_file} not found.")
         return 1

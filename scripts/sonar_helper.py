@@ -38,14 +38,21 @@ def open_issue(issue, ide_cmd="code"):
 
     if ide_cmd == "code":
         # VS Code goto syntax: code --goto file:line
-        cmd = ["code", "--goto", f"{file_path}:{line}"]
+        import shutil
+        resolved_cmd = shutil.which("code") or "code"
+        cmd = [resolved_cmd, "--goto", f"{file_path}:{line}"]
     else:
         # Generic fallback: just open the file
-        cmd = [ide_cmd, file_path]
+        import shutil
+        resolved_cmd = shutil.which(ide_cmd) or ide_cmd
+        cmd = [resolved_cmd, file_path]
 
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        # 🛡️ SENTINEL SECURITY FIX:
+        # What: Set shell=False to prevent command injection.
+        # Why: Passing a list with shell=True is dangerous if the first element is user-controlled.
+        subprocess.run(cmd, check=True, shell=False)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
