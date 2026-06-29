@@ -1,17 +1,19 @@
-// [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO .agents/workflows/agent_must_obey.md
+// [MANDATE]: ZENITH PILLAR COMPLIANCE - REFER TO
+// .agents/workflows/agent_must_obey.md
 #pragma once
 
-#include "ast_nodes.h"
 #include <unordered_map>
+
+#include "ast_nodes.h"
 
 namespace AXIOM {
 
 struct NodeAnalysis {
-    bool is_constant = false;
-    bool is_matrix = false;
-    size_t rows = 0;
-    size_t cols = 0;
-    OperationComplexity complexity = OperationComplexity::Simple;
+  bool is_constant = false;
+  bool is_matrix = false;
+  size_t rows = 0;
+  size_t cols = 0;
+  OperationComplexity complexity = OperationComplexity::Simple;
 };
 
 /**
@@ -19,20 +21,18 @@ struct NodeAnalysis {
  * Updated for Operation VARIANT SHIFT (no virtual calls).
  */
 class ASTAnalyzer {
-public:
-    void Analyze(NodePtr root);
-    
-    // Returns cached analysis for a node
-    NodeAnalysis GetAnalysis(NodePtr node) const;
+ public:
+  void Analyze(NodePtr root);
 
-    bool IsMatrix(NodePtr node) const {
-        return GetAnalysis(node).is_matrix;
-    }
+  // Returns cached analysis for a node
+  NodeAnalysis GetAnalysis(NodePtr node) const;
 
-private:
-    void AnalyzeRecursive(NodePtr node);
+  bool IsMatrix(NodePtr node) const { return GetAnalysis(node).is_matrix; }
 
-    std::unordered_map<NodePtr, NodeAnalysis> analysis_cache_;
+ private:
+  void AnalyzeRecursive(NodePtr node);
+
+  std::unordered_map<NodePtr, NodeAnalysis> analysis_cache_;
 };
 
-} // namespace AXIOM
+}  // namespace AXIOM
