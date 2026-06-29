@@ -70,7 +70,7 @@ void PinnedMemoryPool::unpin() noexcept {
 void* PinnedMemoryPool::allocate(size_t size) noexcept {
     size_t current = offset_.load(std::memory_order_relaxed);
     size_t next = (current + size + 63) & ~63; // 64-byte Cache-line alignment
-    
+
     if (next > size_) return nullptr;
 
     while (!offset_.compare_exchange_weak(current, next, std::memory_order_release, std::memory_order_relaxed)) {

@@ -118,4 +118,3 @@ static void BM_MantisSIMDF32(benchmark::State& state) {
     benchmark::DoNotOptimize(sink);
 }
 BENCHMARK(BM_MantisSIMDF32);
-

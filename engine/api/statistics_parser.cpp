@@ -11,7 +11,7 @@ AXIOM::FixedVector<double, 256> StatisticsParser::ParseVector(const std::string&
     size_t lb = s.find('[');
     size_t rb = s.rfind(']');
     if (lb == std::string::npos || rb == std::string::npos || rb <= lb) return out;
-    
+
     std::string body = s.substr(lb + 1, rb - lb - 1);
     size_t pos = 0;
     while (pos < body.size()) {

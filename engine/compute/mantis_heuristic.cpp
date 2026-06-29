@@ -43,4 +43,3 @@ void load_profile_i8(TargetProfileI8& profile,
 
 } // namespace Mantis
 } // namespace AXIOM
-

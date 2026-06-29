@@ -19,10 +19,10 @@ def list_issues(issues):
 def open_issue(issue, ide_cmd="code"):
     component = issue.get("component", "").split(":")[-1]
     line = issue.get("line")
-    
+
     # Assume workspace root is the current directory
     file_path = os.path.join(os.getcwd(), component)
-    
+
     if not os.path.exists(file_path):
         # Try to find the file if it's not relative to root
         # This is a simple heuristic
@@ -38,14 +38,21 @@ def open_issue(issue, ide_cmd="code"):
 
     if ide_cmd == "code":
         # VS Code goto syntax: code --goto file:line
-        cmd = ["code", "--goto", f"{file_path}:{line}"]
+        import shutil
+        resolved_cmd = shutil.which("code") or "code"
+        cmd = [resolved_cmd, "--goto", f"{file_path}:{line}"]
     else:
         # Generic fallback: just open the file
-        cmd = [ide_cmd, file_path]
-    
+        import shutil
+        resolved_cmd = shutil.which(ide_cmd) or ide_cmd
+        cmd = [resolved_cmd, file_path]
+
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        # 🛡️ SENTINEL SECURITY FIX:
+        # What: Set shell=False to prevent command injection.
+        # Why: Passing a list with shell=True is dangerous if the first element is user-controlled.
+        subprocess.run(cmd, check=True, shell=False)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
@@ -58,16 +65,26 @@ def main():
 
     args = parser.parse_args()
 
-    if not os.path.exists(args.json):
-        print(f"Error: {args.json} not found. Run sonar_issues.py first.")
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Add basic path traversal mitigation.
+    # Why: Prevent reading arbitrary JSON files via CLI arguments.
+    json_path = os.path.abspath(args.json)
+    base_dir = os.path.abspath(os.getcwd())
+
+    if not json_path.startswith(base_dir):
+        print("Error: Path traversal attempt detected.")
         sys.exit(1)
 
-    with open(args.json, "r", encoding="utf-8") as f:
+    if not os.path.exists(json_path):
+        print(f"Error: {json_path} not found. Run sonar_issues.py first.")
+        sys.exit(1)
+
+    with open(json_path, "r", encoding="utf-8") as f:
         issues = json.load(f)
 
     if args.list or args.open is None:
         list_issues(issues)
-    
+
     if args.open is not None:
         if 0 <= args.open < len(issues):
             open_issue(issues[args.open], args.ide)

@@ -14,7 +14,7 @@
 
 namespace AXIOM {
 
-PlutoSwarmNode::PlutoSwarmNode() 
+PlutoSwarmNode::PlutoSwarmNode()
     : m_nodeGeometry(QSGGeometry::defaultAttributes_Point2D(), 0),
       m_edgeGeometry(QSGGeometry::defaultAttributes_Point2D(), 0)
 {
@@ -24,14 +24,14 @@ PlutoSwarmNode::PlutoSwarmNode()
     setGeometry(&m_nodeGeometry);
     m_nodeMaterial.setColor(Qt::cyan);
     setMaterial(&m_nodeMaterial);
-    
+
     // Configure Edges
     m_edgeGeometry.setDrawingMode(QSGGeometry::DrawLines);
     m_edgeGeometry.setLineWidth(1.0f);
     m_edgeNode.setGeometry(&m_edgeGeometry);
     m_edgeMaterial.setColor(QColor::fromRgbF(0.5, 0.8, 1.0, 0.3));
     m_edgeNode.setMaterial(&m_edgeMaterial);
-    
+
     appendChildNode(&m_edgeNode);
 }
 
@@ -61,7 +61,7 @@ void PlutoSwarmNode::update(const QRectF&, size_t count, const QPointF* position
             // Find parent position (assuming pid is an index for now, or use a map)
             // For simplicity and speed in this version, we assume parent_id maps to an index.
             // In a real swarm, we'd have a map or search_nodes already sorted.
-            uint32_t p_idx = pid % (uint32_t)count; 
+            uint32_t p_idx = pid % (uint32_t)count;
             edge_v[edge_idx++].set((float)positions[p_idx].x(), (float)positions[p_idx].y());
             edge_v[edge_idx++].set((float)positions[i].x(), (float)positions[i].y());
         }
@@ -78,10 +78,10 @@ PlutoSwarmNavigator::PlutoSwarmNavigator(QQuickItem* parent) : QQuickItem(parent
 void PlutoSwarmNavigator::setZoom(qreal z) {
     // Bounds checking
     z = std::clamp(z, 0.1, 50.0);
-    
+
     auto now = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastInteractionTime).count();
-    
+
     // Rate-limiting: Max 120Hz updates (~8ms) to prevent flooding the SG
     if (elapsed < 8) return;
     m_lastInteractionTime = now;
@@ -117,14 +117,14 @@ QSGNode* PlutoSwarmNavigator::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeD
     if (!node) {
         node = new PlutoSwarmNode();
     }
-    
+
     // Position calculation once per update
     static std::array<Mantis::AStarNode, Mantis::kMaxNodes> search_nodes;
     static std::array<QPointF, Mantis::kMaxNodes> pos_cache;
     static std::array<uint32_t, Mantis::kMaxNodes> parent_ids;
 
     size_t count = Pluto::PlutoController::instance().get_search_tree(search_nodes.data(), Mantis::kMaxNodes);
-    
+
     if (count == 0) {
         count = 10000; // Stress test with 10k nodes if empty
         for (size_t i = 0; i < count; ++i) {
@@ -143,40 +143,40 @@ QSGNode* PlutoSwarmNavigator::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeD
         float y = (float)center.y() + std::sin(angle) * radius;
         pos_cache[i] = QPointF(x, y);
         parent_ids[i] = search_nodes[i].parent_id;
-        
+
         // Only cache every 4th node for picking if 10k nodes to save memory/time
         // Or cache all if we need precise picking. Let's cache all for 10k.
         m_lastNodePositions.push_back({ (uint32_t)i, pos_cache[i] });
     }
 
     node->update(boundingRect(), count, pos_cache.data(), parent_ids.data());
-    
+
     return node;
 }
 
 void PlutoSwarmNavigator::mousePressEvent(QMouseEvent *event) {
     const QPointF clickPos = event->position();
     const float threshold = 15.0f * (float)m_zoom; // Scale picking radius with zoom
-    
+
     int closestId = -1;
     float minDim = 1000000.0f;
-    
+
     for (const auto& node : m_lastNodePositions) {
-        float dist = std::sqrt(std::pow(node.pos.x() - clickPos.x(), 2) + 
+        float dist = std::sqrt(std::pow(node.pos.x() - clickPos.x(), 2) +
                                std::pow(node.pos.y() - clickPos.y(), 2));
         if (dist < threshold && dist < minDim) {
             minDim = dist;
             closestId = (int)node.id;
         }
     }
-    
+
     if (closestId != -1) {
         m_selectedNodeId = closestId;
         Q_EMIT selectedNodeIdChanged();
         Q_EMIT nodeClicked(closestId);
         std::cout << "[Pluto Navigator] Selected Node: " << closestId << std::endl;
     }
-    
+
     event->accept();
 }
 

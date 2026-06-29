@@ -138,7 +138,7 @@ void DaemonEngine::stop() noexcept {
     }
 
     status_.store(DaemonStatus::SHUTDOWN, std::memory_order::release);
-    
+
     // The jthread destructor will automatically join.
 }
 
@@ -218,7 +218,7 @@ AXIOM_FORCE_INLINE bool decode_request(std::string_view req_str, std::atomic<uin
     copy_sv_to_array(out.command, cmd);
     copy_sv_to_array(out.session_id, sid);
     if (!mod.empty()) copy_sv_to_array(out.mode, mod);
-    
+
     out.request_id = next_request_id.fetch_add(1, std::memory_order::relaxed);
     out.timestamp = std::chrono::steady_clock::now();
     return true;
@@ -311,17 +311,17 @@ std::expected<std::string_view, std::error_code> DaemonEngine::create_session() 
     if (sessions_.full()) {
         return std::unexpected(std::make_error_code(std::errc::too_many_files_open));
     }
-    
+
     auto ctx = std::make_unique<SessionContext>();
     auto ns = std::chrono::steady_clock::now().time_since_epoch().count();
     auto res = std::format_to(ctx->session_id.data(), "session_{}", ns);
     *res = '\0';
 
     ctx->created_at = std::chrono::steady_clock::now();
-    
+
     std::string_view id_view(ctx->session_id.data());
     sessions_.emplace_back(id_view, std::move(ctx));
-    
+
     return id_view;
 }
 

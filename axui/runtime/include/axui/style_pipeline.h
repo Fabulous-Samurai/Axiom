@@ -22,7 +22,7 @@ struct StyleUpdate {
 
 /**
  * @brief StylePipeline: High-performance bridge for JSON-to-QML style updates.
- * 
+ *
  * Uses SPSCQueue (Lock-Free) to ensure the C++ producer (e.g., from network or logic)
  * never blocks on the Qt Main Thread / Event Loop.
  */
@@ -62,7 +62,7 @@ private slots:
 private:
     // SPSCQueue: Lock-free SPSC buffer (64 entries to balance memory and burst capacity)
     AXIOM::SPSCQueue<StyleUpdate, 64> queue_;
-    
+
     QTimer* poll_timer_ = nullptr;
     std::atomic<uint64_t> next_sequence_id_{1};
     double last_latency_ms_ = 0.0;

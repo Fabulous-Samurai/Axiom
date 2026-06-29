@@ -35,7 +35,7 @@ EngineResult UnitParser::ParseConversion(std::string_view input) noexcept {
     if (std::regex_search(s, matches, GetUnitConversionPattern())) {
         auto value_opt = Utils::FastParseDouble(matches[2].str());
         if (!value_opt) return CreateErrorResult(CalcErr::ParseError);
-        
+
         double value = *value_opt;
         std::string from_unit = matches[3].str();
         std::string to_unit = matches[4].str();

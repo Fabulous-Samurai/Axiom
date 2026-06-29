@@ -42,10 +42,10 @@ int NextPowerOfTwo(int value) {
 } // namespace
 
 EigenEngine::EigenEngine() {
-    
+
     // Initialize Eigen with optimal settings for Senna Speed!
     Eigen::initParallel();
-    
+
 #ifdef _OPENMP
     if (num_threads_ > 0) {
         Eigen::setNbThreads(num_threads_);
@@ -62,7 +62,7 @@ EigenEngine::EigenEngine() {
 #endif
 
     ResetMetrics();
-    
+
     std::cout << "EigenEngine initialized with Senna Speed optimization!" << std::endl;
     std::cout << "   Threads: " << num_threads_ << std::endl;
     std::cout << "   SIMD: " << (simd_enabled_ ? "Enabled" : "Disabled") << std::endl;
@@ -70,7 +70,7 @@ EigenEngine::EigenEngine() {
 
 void EigenEngine::SetOptimizationLevel(CPUOptimizationLevel level) {
     optimization_level_ = level;
-    
+
     switch (level) {
         case CPUOptimizationLevel::Basic:
             simd_enabled_ = false;
@@ -101,7 +101,7 @@ void EigenEngine::SetNumThreads(int num_threads) {
     } else {
         num_threads_ = num_threads;
     }
-    
+
 #ifdef _OPENMP
     Eigen::setNbThreads(num_threads_);
     omp_set_num_threads(num_threads_);
@@ -110,50 +110,50 @@ void EigenEngine::SetNumThreads(int num_threads) {
 
 EigenEngine::Matrix EigenEngine::CreateMatrix(const AXIOM::FixedVector<AXIOM::FixedVector<double, 256>, 256>& data) const {
     SENNA_SPEED_EIGEN("CreateMatrix");
-    
+
     if (data.empty()) return Matrix();
-    
+
     size_t rows = data.size();
     size_t cols = data[0].size();
-    
+
     Matrix mat(rows, cols);
     for (size_t i = 0; i < rows; ++i) {
         for (size_t j = 0; j < cols; ++j) {
             mat(i, j) = (j < data[i].size()) ? data[i][j] : 0.0;
         }
     }
-    
+
     return mat;
 }
 
 EigenEngine::Vector EigenEngine::CreateVector(const AXIOM::FixedVector<double, 256>& data) const {
     SENNA_SPEED_EIGEN("CreateVector");
-    
+
     Vector vec(data.size());
     for (size_t i = 0; i < data.size(); ++i) {
         vec(i) = data[i];
     }
-    
+
     return vec;
 }
 
 EigenEngine::Matrix EigenEngine::MatrixMultiply(const Matrix& A, const Matrix& B) const {
     SENNA_SPEED_EIGEN("MatrixMultiply");
-    
+
     if (optimization_level_ >= CPUOptimizationLevel::Vectorized) {
         return OptimizedMatMul(A, B);
     }
-    
+
     return A * B;
 }
 
 EigenEngine::Vector EigenEngine::MatrixVectorMultiply(const Matrix& A, const Vector& x) const {
     SENNA_SPEED_EIGEN("MatrixVectorMultiply");
-    
+
     if (optimization_level_ >= CPUOptimizationLevel::Vectorized) {
         return OptimizedMatVecMul(A, x);
     }
-    
+
     return A * x;
 }
 
@@ -174,7 +174,7 @@ double EigenEngine::Determinant(const Matrix& A) const {
 
 std::optional<EigenEngine::Matrix> EigenEngine::Inverse(const Matrix& A) const noexcept {
     SENNA_SPEED_EIGEN("Inverse");
-    
+
     // Use optimal solver based on matrix properties
     if (A.rows() == A.cols()) {
         // For square matrices, use LU decomposition
@@ -197,29 +197,29 @@ EigenEngine::Matrix EigenEngine::Transpose(const Matrix& A) const {
 
 EigenEngine::Matrix EigenEngine::PseudoInverse(const Matrix& A) const {
     SENNA_SPEED_EIGEN("PseudoInverse");
-    
+
     // Use SVD for numerical stability
     Eigen::JacobiSVD<Matrix> svd(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
-    
-    const double tolerance = std::numeric_limits<double>::epsilon() * 
-                            std::max(A.rows(), A.cols()) * 
+
+    const double tolerance = std::numeric_limits<double>::epsilon() *
+                            std::max(A.rows(), A.cols()) *
                             svd.singularValues().maxCoeff();
-    
-    return svd.matrixV() * 
+
+    return svd.matrixV() *
            (svd.singularValues().array() > tolerance)
                .select(svd.singularValues().array().inverse(), 0)
                .matrix()
-               .asDiagonal() * 
+               .asDiagonal() *
            svd.matrixU().adjoint();
 }
 
 std::optional<std::pair<EigenEngine::Vector, EigenEngine::Matrix>> EigenEngine::EigenDecomposition(const Matrix& A) const noexcept {
     SENNA_SPEED_EIGEN("EigenDecomposition");
-    
+
     if (A.rows() != A.cols()) {
         return std::nullopt;
     }
-    
+
     { // try removed
         // Check if matrix is symmetric for optimization
         if (A.isApprox(A.transpose())) {
@@ -238,14 +238,14 @@ std::optional<std::pair<EigenEngine::Vector, EigenEngine::Matrix>> EigenEngine::
 
 std::tuple<EigenEngine::Matrix, EigenEngine::Vector, EigenEngine::Matrix> EigenEngine::SVD(const Matrix& A) const {
     SENNA_SPEED_EIGEN("SVD");
-    
+
     Eigen::JacobiSVD<Matrix> svd(A, Eigen::ComputeFullU | Eigen::ComputeFullV);
     return std::make_tuple(svd.matrixU(), svd.singularValues(), svd.matrixV());
 }
 
 EigenEngine::Vector EigenEngine::SolveLinearSystem(const Matrix& A, const Vector& b) const {
     SENNA_SPEED_EIGEN("SolveLinearSystem");
-    
+
     // Choose optimal solver based on matrix properties
     if (A.rows() == A.cols()) {
         // Square system - check for special properties
@@ -256,7 +256,7 @@ EigenEngine::Vector EigenEngine::SolveLinearSystem(const Matrix& A, const Vector
                 return chol.solve(b);
             }
         }
-        
+
         // General square system - use LU
         Eigen::FullPivLU<Matrix> lu(A);
         return lu.solve(b);
@@ -268,7 +268,7 @@ EigenEngine::Vector EigenEngine::SolveLinearSystem(const Matrix& A, const Vector
 
 EigenEngine::Matrix EigenEngine::SolveMultipleRHS(const Matrix& A, const Matrix& B) const {
     SENNA_SPEED_EIGEN("SolveMultipleRHS");
-    
+
     if (A.rows() == A.cols()) {
         Eigen::FullPivLU<Matrix> lu(A);
         return lu.solve(B);
@@ -375,21 +375,21 @@ double EigenEngine::Variance(const Vector& data) const {
 
 EigenEngine::Vector EigenEngine::Normalize(const Vector& data) const {
     SENNA_SPEED_EIGEN("Normalize");
-    
+
     double mean_val = data.mean();
     double std_val = StandardDeviation(data);
-    
+
     if (std_val < std::numeric_limits<double>::epsilon()) {
         return Vector::Zero(data.size());
     }
-    
+
     return (data.array() - mean_val) / std_val;
 }
 
 std::string EigenEngine::MatrixToString(const Matrix& mat, int precision) const {
     std::stringstream ss;
     ss << std::fixed << std::setprecision(precision);
-    
+
     ss << "Matrix " << mat.rows() << "x" << mat.cols() << ":\n";
     for (int i = 0; i < mat.rows(); ++i) {
         ss << "[ ";
@@ -399,21 +399,21 @@ std::string EigenEngine::MatrixToString(const Matrix& mat, int precision) const 
         }
         ss << " ]\n";
     }
-    
+
     return ss.str();
 }
 
 std::string EigenEngine::VectorToString(const Vector& vec, int precision) const {
     std::stringstream ss;
     ss << std::fixed << std::setprecision(precision);
-    
+
     ss << "Vector " << vec.size() << ":\n[ ";
     for (int i = 0; i < vec.size(); ++i) {
         ss << vec(i);
         if (i < vec.size() - 1) ss << ", ";
     }
     ss << " ]";
-    
+
     return ss.str();
 }
 
@@ -430,7 +430,7 @@ std::string EigenEngine::GetPerformanceReport() const {
     ss << "   Memory Used: " << last_metrics_.memory_used_bytes << " bytes\n";
     ss << "   SIMD Used: " << (last_metrics_.simd_used ? "Yes" : "No") << "\n";
     ss << "   Optimization Level: ";
-    
+
     switch (optimization_level_) {
         case CPUOptimizationLevel::Basic: ss << "Basic"; break;
         case CPUOptimizationLevel::SIMD: ss << "SIMD"; break;
@@ -438,7 +438,7 @@ std::string EigenEngine::GetPerformanceReport() const {
         case CPUOptimizationLevel::Vectorized: ss << "Vectorized"; break;
         case CPUOptimizationLevel::Extreme: ss << "Extreme"; break;
     }
-    
+
     // Performance classification (Senna Speed style!)
     if (last_metrics_.execution_time_ms < 1.0) {
         ss << "\n   SENNA SPEED: Lightning Fast! (<1ms)";
@@ -449,7 +449,7 @@ std::string EigenEngine::GetPerformanceReport() const {
     } else {
         ss << "\n   🐌 Needs Optimization (>" << last_metrics_.execution_time_ms << "ms)";
     }
-    
+
     return ss.str();
 }
 
@@ -457,19 +457,19 @@ std::string EigenEngine::GetPerformanceReport() const {
 EigenEngine::Matrix EigenEngine::OptimizedMatMul(const Matrix& A, const Matrix& B) const {
     // Use Eigen's optimized BLAS if available
     Matrix result = A * B;
-    
+
     // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
     last_metrics_.simd_used = simd_enabled_;
-    
+
     return result;
 }
 
 EigenEngine::Vector EigenEngine::OptimizedMatVecMul(const Matrix& A, const Vector& x) const {
     Vector result = A * x;
-    
+
     // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
     last_metrics_.simd_used = simd_enabled_;
-    
+
     return result;
 }
 
@@ -506,15 +506,15 @@ double PerformanceTimer::GetElapsedMs() const {
 template<typename Func>
 auto EigenEngine::MeasurePerformance(Func&& func, const std::string& operation) const -> decltype(func()) {
     auto start = std::chrono::high_resolution_clock::now();
-    
+
     auto result = func();
-    
+
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    
+
     // THREAD-SAFETY FIX: No const_cast needed - UpdateMetrics uses mutable members
     UpdateMetrics(operation, duration.count() / 1000.0, sizeof(result));
-    
+
     return result;
 }
 

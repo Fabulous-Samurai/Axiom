@@ -13,7 +13,7 @@ sys.path.insert(0, str(project_root / 'gui' / 'python'))
 def main():
     print("🏛️ AXIOM PRO - Quick Function Test")
     print("="*60)
-    
+
     # Test 1: Import GUI
     print("\n1️⃣ Testing GUI Import...")
     try:
@@ -22,7 +22,7 @@ def main():
     except Exception as e:
         print(f"   ❌ Failed: {e}")
         return False
-    
+
     # Test 2: Check methods
     print("\n2️⃣ Checking GUI Methods...")
     required_methods = [
@@ -31,7 +31,7 @@ def main():
         'send_to_axiom',
         'plot_results'
     ]
-    
+
     all_present = True
     for method in required_methods:
         if hasattr(AxiomProGUI, method):
@@ -39,47 +39,47 @@ def main():
         else:
             print(f"   ❌ {method} missing")
             all_present = False
-    
+
     if not all_present:
         return False
-    
+
     # Test 3: Check axiom.exe
     print("\n3️⃣ Checking AXIOM Engine...")
     axiom_paths = [
         project_root / 'ninja-build' / 'axiom.exe',
         project_root / 'build' / 'axiom.exe',
     ]
-    
+
     engine_found = False
     for path in axiom_paths:
         if path.exists():
             print(f"   ✅ Found at: {path.name}")
             engine_found = True
             break
-    
+
     if not engine_found:
         print("   ⚠️ axiom.exe not found")
-    
+
     # Test 4: Signal Processing Toolkit
     print("\n4️⃣ Testing Signal Processing...")
     try:
         sys.path.insert(0, str(project_root / 'tools' / 'analysis'))
         from signal_processing_toolkit import SignalProcessingToolkit
         print("   ✅ SignalProcessingToolkit imported")
-        
+
         toolkit = SignalProcessingToolkit()
         print("   ✅ Toolkit instantiated")
-        
+
         # Create test signals without showing plots
         import matplotlib
         matplotlib.use('Agg')
         toolkit.create_test_signals()
         print(f"   ✅ Generated {len(toolkit.signals)} signals")
-        
+
     except Exception as e:
         print(f"   ❌ Failed: {e}")
         return False
-    
+
     # Test 5: Numpy operations
     print("\n5️⃣ Testing NumPy Operations...")
     try:
@@ -91,7 +91,7 @@ def main():
     except Exception as e:
         print(f"   ❌ Failed: {e}")
         return False
-    
+
     # Test 6: Matplotlib (non-GUI)
     print("\n6️⃣ Testing Matplotlib...")
     try:
@@ -105,7 +105,7 @@ def main():
     except Exception as e:
         print(f"   ❌ Failed: {e}")
         return False
-    
+
     print("\n" + "="*60)
     print("✅ ALL CORE FUNCTIONS PASSED!")
     print("="*60)

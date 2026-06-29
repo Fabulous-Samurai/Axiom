@@ -17,7 +17,7 @@ namespace AXIOM {
 enum class StatusCode : int32_t {
     Success = 0,
     None = 0,
-    
+
     // Calculation Errors
     DivideByZero = 1001,
     ParseError = 1002,
@@ -29,22 +29,22 @@ enum class StatusCode : int32_t {
     IndeterminateResult = 1008,
     StackOverflow = 1009,
     InfiniteLoop = 1010,
-    
+
     // Resource Errors
     MemoryExhausted = 2001,
     ResourceLocked = 2002,
     Timeout = 2003,
-    
+
     // IPC/Pipe Errors
     PipeError = 3001,
     PermissionDenied = 3002,
     InvalidName = 3003,
-    
+
     // Security Errors
     VaultLocked = 4001,
     AccessDenied = 4002,
     IntegrityCheckFailed = 4003,
-    
+
     Unknown = 9999
 };
 

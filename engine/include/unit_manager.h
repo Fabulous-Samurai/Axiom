@@ -13,7 +13,7 @@
 namespace AXIOM {
 
 enum class UnitType {
-    Length, Time, Mass, Temperature, Current, 
+    Length, Time, Mass, Temperature, Current,
     Angle, Area, Volume, Velocity, Acceleration,
     Force, Energy, Power, Pressure, Dimensionless
 };
@@ -30,16 +30,16 @@ struct Unit {
 class AXIOM_EXPORT UnitManager {
 private:
     AXIOM::FixedVector<Unit, 256> units_;
-    
+
 public:
     UnitManager();
-    
+
     // Core functionality
     EngineResult ConvertUnit(double value, std::string_view from_unit, std::string_view to_unit) noexcept;
     EngineResult ConvertTemperature(double value, std::string_view from_unit, std::string_view to_unit) noexcept;
     bool AreCompatible(std::string_view unit1, std::string_view unit2) noexcept;
     std::string_view GetCanonicalUnit(UnitType type) noexcept;
-    
+
     // Registration
     void RegisterUnit(std::string_view symbol, UnitType type, double scale, std::string_view name) noexcept;
     AXIOM::FixedVector<std::string_view, 256> GetUnitsOfType(UnitType type) noexcept;

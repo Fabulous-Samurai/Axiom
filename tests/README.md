@@ -94,5 +94,3 @@ Measured benchmark sections currently include:
 - Main benchmarking section: [../README.md#benchmarking](../README.md#benchmarking)
 - Release history: [../CHANGELOG.md](../CHANGELOG.md)
 - Optional Python deps: [../requirements-optional.txt](../requirements-optional.txt)
-
-

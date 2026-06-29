@@ -55,7 +55,7 @@ GlassPanel {
             Text { text: "Invariants"; color: Colors.textSecondary; font.pixelSize: Typography.small }
             Text { text: invariantsVerified; color: Colors.textPrimary; font.pixelSize: Typography.h3; font.family: Typography.code }
         }
-        
+
         Column {
             visible: livenessVerified > 0
             Text { text: "Liveness"; color: Colors.textSecondary; font.pixelSize: Typography.small }

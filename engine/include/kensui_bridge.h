@@ -2,7 +2,7 @@
 /**
  * @file kensui_bridge.h
  * @brief Zero-Allocation C-ABI for Project AXIOM KENSUI GUI.
- * 
+ *
  * [MANDATORY PATH]: NO std::string or heap allocations across this boundary.
  * GUI must provide pre-allocated buffers for all data transfers.
  */
@@ -47,7 +47,7 @@ typedef struct AXIOM_C_ALIGN(64) {
 
 /**
  * @brief Fetches disassembly for a JIT-compiled expression.
- * 
+ *
  * @param code_ptr Point to the machine code in memory.
  * @param size Size of the machine code.
  * @param out_buffer Pre-allocated buffer provided by the UI.
@@ -58,7 +58,7 @@ AXIOM_EXPORT uintptr_t AxiomJit_GetDisassembly(const uint8_t* code_ptr, size_t s
 
 /**
  * @brief Stream Mantis A* search tree nodes for Vulkan rendering.
- * 
+ *
  * @param out_nodes Pre-allocated array of Kensui_MantisNode.
  * @param max_count Maximum number of nodes the UI can accept.
  * @return Number of nodes actually written.
@@ -69,4 +69,3 @@ AXIOM_EXPORT size_t AxiomMantis_StreamSearchTree(Kensui_MantisNode* out_nodes, s
 }
 } // namespace AXIOM
 #endif
-

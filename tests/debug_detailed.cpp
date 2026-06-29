@@ -19,17 +19,17 @@ int main() {
         std::cout << "[TEST] " << expr;
         if (!description.empty()) std::cout << " (" << description << ")";
         std::cout << std::endl;
-        
+
         try {
             auto result = parser.ParseAndExecute(expr);
             if (result.result.has_value() && std::holds_alternative<double>(result.result.value())) {
                 double actual = std::get<double>(result.result.value());
                 double difference = std::abs(actual - expected);
-                
-                std::cout << "  Result: " << std::setprecision(10) << actual 
-                         << " (expected: " << std::setprecision(10) << expected 
+
+                std::cout << "  Result: " << std::setprecision(10) << actual
+                         << " (expected: " << std::setprecision(10) << expected
                          << ", diff: " << difference << ")" << std::endl;
-                
+
                 if (difference < tolerance) {
                     std::cout << "  ✅ PASS" << std::endl;
                     tests_passed++;
@@ -87,7 +87,7 @@ int main() {
     std::cout << "Tests Passed: " << tests_passed << "\n";
     std::cout << "Tests Failed: " << tests_failed << "\n";
     std::cout << "Success Rate: " << (100.0 * tests_passed / (tests_passed + tests_failed)) << "%\n";
-    
+
     if (tests_failed > 0) {
         std::cout << "\n❌ FAILED TESTS ANALYSIS:\n";
         std::cout << "The failing test(s) above show the exact issue.\n";
@@ -97,6 +97,6 @@ int main() {
         std::cout << "3. Integration accuracy limits\n";
         std::cout << "4. Complex expression parsing issues\n";
     }
-    
+
     return tests_failed > 0 ? 1 : 0;
 }

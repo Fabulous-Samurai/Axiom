@@ -207,7 +207,7 @@ EngineResult SymbolicEngine::Expand(std::string_view expression) noexcept {
                     if (split != std::string_view::npos) {
                         const std::string_view a = TrimSV(inside.substr(0, split));
                         const std::string_view b_raw = TrimSV(inside.substr(split + 1));
-                        
+
                         double b_num = 0.0;
                         if (ParseDoubleStrict(b_raw, b_num)) {
                             if (op == '-') b_num = -b_num;
@@ -281,12 +281,12 @@ EngineResult SymbolicEngine::Substitute(std::string_view expr, std::string_view 
 
     const std::string_view trimmed_var = TrimSV(var);
     const std::string_view trimmed_val = TrimSV(value);
-    
+
     AXIOM::FixedVector<char, 256> replacement;
     replacement.push_back('(');
     AppendToBuffer(replacement, trimmed_val);
     replacement.push_back(')');
-    
+
     const std::string_view replaced = ReplaceVariableTokens(arena_, expr, trimmed_var, std::string_view(replacement.data(), replacement.size()));
     return CreateSuccessResult(replaced);
 }
@@ -366,7 +366,7 @@ EngineResult SymbolicEngine::DefiniteIntegral(std::string_view expr, std::string
     AppendToBuffer(command, ", ");
     NumberToBuffer(b, command);
     AppendToBuffer(command, ")");
-    
+
     EngineResult res = EvalScalar(std::string_view(command.data(), command.size()));
     if (res.HasResult()) {
         return res;
@@ -382,7 +382,7 @@ EngineResult SymbolicEngine::PartialDerivative(std::string_view expr, std::strin
 
     const std::string_view variable = TrimSV(var);
     const std::string_view source = TrimSV(expr);
-    
+
     std::string_view derivative_target;
     if (variable != "x") {
         derivative_target = ReplaceVariableTokens(arena_, source, variable, "x");
@@ -394,7 +394,7 @@ EngineResult SymbolicEngine::PartialDerivative(std::string_view expr, std::strin
     AXIOM::FixedVector<char, 2048> cmd_buf;
     AppendToBuffer(cmd_buf, "derive ");
     AppendToBuffer(cmd_buf, derivative_target);
-    
+
     EngineResult res = parser.ParseAndExecute(std::string_view(cmd_buf.data(), cmd_buf.size()));
     if (!res.result.has_value()) {
         return CreateErrorResult(CalcErr::OperationNotFound);

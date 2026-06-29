@@ -2,7 +2,7 @@
 /**
  * @file sentry.h
  * @brief Phase 4: Sentry & Watchdog - High-Availability Nano-Service Guardian
- * 
+ *
  * Sentry monitors the isolated core (Pluto/Mantis) and the UI thread via
  * atomic heartbeats. If the UI freezes, Sentry prevents the core from blocking.
  * If a Sandbox times out, Sentry terminates it safely.

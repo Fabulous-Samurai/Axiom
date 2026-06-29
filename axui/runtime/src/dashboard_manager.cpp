@@ -24,7 +24,7 @@ DashboardManager::~DashboardManager() {
 
 void DashboardManager::registerStage(std::string_view stage_id, std::string_view display_name, int order) noexcept {
     std::lock_guard lock(registry_mutex_);
-    
+
     auto it = std::ranges::find_if(stages_, [&](const auto& p) { return p.first == stage_id; });
     if (it == stages_.end()) {
         auto* metrics = new StageMetrics();
@@ -32,7 +32,7 @@ void DashboardManager::registerStage(std::string_view stage_id, std::string_view
         metrics->display_name = display_name;
         metrics->order = order;
         stages_.push_back({stage_id, metrics});
-        
+
         throughput_history_.push_back({stage_id, new ThroughputVec()});
         latency_history_.push_back({stage_id, new LatencyVec()});
     }
@@ -104,14 +104,14 @@ void DashboardManager::reportError(std::string_view stage_id, std::string_view e
             break;
         }
     }
-    emit errorOccurred(QString::fromUtf8(stage_id.data(), stage_id.size()), 
+    emit errorOccurred(QString::fromUtf8(stage_id.data(), stage_id.size()),
                        QString::fromUtf8(error_msg.data(), error_msg.size()));
 }
 
 void DashboardManager::onUpdateTick() {
     calculateThroughput();
     collectSystemTelemetry();
-    
+
     emit stagesUpdated();
     emit linksUpdated();
     emit telemetryUpdated();
@@ -122,7 +122,7 @@ void DashboardManager::calculateThroughput() noexcept {
     for (auto& [id, s] : stages_) {
         double uptime = std::chrono::duration<double>(now - s->started_at).count();
         s->uptime_seconds.store(uptime, std::memory_order_seq_cst);
-        
+
         // Simple throughput calculation for audit
         uint64_t msgs = s->total_messages.load(std::memory_order_seq_cst);
         if (uptime > 0) s->messages_per_second.store(static_cast<double>(msgs) / uptime, std::memory_order_seq_cst);

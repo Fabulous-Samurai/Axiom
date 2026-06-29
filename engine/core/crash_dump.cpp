@@ -29,8 +29,8 @@ bool CrashVault::initialize(const std::string& path) {
     size_t total_size = sizeof(VaultHeader) + VAULT_SIZE;
 
 #ifdef _WIN32
-    HANDLE hFile = CreateFileA(path.c_str(), GENERIC_READ | GENERIC_WRITE, 
-                              FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, 
+    HANDLE hFile = CreateFileA(path.c_str(), GENERIC_READ | GENERIC_WRITE,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                               OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE) return false;
 
@@ -90,12 +90,12 @@ bool CrashVault::initialize(const std::string& path) {
 void CrashVault::record(uint32_t event_id, const char* msg) noexcept {
     if (!header_) return;
 
-    // Use atomic fetch_add for multi-producer safety (though SPSC is intended, 
+    // Use atomic fetch_add for multi-producer safety (though SPSC is intended,
     // we make it thread-safe for the crash log)
     uint64_t index = header_->head.fetch_add(1, std::memory_order_relaxed);
-    
+
     CrashRecord& rec = records_[index % MAX_RECORDS];
-    
+
     rec.timestamp_rdtsc = AXIOM_RDTSC();
     rec.event_id = event_id;
     // Simple thread ID retrieval
@@ -131,7 +131,3 @@ CrashVault::~CrashVault() {
 }
 
 } // namespace AXIOM
-
-
-
-

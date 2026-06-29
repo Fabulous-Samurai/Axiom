@@ -49,7 +49,7 @@ void StylePipeline::processQueue() {
 
             auto now = std::chrono::steady_clock::now();
             last_latency_ms_ = std::chrono::duration_cast<std::chrono::microseconds>(now - update.timestamp).count() / 1000.0;
-            
+
             emit styleChanged(style);
             emit pipelineUpdated();
 

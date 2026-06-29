@@ -26,7 +26,7 @@ $patterns = @("std::vector","std::string","new\s","malloc\(","free\(","throw\s",
 $results = @()
 $skipDirs = @(".git", "build", "node_modules", "_deps", "extern", "mimalloc-src", "ninja-build")
 
-Get-ChildItem -Recurse -File | Where-Object { 
+Get-ChildItem -Recurse -File | Where-Object {
     $fullName = $_.FullName
     $isValid = $fullName -match "\.(cpp|h|hpp)$"
     $isSkipped = $false

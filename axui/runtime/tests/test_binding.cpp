@@ -77,7 +77,7 @@ void test_binding_thread_safety() {
     std::cout << "[RUN] test_binding_thread_safety" << std::endl;
     BindingEngine& engine = BindingContext::instance();
     std::atomic<bool> running{true};
-    
+
     std::thread updater([&]() {
         double val = 0.0;
         while(running) {
@@ -109,7 +109,7 @@ void test_binding_clear_and_rebind() {
     auto result = compiler.compile(R"({"root":{"component":"Text","props":{"v":"@t"}}})");
     engine.bindTree(*result.root);
     if (engine.subscriptionCount() != 1) { std::cerr << "Sub count mismatch!" << std::endl; exit(1); }
-    
+
     engine.clearSubscriptions();
     if (engine.subscriptionCount() != 0) { std::cerr << "Clear failed!" << std::endl; exit(1); }
 }
@@ -145,11 +145,11 @@ void test_binding_late_binding() {
     std::cout << "[RUN] test_binding_late_binding" << std::endl;
     BindingEngine& engine = BindingContext::instance();
     engine.updateSource("late.val", 99.0);
-    
+
     Compiler compiler;
     auto result = compiler.compile(R"({"root":{"component":"Text","props":{"v":"@late.val"}}})");
     engine.bindTree(*result.root);
-    
+
     auto* p = result.root->getProperty("v");
     if (std::get<double>(*p) != 99.0) { std::cerr << "Late binding failed!" << std::endl; exit(1); }
 }
@@ -158,11 +158,11 @@ void test_binding_int64_promotion() {
     std::cout << "[RUN] test_binding_int64_promotion" << std::endl;
     BindingEngine& engine = BindingContext::instance();
     engine.updateSource("int.val", static_cast<int64_t>(42));
-    
+
     Compiler compiler;
     auto result = compiler.compile(R"({"root":{"component":"Text","props":{"v":"@int.val"}}})");
     engine.bindTree(*result.root);
-    
+
     auto* p = result.root->getProperty("v");
     if (std::get<double>(*p) != 42.0) { std::cerr << "Promotion failed!" << std::endl; exit(1); }
 }
@@ -172,11 +172,11 @@ void test_binding_color_value() {
     BindingEngine& engine = BindingContext::instance();
     Color c{255, 0, 0, 255};
     engine.updateSource("color.val", c);
-    
+
     Compiler compiler;
     auto result = compiler.compile(R"({ "root": { "component": "Text", "props": { "c": "@color.val" } } })");
     engine.bindTree(*result.root);
-    
+
     auto* p = result.root->getProperty("c");
     if (std::get<Color>(*p).r != 255) { std::cerr << "Color binding failed!" << std::endl; exit(1); }
 }
@@ -185,11 +185,11 @@ void test_binding_bool_value() {
     std::cout << "[RUN] test_binding_bool_value" << std::endl;
     BindingEngine& engine = BindingContext::instance();
     engine.updateSource("bool.val", true);
-    
+
     Compiler compiler;
     auto result = compiler.compile(R"({ "root": { "component": "Text", "props": { "b": "@bool.val" } } })");
     engine.bindTree(*result.root);
-    
+
     auto* p = result.root->getProperty("b");
     if (std::get<bool>(*p) != true) { std::cerr << "Bool binding failed!" << std::endl; exit(1); }
 }
@@ -198,11 +198,11 @@ void test_binding_string_value() {
     std::cout << "[RUN] test_binding_string_value" << std::endl;
     BindingEngine& engine = BindingContext::instance();
     engine.updateSource("str.val", std::string("hello"));
-    
+
     Compiler compiler;
     auto result = compiler.compile(R"({ "root": { "component": "Text", "props": { "s": "@str.val" } } })");
     engine.bindTree(*result.root);
-    
+
     auto* p = result.root->getProperty("s");
     if (std::get<std::string_view>(*p) != "hello") { std::cerr << "String binding failed!" << std::endl; exit(1); }
 }

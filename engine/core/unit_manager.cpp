@@ -53,7 +53,7 @@ EngineResult UnitManager::ConvertUnit(double value, std::string_view from_unit, 
     auto from_it = std::ranges::lower_bound(units_, from_unit, {}, &Unit::symbol);
     auto to_it = std::ranges::lower_bound(units_, to_unit, {}, &Unit::symbol);
 
-    if (from_it == units_.end() || from_it->symbol != from_unit || 
+    if (from_it == units_.end() || from_it->symbol != from_unit ||
         to_it == units_.end() || to_it->symbol != to_unit) {
         return CreateErrorResult(CalcErr::OperationNotFound);
     }
@@ -106,8 +106,8 @@ bool UnitManager::AreCompatible(std::string_view unit1, std::string_view unit2) 
     auto u1_it = std::ranges::lower_bound(units_, unit1, {}, &Unit::symbol);
     auto u2_it = std::ranges::lower_bound(units_, unit2, {}, &Unit::symbol);
 
-    return (u1_it != units_.end() && u1_it->symbol == unit1 && 
-            u2_it != units_.end() && u2_it->symbol == unit2 && 
+    return (u1_it != units_.end() && u1_it->symbol == unit1 &&
+            u2_it != units_.end() && u2_it->symbol == unit2 &&
             u1_it->type == u2_it->type);
 }
 

@@ -10,4 +10,3 @@ static void BM_SimpleAdd(benchmark::State& state) {
 BENCHMARK(BM_SimpleAdd);
 
 BENCHMARK_MAIN();
-

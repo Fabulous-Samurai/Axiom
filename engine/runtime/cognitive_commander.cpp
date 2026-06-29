@@ -14,7 +14,7 @@ bool CognitiveCommander::load_weights(const std::string& model_path) {
     // [DRY-POOL]: Now using the centralized PinnedMemoryPool
     weight_pool_ = std::make_unique<PinnedMemoryPool>(512 * 1024 * 1024); // 512MB weight pool
     if (!weight_pool_->pin()) return false;
-    
+
     activation_pool_ = std::make_unique<PinnedMemoryPool>(128 * 1024 * 1024); // 128MB activation pool
     return true;
 }

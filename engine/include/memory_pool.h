@@ -2,7 +2,7 @@
 /**
  * @file memory_pool.h
  * @brief Centralized Hardware-Pinned Memory Pool for AXIOM Zenith.
- * 
+ *
  * [MANDATORY PATH]: Provides VirtualLock/mlock guarantees for model weights.
  */
 

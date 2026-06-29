@@ -155,7 +155,7 @@ config.h
 autotools.cache/
 
 # Reports and temporary docs
-PR_REPORT_* 
+PR_REPORT_*
 docs/reports/
 
 # Formal model output

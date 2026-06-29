@@ -27,7 +27,7 @@ bool Sentry::start() {
 
     auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
-    
+
     last_core_heartbeat_.store(now);
     last_ui_heartbeat_.store(now);
 
@@ -76,12 +76,12 @@ void Sentry::monitor_loop() {
                 AXIOM_CRASH_MARK(0xDEADBEEF, "Sentry: UI Thread Deadlock (Panic)");
                 trigger_recovery();
             }
-        } 
+        }
         else if (ui_delay > SUSPICION_THRESHOLD_MS) {
             // UI is lagging, but is the Core busy?
             current_state_.store(State::SUSPICIOUS);
             analyze_situation();
-        } 
+        }
         else {
             if (current_state_.load() != State::NORMAL) {
                 current_state_.store(State::NORMAL);
@@ -95,7 +95,7 @@ void Sentry::analyze_situation() {
     auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
     auto core_hb = last_core_heartbeat_.load(std::memory_order_relaxed);
-    
+
     // Sentry (Context Logic)
     if (now - core_hb < 10) {
         // Core is producing heartbeats rapidly, but UI is hanging.

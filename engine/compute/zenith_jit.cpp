@@ -23,7 +23,7 @@ ZenithJIT::~ZenithJIT() = default;
 
 JiffedFunc ZenithJIT::Compile(NodePtr root, const SymbolTable& var_map) noexcept {
     if (!root) return nullptr;
-    
+
     asmjit::CodeHolder code;
     code.init(rt_.environment());
     asmjit::StringLogger logger;
@@ -35,7 +35,7 @@ JiffedFunc ZenithJIT::Compile(NodePtr root, const SymbolTable& var_map) noexcept
     asmjit::x86::Gp vars_ptr = cc.new_gp(asmjit::TypeId::kIntPtr, "vars_ptr");
     func->set_arg(0, vars_ptr);
     asmjit::x86::Vec result = cc.new_xmm("result");
-    
+
     CompileNodeX86(cc, vars_ptr, root, var_map, result);
     cc.ret(result);
     cc.end_func();
@@ -46,13 +46,13 @@ JiffedFunc ZenithJIT::Compile(NodePtr root, const SymbolTable& var_map) noexcept
     asmjit::aarch64::Gp vars_ptr = cc.new_gp(asmjit::TypeId::kIntPtr, "vars_ptr");
     func->set_arg(0, vars_ptr);
     asmjit::aarch64::Vec result = cc.new_v("result");
-    
+
     CompileNodeAArch64(cc, vars_ptr, root, var_map, result);
     cc.ret(result);
     cc.end_func();
     cc.finalize();
 #endif
-        
+
     last_disassembly_.clear();
     const char* dis_data = logger.data();
     while (dis_data && *dis_data && last_disassembly_.size() < last_disassembly_.capacity()) {
@@ -66,7 +66,7 @@ JiffedFunc ZenithJIT::Compile(NodePtr root, const SymbolTable& var_map) noexcept
 
 JiffedMatrixFunc ZenithJIT::CompileMatrix(NodePtr root, const SymbolTable& var_map) noexcept {
     // Matrix compilation recovery for Operation VARIANT SHIFT
-    return nullptr; 
+    return nullptr;
 }
 
 #if defined(ASMJIT_BUILD_X86)
@@ -76,7 +76,7 @@ void ZenithJIT::CompileNodeX86(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_p
 
     std::visit([&](auto& n) {
         using T = std::decay_t<decltype(n)>;
-        
+
         if constexpr (std::is_same_v<T, NumberNode>) {
             asmjit::x86::Gp constant_ptr = cc.new_gp(asmjit::TypeId::kIntPtr);
             cc.mov(constant_ptr, (uintptr_t)&n.value);
@@ -93,7 +93,7 @@ void ZenithJIT::CompileNodeX86(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_p
             asmjit::x86::Vec right_res = cc.new_xmm();
             CompileNodeX86(cc, vars_ptr, n.left, var_map, left_res);
             CompileNodeX86(cc, vars_ptr, n.right, var_map, right_res);
-            
+
             switch (n.op) {
                 case '+': cc.vaddsd(out, left_res, right_res); break;
                 case '-': cc.vsubsd(out, left_res, right_res); break;
@@ -110,7 +110,7 @@ void ZenithJIT::CompileNodeX86(asmjit::x86::Compiler& cc, asmjit::x86::Gp vars_p
 void ZenithJIT::CompileNodeAArch64(asmjit::aarch64::Compiler& cc, asmjit::aarch64::Gp vars_ptr, NodePtr node,
                            const SymbolTable& var_map, asmjit::aarch64::Vec& out) noexcept {
     if (!node) return;
-    
+
     std::visit([&](auto& n) {
         using T = std::decay_t<decltype(n)>;
         if constexpr (std::is_same_v<T, NumberNode>) {

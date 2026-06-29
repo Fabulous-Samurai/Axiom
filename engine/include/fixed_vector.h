@@ -16,11 +16,11 @@ private:
 
 public:
     FixedVector() = default;
-    
+
     explicit FixedVector(size_t count, const T& value = T()) {
         assign(count, value);
     }
-    
+
     explicit FixedVector(std::initializer_list<T> init) {
         for (const auto& item : init) {
             push_back(item);
@@ -32,7 +32,7 @@ public:
             data_[size_++] = value;
         }
     }
-    
+
     void push_back(T&& value) {
         if (size_ < Capacity) {
             data_[size_++] = std::move(value);
@@ -61,7 +61,7 @@ public:
 
     void clear() { size_ = 0; }
     void reserve(size_t) { /* No-op for fixed capacity */ }
-    
+
     bool empty() const { return size_ == 0; }
     bool full() const noexcept { return size_ >= Capacity; }
     size_t size() const { return size_; }
@@ -87,7 +87,7 @@ public:
     const T& front() const { return data_[0]; }
     T& back() { return data_[size_ > 0 ? size_ - 1 : 0]; }
     const T& back() const { return data_[size_ > 0 ? size_ - 1 : 0]; }
-    
+
     auto begin() { return data_; }
     auto end() { return data_ + size_; }
     auto begin() const { return data_; }
@@ -99,5 +99,3 @@ template<typename T>
 using ArenaVector = FixedVector<T, 64>;
 
 } // namespace AXIOM
-
-

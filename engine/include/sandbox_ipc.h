@@ -44,7 +44,7 @@ struct alignas(64) SandboxIPCLayout {
     // Lock-Free Queues
     // Main process pushes to req_queue, Worker pops.
     SPSCQueue<SandboxRequest, 128> req_queue;
-    
+
     // Worker pushes to res_queue, Main process pops.
     SPSCQueue<SandboxResponse, 128> res_queue;
 };

@@ -109,7 +109,7 @@ void test_parser_binding() {
 
     auto* bind_prop = root->getProperty("bind");
     assert(bind_prop != nullptr);
-    
+
     auto* binding = std::get_if<axui::Binding>(bind_prop);
     assert(binding != nullptr);
     assert(binding->path == "@engine.throughput");

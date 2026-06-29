@@ -2,7 +2,7 @@
 /**
  * @file ingress.h
  * @brief Phase E: Kernel-Bypass Networking (Operation VARIANT SHIFT)
- * 
+ *
  * Replaces dynamic polymorphism with static-variant dispatch for sub-nanosecond ingress.
  */
 

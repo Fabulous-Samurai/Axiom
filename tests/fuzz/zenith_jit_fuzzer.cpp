@@ -20,10 +20,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     // Context for compilation
     AlgebraicParser parser;
     ZenithJIT jit;
-    
-    // We just want to check that parsing malformed ASTs / strings 
+
+    // We just want to check that parsing malformed ASTs / strings
     // does not crash the system (Zero-Exception policy + memory safety).
-    
+
     NodePtr root = parser.ParseExpression(expr);
     if (!root) {
         return 0; // Failed to parse, which is expected for random bytes
@@ -43,7 +43,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         double vars[3] = {0.0, 0.0, 0.0};
         fn(vars);
     }
-    
+
     // Fuzz Matrix Compilation
     JiffedMatrixFunc mfn = jit.CompileMatrix(root, var_map);
     if (mfn) {

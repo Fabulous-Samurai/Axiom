@@ -34,7 +34,7 @@ void AF_XDPChannel::stop() noexcept {}
 
 size_t AF_XDPChannel::poll(std::function<void(const IngressFrame&)> callback) noexcept {
     (void)callback;
-    return 0; 
+    return 0;
 }
 
 // --- PosixUDPChannel Implementation ---

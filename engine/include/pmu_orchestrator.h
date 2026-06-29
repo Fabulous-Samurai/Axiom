@@ -26,7 +26,7 @@ struct PMUMetrics {
 
 /**
  * @brief PMUOrchestrator: Manages hardware performance counters.
- * 
+ *
  * [MANDATORY PATH]: Uses perf_event_open + mmap to authorize user-mode rdpmc.
  */
 class PMUOrchestrator {
@@ -38,15 +38,15 @@ public:
 
     /**
      * @brief Reads hardware counters with OoOE serialization.
-     * 
+     *
      * [MANDATORY PATH]: _mm_lfence() used before every rdpmc.
      */
     AXIOM_FORCE_INLINE PMUMetrics ReadContext() const noexcept {
         PMUMetrics metrics;
-        
+
         // Serialize pipeline
         AXIOM_LFENCE();
-        
+
         #if defined(__linux__)
             // On Linux, indices are determined by mmap'd perf_event page.
             metrics.instructions = ReadCounter(0);
@@ -60,7 +60,7 @@ public:
             metrics.l1_misses = 0;
             metrics.br_misses = 0;
         #endif
-        
+
         return metrics;
     }
 
@@ -82,4 +82,3 @@ private:
 };
 
 } // namespace AXIOM
-

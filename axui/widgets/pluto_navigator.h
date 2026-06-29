@@ -28,7 +28,7 @@ private:
     QSGGeometry m_edgeGeometry;
     QSGFlatColorMaterial m_nodeMaterial;
     QSGFlatColorMaterial m_edgeMaterial;
-    
+
     // Sub-nodes for nodes and edges
     QSGGeometryNode m_edgeNode;
 };
@@ -46,10 +46,10 @@ class PlutoSwarmNavigator : public QQuickItem {
 
 public:
     explicit PlutoSwarmNavigator(QQuickItem* parent = nullptr);
-    
+
     QColor nodeColor() const { return m_nodeColor; }
     void setNodeColor(const QColor& c) { if (m_nodeColor != c) { m_nodeColor = c; Q_EMIT nodeColorChanged(); update(); } }
-    
+
     QColor edgeColor() const { return m_edgeColor; }
     void setEdgeColor(const QColor& c) { if (m_edgeColor != c) { m_edgeColor = c; Q_EMIT edgeColorChanged(); update(); } }
 

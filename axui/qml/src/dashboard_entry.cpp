@@ -21,7 +21,7 @@ void myMessageOutput(QtMsgType type, const QMessageLogContext &context, const QS
 
 int main(int argc, char *argv[]) {
     qInstallMessageHandler(myMessageOutput);
-    
+
     Q_INIT_RESOURCE(axui_dashboard);
     Q_INIT_RESOURCE(axui_components);
 
@@ -31,9 +31,9 @@ int main(int argc, char *argv[]) {
     app.setOrganizationName("AXIOM");
 
     QQmlApplicationEngine engine;
-    
+
     axui::DashboardManager manager;
-    
+
     bool mockMode = qEnvironmentVariableIntValue("AXIOM_MOCK_MODE") == 1;
     if (mockMode) {
         std::cout << "[Dashboard] Starting in MOCK MODE" << std::endl;
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 
     const QUrl url(QStringLiteral("qrc:/AxiomDashboard.qml"));
     std::cout << "[Dashboard] Loading QML from: " << url.toString().toStdString() << "..." << std::endl;
-    
+
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
                      &app, [url](QObject *obj, const QUrl &objUrl) {
         if (!obj && url == objUrl) {
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
             QCoreApplication::exit(-1);
         }
     }, Qt::QueuedConnection);
-    
+
     engine.load(url);
     if (engine.rootObjects().isEmpty()) {
         std::cerr << "[Dashboard] ERROR: Root objects are empty after engine.load()" << std::endl;

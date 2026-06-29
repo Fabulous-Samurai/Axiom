@@ -12,7 +12,7 @@ namespace AXIOM {
 bool SecureMantisVault::initialize_enclave() noexcept {
     // [PRODUCTION PATH]: Integrated with Intel SGX / ARM TrustZone
     // On non-SGX hardware, this initiates a software-level isolation fallback.
-    
+
     #ifdef AXIOM_ENABLE_SGX
         // sgx_status_t ret = sgx_create_enclave(ENCLAVE_FILENAME, SGX_DEBUG_FLAG, &token, &updated, &eid, NULL);
         // if (ret != SGX_SUCCESS) return false;
@@ -28,7 +28,7 @@ bool SecureMantisVault::seal(const void* src, size_t size) noexcept {
     // [SECURITY]: SGX Data Sealing (AES-GCM-256)
     // This prevents the OS or other processes from reading the Mantis State Machine memory.
     storage_size_ = size;
-    
+
     #ifdef AXIOM_ENABLE_SGX
         // uint32_t sealed_len = sgx_calc_sealed_data_size(0, size);
         // encrypted_storage_ = std::make_unique<std::byte[]>(sealed_len);
@@ -36,15 +36,15 @@ bool SecureMantisVault::seal(const void* src, size_t size) noexcept {
     #else
         // Simulated Sealing for non-SGX environments
         encrypted_storage_ = std::make_unique<std::byte[]>(storage_size_);
-        std::memcpy(encrypted_storage_.get(), src, size); 
+        std::memcpy(encrypted_storage_.get(), src, size);
     #endif
-    
+
     return true;
 }
 
 bool SecureMantisVault::unseal(void* dst, size_t size) noexcept {
     if (!enclave_active_ || !encrypted_storage_) return false;
-    
+
     #ifdef AXIOM_ENABLE_SGX
         // uint32_t mac_text_len = 0;
         // uint32_t decrypt_data_len = size;
@@ -53,7 +53,7 @@ bool SecureMantisVault::unseal(void* dst, size_t size) noexcept {
         if (size != storage_size_) return false;
         std::memcpy(dst, encrypted_storage_.get(), size);
     #endif
-    
+
     return true;
 }
 

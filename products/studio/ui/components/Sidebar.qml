@@ -19,8 +19,8 @@ Rectangle {
         spacing: Spacing.micro
 
         SidebarItem { icon: "⚡"; text: "Dashboard"; page: "dashboard"; active: true; onClicked: sidebar.pageChanged(page) }
-        
-        SidebarItem { 
+
+        SidebarItem {
             icon: "📊"; text: "Modes"; page: "modes"; expandable: true; onClicked: sidebar.pageChanged(page)
         }
         Column {

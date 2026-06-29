@@ -26,7 +26,7 @@ runs = get_latest_runs(owner, repo)
 if runs:
     latest_run = runs[0]
     print(f"Latest Run: {latest_run['id']} - {latest_run['display_title']} ({latest_run['status']} / {latest_run['conclusion']})")
-    
+
     jobs = get_run_jobs(owner, repo, latest_run['id'])
     for job in jobs:
         print(f"Job: {job['name']} - {job['status']} / {job['conclusion']}")

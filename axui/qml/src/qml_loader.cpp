@@ -14,7 +14,7 @@
 
 namespace axui {
 
-QmlLoader::QmlLoader(QObject* parent) 
+QmlLoader::QmlLoader(QObject* parent)
     : QObject(parent), binding_engine_(&BindingContext::instance()) {}
 
 bool QmlLoader::loadFromNode(const UINode& root, const QmlConfig& config) {
@@ -67,7 +67,7 @@ bool QmlLoader::loadFromFile(const std::string& axui_json_path, const std::strin
     if (!result.success || !result.root) return false;
 
     binding_engine_->bindTree(*result.root);
-    
+
     return loadFromNode(*result.root, config);
 }
 
@@ -153,9 +153,9 @@ void QmlLoader::setupBindings(QQuickItem* item, const UINode& node) {
             if (binding->is_bound) {
                 QString qml_prop = QString::fromUtf8(prop.key.data(), static_cast<int>(prop.key.size()));
                 QString path = QString::fromUtf8(binding->path.data(), static_cast<int>(binding->path.size()));
-                
+
                 // [MANDATORY PATH]: Register QML callback for data flow
-                connect(binding_engine_, &BindingEngine::sourceUpdated, this, 
+                connect(binding_engine_, &BindingEngine::sourceUpdated, this,
                     [item, qml_prop, path](const QString& updated_path, const BindingValue& val) {
                         if (updated_path == path) {
                             // Update QML property dynamically

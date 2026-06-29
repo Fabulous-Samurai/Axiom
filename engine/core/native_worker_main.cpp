@@ -21,7 +21,7 @@
 
 int main() {
     std::string shm_name = "Local\\AXIOM_SANDBOX_SHM"; // Fixed for now
-    
+
     AXIOM::Sandbox::SandboxIPCLayout* ipc = nullptr;
 
 #ifdef _WIN32
@@ -36,7 +36,7 @@ int main() {
 #endif
 
     AXIOM::DynamicCalc calculator;
-    
+
     // Worker Loop
     while (true) {
         // 1. Signal Liveness (Heartbeat)
@@ -53,7 +53,7 @@ int main() {
 
             if (std::string_view(req.command.data()) == "STALL_INFINITE") {
                 // Simulation of a 'Poison' command that hangs the process
-                while(true) { std::this_thread::yield(); } 
+                while(true) { std::this_thread::yield(); }
             }
             auto calc_result = calculator.Evaluate(req.command.data());
             if (!calc_result.HasErrors()) {

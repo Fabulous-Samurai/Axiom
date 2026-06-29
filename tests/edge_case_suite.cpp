@@ -69,7 +69,7 @@ private:
 
 void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("ALGEBRAIC PARSER EDGE CASES");
-    
+
     AlgebraicParser parser;
 
     // Empty input
@@ -166,7 +166,7 @@ void TestAlgebraicParserEdgeCases(EdgeCaseRunner& runner) {
 
 void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("STATISTICS ENGINE EDGE CASES");
-    
+
     StatisticsEngine stats;
 
     // Empty vector
@@ -267,7 +267,7 @@ void TestStatisticsEngineEdgeCases(EdgeCaseRunner& runner) {
 
 void TestLinearSystemParserEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("LINEAR SYSTEM PARSER EDGE CASES");
-    
+
     LinearSystemParser parser;
 
     // Singular matrix (no unique solution)
@@ -324,7 +324,7 @@ void TestLinearSystemParserEdgeCases(EdgeCaseRunner& runner) {
 
 void TestSymbolicEngineEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("SYMBOLIC ENGINE EDGE CASES");
-    
+
     SymbolicEngine symbolic;
 
     // Empty expression
@@ -380,7 +380,7 @@ void TestSymbolicEngineEdgeCases(EdgeCaseRunner& runner) {
 
 void TestUnitManagerEdgeCases(EdgeCaseRunner& runner) {
     runner.StartSection("UNIT MANAGER EDGE CASES");
-    
+
     UnitManager units;
 
     // Zero conversion
@@ -449,4 +449,3 @@ int main() {
 
     return runner.GetFailedCount();
 }
-

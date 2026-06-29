@@ -21,7 +21,7 @@ struct NodeAnalysis {
 class ASTAnalyzer {
 public:
     void Analyze(NodePtr root);
-    
+
     // Returns cached analysis for a node
     NodeAnalysis GetAnalysis(NodePtr node) const;
 

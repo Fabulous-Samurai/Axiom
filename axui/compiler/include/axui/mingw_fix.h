@@ -10,7 +10,7 @@ extern "C" {
     inline int at_quick_exit(void (*)(void)) { return 0; }
     inline void quick_exit(int status) { _exit(status); }
     #endif
-    
+
     #ifndef _TIMESPEC_GET_DEFINED
     #define _TIMESPEC_GET_DEFINED
     inline int timespec_get(struct timespec* ts, int base) { (void)ts; (void)base; return 0; }

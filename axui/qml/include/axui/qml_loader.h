@@ -38,7 +38,7 @@ public:
     bool loadFromNode(const UINode& root, const QmlConfig& config = QmlConfig());
 
     // .axui dosyasından direkt yükle (parser + resolver + binding + render)
-    bool loadFromFile(const std::string& axui_path, 
+    bool loadFromFile(const std::string& axui_path,
                       const std::string& theme_path,
                       const QmlConfig& config = QmlConfig());
 
@@ -49,7 +49,7 @@ private:
 
     // Dinamik QML code generator
     QString generateComponentCode(const UINode& node, int depth = 0);
-    
+
     // Property binding (UINode property → QML property)
     void setupBindings(QQuickItem* item, const UINode& node);
 

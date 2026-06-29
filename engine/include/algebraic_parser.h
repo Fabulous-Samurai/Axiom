@@ -20,7 +20,7 @@ public:
     EngineResult ParseAndExecute(std::string_view input) noexcept override;
     EngineResult ParseAndExecuteWithContext(std::string_view input, const SymbolTable& context) noexcept;
 
-    
+
     NodePtr ParseExpression(std::string_view input) noexcept;
     Arena& GetArena() noexcept { return arena_; }
 
@@ -45,5 +45,3 @@ private:
 };
 
 } // namespace AXIOM
-
-

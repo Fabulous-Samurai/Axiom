@@ -18,7 +18,7 @@ static void BM_HarmonicArena(benchmark::State& state) {
     for (auto _ : state) {
         void* ptr = arena.allocate(state.range(0));
         benchmark::DoNotOptimize(ptr);
-        // Deallocate is a no-op in HarmonicArena's typical lifecycle, 
+        // Deallocate is a no-op in HarmonicArena's typical lifecycle,
         // so we don't benchmark it to reflect real usage.
     }
 }

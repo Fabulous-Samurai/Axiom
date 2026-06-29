@@ -2,7 +2,7 @@
 /**
  * @file crash_dump.h
  * @brief Phase 3: Zero-Jitter Crash Vault using mmap-backed SPSC buffer
- * 
+ *
  * Provides an "Invisible Telemetry" layer that persists metrics across crashes
  * without introducing OS-level jitter or blocking I/O.
  */

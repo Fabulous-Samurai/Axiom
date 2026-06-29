@@ -56,7 +56,7 @@ Column {
                     width: columnWidths[0]; height: parent.height
                     ModeBadge { mode: modelData.mode; anchors.verticalCenter: parent.verticalCenter }
                 }
-                
+
                 Item {
                     width: columnWidths[1]; height: parent.height
                     Text {

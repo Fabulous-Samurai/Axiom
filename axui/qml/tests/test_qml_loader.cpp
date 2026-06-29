@@ -16,7 +16,7 @@ void test_qml_code_generation() {
     char** argv = nullptr;
     QGuiApplication app(argc, argv);  // Qt requires QGuiApplication
     QmlLoader loader;
-    
+
     Compiler compiler;
     auto result = compiler.compile(R"({
         "root": {
@@ -46,7 +46,7 @@ void test_qml_code_generation() {
 
     assert(result.success);
     std::cout << "QML Code Generation Test: PASS" << std::endl;
-    
+
     // Test direct loading from node
     // QmlLoader loader2;
     // loader2.loadFromNode(result.root);

@@ -42,7 +42,7 @@ UINode* Parser::parse(const std::string& json_content, AXIOM::ArenaAllocator<UIN
 void Parser::parseNodeInto(simdjson::ondemand::object& obj, UINode& node, AXIOM::ArenaAllocator<UINode>& arena) {
     for (auto field : obj) {
         auto key = field.unescaped_key().value();
-        
+
         if (key == "component") {
             node.component_type = componentTypeFromString(field.value().get_string().value());
         } else if (key == "id") {

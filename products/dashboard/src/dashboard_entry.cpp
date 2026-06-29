@@ -7,10 +7,10 @@ int main(int argc, char *argv[]) {
     Q_INIT_RESOURCE(axui_components);
 
     axui::AppRunner app(argc, argv, "AXIOM Dashboard");
-    
+
     axui::DashboardManager manager;
     app.registerContextProperty("dashboardManager", &manager);
-    
+
     // Logic for mock mode or IPC connection can be handled inside the runner or here.
     // For now, keeping it simple.
 

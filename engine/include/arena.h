@@ -10,7 +10,7 @@ struct Block {
     std::unique_ptr<char[]> memory;
     size_t size;
     size_t used;
-    Block(std::unique_ptr<char[]> mem, size_t s, size_t u) 
+    Block(std::unique_ptr<char[]> mem, size_t s, size_t u)
         : memory(std::move(mem)), size(s), used(u) {}
 };
 
@@ -21,12 +21,12 @@ public:
     ~Arena() = default;
     Arena(const Arena&) = delete;
     Arena& operator=(const Arena&) = delete;
-    
+
     void allocateBlock(size_t size) {
         auto mem = std::make_unique<char[]>(size);
         blocks.emplace_back(std::move(mem), size, 0);
     }
-    void reset() { 
+    void reset() {
         if (!blocks.empty() && blocks[0].size >= 1024 * 64) {
             for (auto& block : blocks) block.used = 0;
         } else {
@@ -34,7 +34,7 @@ public:
             allocateBlock(1024 * 64);
         }
     }
-    
+
     template <typename T, typename... Args>
     T* alloc(Args&&... args) {
         size_t sizeNeeded = sizeof(T); size_t align = alignof(T);
