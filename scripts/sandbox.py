@@ -30,9 +30,19 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Restrict eval() scope in subprocess.
+    # Why: Prevent sandbox escape via unconstrained eval() code execution.
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = (
+        "import sys\n"
+        "try:\n"
+        "    print(eval(%s, {'__builtins__': {}}, {}))\n"
+        "except Exception as e:\n"
+        "    print(str(e), file=sys.stderr)\n"
+        "    sys.exit(1)\n"
+    ) % repr(expression)
     cmd = [sys.executable, "-c", code]
     
     try:
