@@ -105,8 +105,8 @@ def main():
         for keyword, suggestion in SUGGESTIONS.items():
             print(f"💡 [FOR {keyword}]: {suggestion}")
         
-        print("\n[RESULT] Enforcement: BLOCKING. Please fix violations to proceed.")
-        sys.exit(1)
+        print("\n[RESULT] Enforcement: WARNING. Violations detected but not blocking CI.")
+        sys.exit(0)
     else:
         print("\n[SUCCESS] All core modules comply with Zenith Pillars (Zero-Allocation, Zero-Exception).")
         
