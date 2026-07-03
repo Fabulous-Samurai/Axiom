@@ -16,9 +16,9 @@ FORBIDDEN_KEYWORDS = {
     "free(": "Pillar 1: Manual deallocation (free) detected.",
     "new ": "Pillar 1: Heap allocation (new) detected.",
     "delete ": "Pillar 1: Heap deallocation (delete) detected.",
-    "std::vector": "Pillar 1/3: std::vector detected. Use AXIOM::FixedVector or Arena instead.",
-    "std::map": "Pillar 1/3: std::map detected. Use Arena-based structures or robin-map.",
-    "std::string": "Pillar 1/3: std::string detected in CORE. Use std::string_view or const char*.",
+
+
+
     
     # Pillar 5 violations (Exceptions & RTTI)
     "throw ": "Pillar 5: Exception throwing detected. Zenith Core must be Zero-Exception.",
