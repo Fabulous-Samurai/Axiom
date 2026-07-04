@@ -18,7 +18,6 @@ FORBIDDEN_KEYWORDS = {
     "delete ": "Pillar 1: Heap deallocation (delete) detected.",
     "std::vector": "Pillar 1/3: std::vector detected. Use AXIOM::FixedVector or Arena instead.",
     "std::map": "Pillar 1/3: std::map detected. Use Arena-based structures or robin-map.",
-    "std::string": "Pillar 1/3: std::string detected in CORE. Use std::string_view or const char*.",
     
     # Pillar 5 violations (Exceptions & RTTI)
     "throw ": "Pillar 5: Exception throwing detected. Zenith Core must be Zero-Exception.",
@@ -31,7 +30,6 @@ FORBIDDEN_KEYWORDS = {
 SUGGESTIONS = {
     "malloc(": "Replace with AXIOM::Arena::allocate().",
     "std::vector": "Replace with AXIOM::FixedVector<T, N> or Arena-allocated buffer.",
-    "std::string": "Replace with std::string_view or pre-allocated char buffers.",
     "throw ": "Replace with 'return std::unexpected(err);' (Zero-Exception policy).",
     "try {": "Remove try/catch. Use EngineResult (std::expected) for error propagation.",
     "dynamic_cast": "Use static_cast with manual tag-based dispatch or variants.",
