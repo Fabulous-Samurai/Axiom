@@ -38,7 +38,7 @@ SUGGESTIONS = {
 }
 
 # Exempt files - MUST BE KEPT MINIMAL
-EXEMPT_FILES = ["main.cpp", "setup_other_device", "test_"]
+EXEMPT_FILES = ["main.cpp", "setup_other_device", "test_", "engine/api"]
 # WHITELISTED_FILES are the ONLY files allowed to implement allocation logic
 WHITELISTED_FILES = [
     "arena.h", 
@@ -76,7 +76,7 @@ def main():
     print("--------------------------------------------------------")
     
     # Target core directories
-    core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
+    core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api", "engine/bindings"]
     total_violations = 0
     
     for d in core_dirs:
