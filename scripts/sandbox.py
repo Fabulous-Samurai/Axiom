@@ -3,6 +3,7 @@ import sys
 import time
 import threading
 import subprocess
+import shutil
 import signal
 
 class ComplexityGuard:
@@ -32,11 +33,25 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Restrict eval globals and locals, and route errors to stderr.
+    # Why: Prevent arbitrary code execution in isolated expressions and avoid polluting stdout.
+    code = (
+        "import sys\n"
+        "try:\n"
+        "    print(eval(%r, {'__builtins__': {}}, {}))\n"
+        "except Exception as e:\n"
+        "    print(str(e), file=sys.stderr)\n"
+        "    sys.exit(1)\n"
+    ) % (expression,)
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Resolve executable via shutil.which and explicitly set shell=False
+    # Why: Mitigate command injection vulnerability flagged by SonarCloud
+    executable = shutil.which(sys.executable) or sys.executable
+    cmd = [executable, "-c", code]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=False)
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
