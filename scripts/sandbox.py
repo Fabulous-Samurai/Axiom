@@ -32,7 +32,17 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Restrict eval globals and locals, and route errors to stderr.
+    # Why: Prevent arbitrary code execution in isolated expressions and avoid polluting stdout.
+    code = (
+        "import sys\n"
+        "try:\n"
+        "    print(eval(%r, {'__builtins__': {}}, {}))\n"
+        "except Exception as e:\n"
+        "    print(str(e), file=sys.stderr)\n"
+        "    sys.exit(1)\n"
+    ) % (expression,)
     cmd = [sys.executable, "-c", code]
     
     try:
