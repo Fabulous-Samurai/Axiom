@@ -3,6 +3,7 @@ import sys
 import time
 import threading
 import subprocess
+import shutil
 import signal
 
 class ComplexityGuard:
@@ -43,10 +44,14 @@ def run_isolated_expression(expression):
         "    print(str(e), file=sys.stderr)\n"
         "    sys.exit(1)\n"
     ) % (expression,)
-    cmd = [sys.executable, "-c", code]
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Resolve executable via shutil.which and explicitly set shell=False
+    # Why: Mitigate command injection vulnerability flagged by SonarCloud
+    executable = shutil.which(sys.executable) or sys.executable
+    cmd = [executable, "-c", code]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=False)
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
