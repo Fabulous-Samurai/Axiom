@@ -36,16 +36,22 @@ def open_issue(issue, ide_cmd="code"):
             print(f"Error: Could not find file {component}")
             return
 
+    import shutil
     if ide_cmd == "code":
         # VS Code goto syntax: code --goto file:line
-        cmd = ["code", "--goto", f"{file_path}:{line}"]
+        resolved_cmd = shutil.which("code") or "code"
+        cmd = [resolved_cmd, "--goto", f"{file_path}:{line}"]
     else:
         # Generic fallback: just open the file
-        cmd = [ide_cmd, file_path]
+        resolved_cmd = shutil.which(ide_cmd) or ide_cmd
+        cmd = [resolved_cmd, file_path]
     
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        # 🛡️ SENTINEL SECURITY FIX:
+        # What: Explicitly set shell=False and resolve executable path.
+        # Why: Mitigate command injection vulnerabilities and satisfy SonarCloud rule S2076.
+        subprocess.run(cmd, check=True, shell=False)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
