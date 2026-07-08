@@ -109,10 +109,14 @@ class LargeScaleVarStore:
         if self._conn is None:
             return self._tier1.keys()
         self._flush_write_buf()
-        rows = self._conn.execute(
+        # ⚡ BOLT OPTIMIZATION:
+        # What: Replaced .fetchall() with direct cursor iteration.
+        # Why: Materializing the full list of tuples via .fetchall() causes unnecessary memory allocation.
+        # Impact: Reduces peak memory usage for large views.
+        cursor = self._conn.execute(
             f"SELECT key FROM vars ORDER BY rowid LIMIT {self.TABLE_VIEW_CAP}"
-        ).fetchall()
-        return [r[0] for r in rows]
+        )
+        return [r[0] for r in cursor]
 
     def all_keys(self):
         """Generator yielding ALL keys in insertion order (bypasses UI cap)."""
@@ -183,4 +187,3 @@ def _entry_from_row(row: tuple) -> Any:
     # Late import avoids circular dependency; VarEntry lives in axiom_qt_gui.
     from gui.qt.panels.workspace_panel import VarEntry
     return VarEntry(row[0], row[1], row[2])
-

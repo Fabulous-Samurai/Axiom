@@ -7,10 +7,10 @@ def run_build(config, clean=False):
     root = find_project_root()
     build_cfg = config.get("build", {})
     build_dir = build_cfg.get("build_dir", "build-ci")
-    
+
     stage = StageResult("BUILD")
     start = time.time()
-    
+
     if clean and (root / build_dir).exists():
         import shutil
         shutil.rmtree(root / build_dir)
@@ -22,9 +22,9 @@ def run_build(config, clean=False):
     else:
         # Linux/Mac specifics
         configure_cmd = f"cmake -B {build_dir} -G Ninja -DCMAKE_BUILD_TYPE=Debug -DAXIOM_ENABLE_TELEMETRY=ON"
-    
+
     build_cmd = f"cmake --build {build_dir} -j8"
-    
+
     rc, stdout, stderr, _ = run_command(configure_cmd, cwd=str(root))
     if rc != 0:
         stage.status = Status.FAIL

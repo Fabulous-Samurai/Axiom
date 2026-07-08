@@ -151,4 +151,3 @@ Planned follow-up models:
 - daemon pipe request queue fairness
 - timeout and restart semantics for persistent engine
 - mode-specific parser dispatch assumptions
-
