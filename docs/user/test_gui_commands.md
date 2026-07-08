@@ -60,4 +60,3 @@ plot(cos(x)*exp(-x/5), 0, 10, -1, 1)
 - **Symbolic**: Returns simplified expressions (not "Operation not found")
 - **Plotting**: Opens matplotlib window with plot (not ASCII art)
 - **Units**: Returns converted values
-

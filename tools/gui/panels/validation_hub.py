@@ -5,10 +5,10 @@ class ValidationHub(QDockWidget):
     def __init__(self, parent=None):
         super().__init__("Surgical Test & Validation Hub", parent)
         self.setObjectName("ValidationHub")
-        
+
         self.widget = QWidget()
         self.layout = QVBoxLayout(self.widget)
-        
+
         # Module Unit Tests
         module_box = QGroupBox("Module Unit-Testing")
         module_layout = QVBoxLayout()
@@ -19,7 +19,7 @@ class ValidationHub(QDockWidget):
         module_layout.addWidget(self.btn_test_pluto)
         module_layout.addWidget(self.btn_test_mantis)
         module_box.setLayout(module_layout)
-        
+
         # Real-time Benchmarking
         bench_box = QGroupBox("Real-Time Stress Testing")
         bench_layout = QVBoxLayout()
@@ -33,9 +33,9 @@ class ValidationHub(QDockWidget):
         bench_layout.addWidget(self.saturation_bar)
         bench_layout.addWidget(self.jitter_label)
         bench_box.setLayout(bench_layout)
-        
+
         self.layout.addWidget(module_box)
         self.layout.addWidget(bench_box)
         self.layout.addStretch(1)
-        
+
         self.setWidget(self.widget)

@@ -25,13 +25,13 @@ Init ==
 Dispatch ==
     /\ tokens["P1"] > 0
     /\ tokens["P4"] > 0
-    /\ tokens' = [tokens EXCEPT !["P1"] = @ - 1, 
+    /\ tokens' = [tokens EXCEPT !["P1"] = @ - 1,
                                !["P4"] = @ - 1,
                                !["P2"] = @ + 1]
 
 Complete ==
     /\ tokens["P2"] > 0
-    /\ tokens' = [tokens EXCEPT !["P2"] = @ - 1, 
+    /\ tokens' = [tokens EXCEPT !["P2"] = @ - 1,
                                !["P4"] = @ + 1,
                                !["P3"] = @ + 1]
 
