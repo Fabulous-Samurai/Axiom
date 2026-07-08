@@ -32,7 +32,17 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = (
+        "import sys\n"
+        "# 🛡️ SENTINEL SECURITY FIX:\n"
+        "# What: Restrict eval() environment to prevent arbitrary code execution.\n"
+        "# Why: Mitigates sandbox escape vulnerabilities by removing __builtins__.\n"
+        "try:\n"
+        "    print(eval(%r, {'__builtins__': {}}, {}))\n"
+        "except Exception as e:\n"
+        "    print('Error: ' + str(e), file=sys.stderr)\n"
+        "    sys.exit(1)\n"
+    ) % expression
     cmd = [sys.executable, "-c", code]
     
     try:
