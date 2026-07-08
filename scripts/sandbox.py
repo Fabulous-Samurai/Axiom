@@ -4,6 +4,7 @@ import time
 import threading
 import subprocess
 import signal
+import shutil
 
 class ComplexityGuard:
     """
@@ -43,10 +44,11 @@ def run_isolated_expression(expression):
         "    print('Error: ' + str(e), file=sys.stderr)\n"
         "    sys.exit(1)\n"
     ) % expression
-    cmd = [sys.executable, "-c", code]
+    executable = shutil.which(sys.executable) or sys.executable
+    cmd = [executable, "-c", code]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=False)
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
