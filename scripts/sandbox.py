@@ -30,13 +30,23 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Restrict `eval` environment to prevent arbitrary code execution via builtins.
+    # Why: Unrestricted `eval()` allows malicious expressions to import modules and access the system, bypassing intended sandbox constraints.
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code_template = """import sys
+try:
+    print(eval(%r, {'__builtins__': {}}, {}))
+except Exception as e:
+    print(f'{type(e).__name__}: {e}', file=sys.stderr)
+    sys.exit(1)
+"""
+    code = code_template % (expression,)
     cmd = [sys.executable, "-c", code]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=False)
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
