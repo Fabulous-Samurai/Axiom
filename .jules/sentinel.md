@@ -1,0 +1,4 @@
+## 2026-07-10 - Unrestricted eval() arbitrary code execution in Sandbox
+**Vulnerability:** The sandbox evaluator in `scripts/sandbox.py` used Python's `eval()` without restricting the environment, which allows attackers to use `__import__` to execute arbitrary code or bypass the sandbox.
+**Learning:** Subprocess isolation (e.g., AppContainer, seccomp) should only act as a secondary defense layer; it is fundamentally unsafe to use Python's `eval()` on untrusted input even within an isolated subprocess unless the execution environment globals and locals are restricted.
+**Prevention:** Always restrict the environment globals and locals when using `eval()`, specifically stripping out `__builtins__` (e.g., `eval(expr, {'__builtins__': {}}, {})`), to prevent arbitrary code execution while retaining general expression parsing.
