@@ -31,14 +31,20 @@ def run_isolated_expression(expression):
     print(f"[SANDBOX] Evaluating: {expression}")
     
     # 🛡️ SENTINEL SECURITY FIX:
-    # What: Restrict eval environment by removing builtins.
-    # Why: Prevent arbitrary code execution even within the isolated subprocess.
-    # We use %r formatting instead of f-strings to avoid brace collisions.
-    code = "import sys; print(eval(%r, {'__builtins__': {}}, {}))" % expression
+    # What: Restrict eval environment with a safe whitelist and explicitly set shell=False.
+    # Why: Prevent arbitrary code execution and command injection (S2076).
+    code = (
+        "import sys; "
+        "print(eval(%r, {'__builtins__': {'abs': abs, 'min': min, 'max': max, "
+        "'int': int, 'float': float}}, {}))"
+    ) % expression
     cmd = [sys.executable, "-c", code]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, shell=False
+        )
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
