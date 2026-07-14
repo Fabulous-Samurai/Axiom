@@ -1,0 +1,34 @@
+--- scripts/sonar_helper.py
++++ scripts/sonar_helper.py
+@@ -3,6 +3,7 @@
+ import argparse
+ import subprocess
+ import sys
++import shutil
+
+ def list_issues(issues):
+     print(f"{'#':<3} | {'Severity':<10} | {'Type':<12} | {'File:Line':<40} | {'Message'}")
+@@ -32,15 +33,21 @@
+             print(f"Error: Could not find file {component}")
+             return
+
++    # 🛡️ SENTINEL SECURITY FIX:
++    # What: Use shutil.which to resolve executable and set shell=False
++    # Why: Mitigates command injection vulnerabilities from user-controlled ide_cmd.
++    resolved_cmd = shutil.which(ide_cmd) or ide_cmd
++
+     if ide_cmd == "code":
+         # VS Code goto syntax: code --goto file:line
+-        cmd = ["code", "--goto", f"{file_path}:{line}"]
++        cmd = [resolved_cmd, "--goto", f"{file_path}:{line}"]
+     else:
+         # Generic fallback: just open the file
+-        cmd = [ide_cmd, file_path]
++        cmd = [resolved_cmd, file_path]
+
+     print(f"Executing: {' '.join(cmd)}")
+     try:
+-        subprocess.run(cmd, check=True, shell=True)
++        subprocess.run(cmd, check=True, shell=False)
+     except Exception as e:
+         print(f"Error opening IDE: {e}")
