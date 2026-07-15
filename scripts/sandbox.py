@@ -32,11 +32,15 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Restrict eval environment with safe __builtins__ whitelist
+    # Why: Prevent arbitrary code execution (like __import__('os')) during expression evaluation
+    # Use % formatting to avoid KeyError syntax errors with braces.
+    code = "try:\n    print(eval(%r, {'__builtins__': {'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float}}))\nexcept Exception as e:\n    import sys\n    print(str(e), file=sys.stderr)\n    sys.exit(1)" % (expression,)
     cmd = [sys.executable, "-c", code]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=False)
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
