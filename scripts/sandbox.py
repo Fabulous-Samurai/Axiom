@@ -32,7 +32,18 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Restrict eval environment to prevent unauthorized code execution
+    # Why: By default, eval() has access to __import__ and other builtins, allowing a sandbox escape (e.g. __import__('os').system('...'))
+    code = (
+        "import sys\n"
+        "try:\n"
+        "    safe_env = {'__builtins__': {'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float}}\n"
+        "    print(eval(%r, safe_env))\n"
+        "except Exception as e:\n"
+        "    print(str(e), file=sys.stderr)\n"
+        "    sys.exit(1)\n"
+    ) % (expression,)
     cmd = [sys.executable, "-c", code]
     
     try:

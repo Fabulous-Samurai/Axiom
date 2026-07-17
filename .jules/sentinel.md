@@ -1,0 +1,4 @@
+## 2024-07-17 - Restrict eval in Sandbox Script
+**Vulnerability:** The `scripts/sandbox.py` uses `eval()` with `sys.executable -c` without restricting the Python evaluation environment. By default, `eval()` executes in an environment that has access to all Python builtins, such as `__import__`. This means users can evaluate arbitrary Python code, allowing them to escape the isolated execution and run things like `__import__('os').system('...')`.
+**Learning:** Even though the execution is running in an isolated process via `subprocess.Popen`, the Python `eval()` function itself has full access to Python primitives if it isn't explicitly sandboxed.
+**Prevention:** To prevent command injection and access to unauthorized builtins within `eval()`, pass a restricted dictionary for globals that overrides `__builtins__` with a safe whitelist. E.g., `{'__builtins__': {'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float}}`
