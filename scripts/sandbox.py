@@ -4,6 +4,7 @@ import time
 import threading
 import subprocess
 import signal
+import shutil
 
 class ComplexityGuard:
     """
@@ -44,7 +45,9 @@ def run_isolated_expression(expression):
         "    print(str(e), file=sys.stderr)\n"
         "    sys.exit(1)\n"
     ) % (expression,)
-    cmd = [sys.executable, "-c", code]
+
+    python_exe = shutil.which('python3') or sys.executable
+    cmd = [python_exe, "-c", code]
     
     try:
         proc = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
