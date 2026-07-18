@@ -54,7 +54,7 @@ def run_isolated_expression(expression):
     
     try:
         proc = subprocess.Popen(
-            cmd,
+            [executable, "-c", code],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
