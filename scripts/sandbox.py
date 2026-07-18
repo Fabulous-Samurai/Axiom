@@ -44,10 +44,22 @@ def run_isolated_expression(expression):
         "    print(str(e), file=sys.stderr)\n"
         "    sys.exit(1)"
     ) % expression
-    cmd = [sys.executable, "-c", code]
+
+    import shutil
+    executable = shutil.which(sys.executable)
+    if executable is None:
+        executable = sys.executable
+
+    cmd = [executable, "-c", code]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            shell=False
+        )
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
