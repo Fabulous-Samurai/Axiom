@@ -36,7 +36,11 @@ def run_isolated_expression(expression):
     # What: Restrict eval environment to prevent RCE
     # Why: Unrestricted eval allows escaping sandbox via __import__ or __builtins__
     code = "print(eval(%r, {'__builtins__': {'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float}}, {}))" % (expression,)
-    cmd = [sys.executable, "-c", code]
+    import shutil
+    executable = shutil.which(sys.executable)
+    if executable is None:
+        executable = sys.executable
+    cmd = [executable, "-c", code]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=False)
