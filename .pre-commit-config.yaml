@@ -7,8 +7,11 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
 
-  - repo: https://github.com/pwaller/pre-commit-clang-format
-    rev: v1.1.0
+  # 🛡️ SENTINEL SECURITY FIX:
+  # What: Replaced unmaintained pwaller/pre-commit-clang-format with official pre-commit/mirrors-clang-format
+  # Why: pwaller/pre-commit-clang-format is unmaintained and poses a supply chain risk. The official mirror is actively maintained and more secure.
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v18.1.8
     hooks:
       - id: clang-format
         args: [--style=Google]
