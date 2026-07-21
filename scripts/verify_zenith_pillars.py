@@ -57,7 +57,7 @@ def verify_file(file_path):
             for i, line in enumerate(lines):
                 # Skip comments
                 clean_line = line.strip()
-                if clean_line.startswith("//") or clean_line.startswith("/*") or clean_line.startswith("*"):
+                if clean_line.startswith(("//", "/*", "*")):
                     continue
                 
                 for keyword, message in FORBIDDEN_KEYWORDS.items():
