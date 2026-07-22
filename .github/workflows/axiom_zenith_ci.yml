@@ -55,7 +55,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y ninja-build python3-dev libnuma-dev valgrind ccache
           python -m pip install nanobind pytest numpy matplotlib
       - name: "Ccache Cache"
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
         with:
           path: ~/.cache/ccache
           key: ${{ runner.os }}-ccache-${{ github.sha }}
@@ -178,7 +178,7 @@ jobs:
           name: axiom-coverage-report
           path: .
       - name: "SonarCloud Scan"
-        uses: SonarSource/sonarqube-scan-action@53c6b9f13962ae22901f056d6d4ba877f91f27ed # v5.0.0
+        uses: SonarSource/sonarqube-scan-action@0303d6b62e310685c0e34d0b9cde218036885c4d # v5.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
