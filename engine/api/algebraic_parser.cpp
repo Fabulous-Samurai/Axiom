@@ -259,7 +259,7 @@ namespace {
 void AlgebraicParser::RegisterSpecialCommands() noexcept {}
 NodePtr AlgebraicParser::ParseExpression(std::string_view input) noexcept { ParserState state{input, 0, arena_}; return parse_expression(state); }
 
-EngineResult AlgebraicParser::ParseAndExecute(std::string_view input) noexcept { 
+EngineResult AlgebraicParser::ParseAndExecute(std::string_view input) noexcept {
     std::string_view trimmed = Utils::Trim(input);
     if (trimmed.rfind("derive ", 0) == 0) return HandleDerivative(trimmed);
     if (trimmed.rfind("limit(", 0) == 0) return HandleLimit(trimmed);

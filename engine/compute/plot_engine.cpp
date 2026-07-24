@@ -138,7 +138,7 @@ std::string_view PlotEngine::PlotFunction(std::string_view expression, const Plo
     return arena_.allocString(std::string_view(result_buffer.data(), result_buffer.size()));
 }
 
-std::string_view PlotEngine::PlotParametric(std::string_view x_expr, std::string_view y_expr, 
+std::string_view PlotEngine::PlotParametric(std::string_view x_expr, std::string_view y_expr,
                                            double t_min, double t_max, const PlotConfig& config) noexcept {
     arena_.reset();
     AlgebraicParser parser;

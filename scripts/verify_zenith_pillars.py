@@ -18,7 +18,7 @@ FORBIDDEN_KEYWORDS = {
     "delete ": "Pillar 1: Heap deallocation (delete) detected.",
     "std::vector": "Pillar 1/3: std::vector detected. Use AXIOM::FixedVector or Arena instead.",
     "std::map": "Pillar 1/3: std::map detected. Use Arena-based structures or robin-map.",
-    "std::string": "Pillar 1/3: std::string detected in CORE. Use std::string_view or const char*.",
+    r"std::string(?![_a-zA-Z0-9])": "Pillar 1/3: std::string detected in CORE. Use std::string_view or const char*.",
     
     # Pillar 5 violations (Exceptions & RTTI)
     "throw ": "Pillar 5: Exception throwing detected. Zenith Core must be Zero-Exception.",
@@ -61,9 +61,9 @@ def verify_file(file_path):
                     continue
                 
                 for keyword, message in FORBIDDEN_KEYWORDS.items():
-                    if keyword in line:
+                    if re.search(keyword, line):
                         # Double check it's not a comment at the end of a line
-                        if "//" in line and line.find("//") < line.find(keyword):
+                        if "//" in line and line.find("//") < re.search(keyword, line).start():
                             continue
                         violations.append(f"Line {i+1}: {message}")
     except Exception as e:
