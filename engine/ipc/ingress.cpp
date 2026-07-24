@@ -68,7 +68,7 @@ size_t MockHFTChannel::poll(std::function<void(const IngressFrame&)> callback) n
 
 // --- Factory ---
 
-AnyIngressChannel IngressFactory::create(ProviderType type, const std::string& interface_name) {
+AnyIngressChannel IngressFactory::create(ProviderType type, const std::string_view& interface_name) {
     (void)interface_name;
     if (type == ProviderType::PROV_AF_XDP) {
         return AF_XDPChannel();

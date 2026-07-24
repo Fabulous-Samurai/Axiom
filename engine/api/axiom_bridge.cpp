@@ -21,7 +21,7 @@ AXIOM_EXPORT Axiom_CalculationResult Axiom_Execute(const char* expression, const
     thread_local DynamicCalc engine;
     
     // Set mode
-    std::string_view m(mode ? mode : "algebraic");
+    std::string_view_view m(mode ? mode : "algebraic");
     if (m == "linear") engine.SetMode(CalculationMode::LINEAR_SYSTEM);
     else if (m == "stats") engine.SetMode(CalculationMode::STATISTICS);
     else if (m == "symbolic") engine.SetMode(CalculationMode::SYMBOLIC);

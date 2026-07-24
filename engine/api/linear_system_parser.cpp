@@ -20,7 +20,7 @@ void LinearSystemParser::RegisterCommands()
     // Simplified registration for zenith compliance
 }
 
-EngineResult LinearSystemParser::ParseAndExecute(std::string_view input) noexcept
+EngineResult LinearSystemParser::ParseAndExecute(std::string_view_view input) noexcept
 {
     if (input.starts_with("qr(")) return HandleQR(input);
     if (input.starts_with("eigen(")) return HandleEigen(input);
@@ -30,21 +30,21 @@ EngineResult LinearSystemParser::ParseAndExecute(std::string_view input) noexcep
     return CreateErrorResult(StatusCode::OperationNotFound);
 }
 
-EngineResult LinearSystemParser::HandleQR(std::string_view input) const noexcept
+EngineResult LinearSystemParser::HandleQR(std::string_view_view input) const noexcept
 {
     Matrix A = ParseMatrixString(input);
     auto [Q, R] = GramSchmidt(A);
     return CreateSuccessResult(std::move(Q)); 
 }
 
-EngineResult LinearSystemParser::HandleEigen(std::string_view input) const noexcept
+EngineResult LinearSystemParser::HandleEigen(std::string_view_view input) const noexcept
 {
     Matrix A = ParseMatrixString(input);
     auto [eigenValues, eigenVectors] = ComputeEigenvalues(A);
     return CreateSuccessResult(std::move(eigenValues));
 }
 
-EngineResult LinearSystemParser::HandleSolve(std::string_view input) const noexcept
+EngineResult LinearSystemParser::HandleSolve(std::string_view_view input) const noexcept
 {
     Matrix A;
     Vector b;
@@ -60,12 +60,12 @@ Vector LinearSystemParser::solve_linear_system(const Matrix& A, const Vector& b)
     return res ? *res : Vector();
 }
 
-bool LinearSystemParser::ParseLinearSystem(std::string_view input, Matrix &A, Vector &b) const noexcept {
+bool LinearSystemParser::ParseLinearSystem(std::string_view_view input, Matrix &A, Vector &b) const noexcept {
     (void)input; (void)A; (void)b;
     return false; 
 }
 
-Matrix LinearSystemParser::ParseMatrixString(std::string_view input) const noexcept {
+Matrix LinearSystemParser::ParseMatrixString(std::string_view_view input) const noexcept {
     (void)input;
     return Matrix();
 }
@@ -136,6 +136,6 @@ std::pair<Vector, Matrix> LinearSystemParser::ComputeEigenvalues(const Matrix &A
 }
 
 bool isCloseToZero(double value, double epsilon) noexcept { (void)value; (void)epsilon; return false; }
-bool isValidNumber(std::string_view str) noexcept { (void)str; return false; }
+bool isValidNumber(std::string_view_view str) noexcept { (void)str; return false; }
 
 } // namespace AXIOM

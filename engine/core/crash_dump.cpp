@@ -25,7 +25,7 @@ CrashVault& CrashVault::instance() {
     return vault;
 }
 
-bool CrashVault::initialize(const std::string& path) {
+bool CrashVault::initialize(const std::string_view& path) {
     size_t total_size = sizeof(VaultHeader) + VAULT_SIZE;
 
 #ifdef _WIN32

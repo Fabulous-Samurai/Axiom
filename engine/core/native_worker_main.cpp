@@ -20,7 +20,7 @@
 #endif
 
 int main() {
-    std::string shm_name = "Local\\AXIOM_SANDBOX_SHM"; // Fixed for now
+    std::string_view shm_name = "Local\\AXIOM_SANDBOX_SHM"; // Fixed for now
     
     AXIOM::Sandbox::SandboxIPCLayout* ipc = nullptr;
 
@@ -51,7 +51,7 @@ int main() {
             res.request_id = req.request_id;
             res.success = false;
 
-            if (std::string_view(req.command.data()) == "STALL_INFINITE") {
+            if (std::string_view_view(req.command.data()) == "STALL_INFINITE") {
                 // Simulation of a 'Poison' command that hangs the process
                 while(true) { std::this_thread::yield(); } 
             }

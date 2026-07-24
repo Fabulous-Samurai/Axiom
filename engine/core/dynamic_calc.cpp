@@ -47,7 +47,7 @@ DynamicCalc::DynamicCalc() {
 
 DynamicCalc::~DynamicCalc() = default;
 
-EngineResult DynamicCalc::Evaluate(std::string_view input) noexcept {
+EngineResult DynamicCalc::Evaluate(std::string_view_view input) noexcept {
     const auto policy = AssessExpressionPolicy(input, current_mode_);
     if (!policy.allowed) return CreateErrorResult(policy.error);
 

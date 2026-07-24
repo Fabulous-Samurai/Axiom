@@ -5,15 +5,15 @@
 
 namespace AXIOM {
 
-EngineResult PlotParser::ParseAndExecute(std::string_view input) noexcept {
-    const std::string_view prefix = "plot(";
+EngineResult PlotParser::ParseAndExecute(std::string_view_view input) noexcept {
+    const std::string_view_view prefix = "plot(";
     if (input.rfind(prefix, 0) != 0 || input.back() != ')') {
         return CreateErrorResult(CalcErr::ParseError);
     }
 
-    const std::string_view args_content = input.substr(prefix.size(), input.size() - prefix.size() - 1);
+    const std::string_view_view args_content = input.substr(prefix.size(), input.size() - prefix.size() - 1);
 
-    AXIOM::FixedVector<std::string_view, 16> args;
+    AXIOM::FixedVector<std::string_view_view, 16> args;
     size_t start = 0;
     int paren_depth = 0;
     for (size_t i = 0; i <= args_content.size(); ++i) {
@@ -23,7 +23,7 @@ EngineResult PlotParser::ParseAndExecute(std::string_view input) noexcept {
         } else if (c == ')') {
             --paren_depth;
         } else if (c == ',' && paren_depth == 0) {
-            const std::string_view arg = Utils::Trim(args_content.substr(start, i - start));
+            const std::string_view_view arg = Utils::Trim(args_content.substr(start, i - start));
             if (!arg.empty()) {
                 args.push_back(arg);
             }
@@ -50,7 +50,7 @@ EngineResult PlotParser::ParseAndExecute(std::string_view input) noexcept {
     cfg.y_min = *ymin;
     cfg.y_max = *ymax;
 
-    auto data = plot_engine_.ComputeFunctionData(std::string(args[0]), cfg);
+    auto data = plot_engine_.ComputeFunctionData(std::string_view(args[0]), cfg);
     return CreateSuccessResult(std::move(data));
 }
 

@@ -12,14 +12,14 @@ namespace {
     constexpr double D2R = std::numbers::pi / 180.0;
     constexpr double R2D = 180.0 / std::numbers::pi;
 
-    int LookupSymbol(const SymbolTable& vars, std::string_view name) noexcept {
+    int LookupSymbol(const SymbolTable& vars, std::string_view_view name) noexcept {
         for (size_t i = 0; i < vars.size(); ++i) {
             if (vars[i].first == name) return static_cast<int>(i);
         }
         return -1;
     }
 
-    std::string_view FormatNumber(Arena& arena, double val) noexcept {
+    std::string_view_view FormatNumber(Arena& arena, double val) noexcept {
         char buf[64];
         int len = 0;
         if (std::isinf(val)) len = snprintf(buf, sizeof(buf), std::signbit(val) ? "-inf" : "inf");
@@ -30,7 +30,7 @@ namespace {
             if (abs_val >= 1e6 || (abs_val > 0 && abs_val < 1e-6)) len = snprintf(buf, sizeof(buf), "%.6e", val);
             else len = snprintf(buf, sizeof(buf), "%.15g", val);
         }
-        return arena.allocString(std::string_view(buf, len > 0 ? static_cast<size_t>(len) : 0));
+        return arena.allocString(std::string_view_view(buf, len > 0 ? static_cast<size_t>(len) : 0));
     }
 }
 
@@ -126,9 +126,9 @@ void NodeDispatcher::CollectVariables(NodePtr node, SymbolTable& var_map) noexce
     }, *node);
 }
 
-std::string_view NodeDispatcher::ToString(NodePtr node, Arena& arena, Precedence p) noexcept {
+std::string_view_view NodeDispatcher::ToString(NodePtr node, Arena& arena, Precedence p) noexcept {
     if (!node) return "";
-    return std::visit([&](auto&& n) -> std::string_view {
+    return std::visit([&](auto&& n) -> std::string_view_view {
         using T = std::decay_t<decltype(n)>;
         if constexpr (std::is_same_v<T, NumberNode>) {
             return FormatNumber(arena, n.value);
@@ -139,18 +139,18 @@ std::string_view NodeDispatcher::ToString(NodePtr node, Arena& arena, Precedence
             auto r = ToString(n.right, arena);
             char buf[1024];
             int len = snprintf(buf, sizeof(buf), "%.*s %c %.*s", (int)l.length(), l.data(), n.op, (int)r.length(), r.data());
-            return arena.allocString(std::string_view(buf, len > 0 ? static_cast<size_t>(len) : 0));
+            return arena.allocString(std::string_view_view(buf, len > 0 ? static_cast<size_t>(len) : 0));
         } else if constexpr (std::is_same_v<T, UnaryOpNode>) {
             auto arg = ToString(n.operand, arena);
             char buf[1024];
             int len = snprintf(buf, sizeof(buf), "%.*s(%.*s)", (int)n.func.length(), n.func.data(), (int)arg.length(), arg.data());
-            return arena.allocString(std::string_view(buf, len > 0 ? static_cast<size_t>(len) : 0));
+            return arena.allocString(std::string_view_view(buf, len > 0 ? static_cast<size_t>(len) : 0));
         }
         return "unimplemented";
     }, *node);
 }
 
-NodePtr NodeDispatcher::Derivative(NodePtr node, Arena& arena, std::string_view var) noexcept {
+NodePtr NodeDispatcher::Derivative(NodePtr node, Arena& arena, std::string_view_view var) noexcept {
     if (!node) return nullptr;
     return std::visit([&](auto&& n) -> NodePtr {
         using T = std::decay_t<decltype(n)>;

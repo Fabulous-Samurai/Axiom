@@ -20,7 +20,7 @@ void CPUOptimization::Initialize() {
     std::cout << "CPU optimizations initialized" << std::endl;
 }
 
-std::string CPUOptimization::GetCPUInfo() {
+std::string_view CPUOptimization::GetCPUInfo() {
     return "CPU optimization module loaded";
 }
 

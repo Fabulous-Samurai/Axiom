@@ -45,11 +45,11 @@ UnitManager::UnitManager() {
     std::ranges::sort(units_, {}, &Unit::symbol);
 }
 
-void UnitManager::RegisterUnit(std::string_view symbol, UnitType type, double scale, std::string_view name) noexcept {
+void UnitManager::RegisterUnit(std::string_view_view symbol, UnitType type, double scale, std::string_view_view name) noexcept {
     units_.emplace_back(type, scale, symbol, name);
 }
 
-EngineResult UnitManager::ConvertUnit(double value, std::string_view from_unit, std::string_view to_unit) noexcept {
+EngineResult UnitManager::ConvertUnit(double value, std::string_view_view from_unit, std::string_view_view to_unit) noexcept {
     auto from_it = std::ranges::lower_bound(units_, from_unit, {}, &Unit::symbol);
     auto to_it = std::ranges::lower_bound(units_, to_unit, {}, &Unit::symbol);
 
@@ -74,7 +74,7 @@ EngineResult UnitManager::ConvertUnit(double value, std::string_view from_unit, 
     return CreateSuccessResult(result);
 }
 
-AXIOM::EngineResult UnitManager::ConvertTemperature(double value, std::string_view from_unit, std::string_view to_unit) noexcept {
+AXIOM::EngineResult UnitManager::ConvertTemperature(double value, std::string_view_view from_unit, std::string_view_view to_unit) noexcept {
     // Convert to Kelvin first
     double kelvin;
     if (from_unit == "C") {
@@ -102,7 +102,7 @@ AXIOM::EngineResult UnitManager::ConvertTemperature(double value, std::string_vi
     return CreateSuccessResult(result);
 }
 
-bool UnitManager::AreCompatible(std::string_view unit1, std::string_view unit2) noexcept {
+bool UnitManager::AreCompatible(std::string_view_view unit1, std::string_view_view unit2) noexcept {
     auto u1_it = std::ranges::lower_bound(units_, unit1, {}, &Unit::symbol);
     auto u2_it = std::ranges::lower_bound(units_, unit2, {}, &Unit::symbol);
 
@@ -111,7 +111,7 @@ bool UnitManager::AreCompatible(std::string_view unit1, std::string_view unit2) 
             u1_it->type == u2_it->type);
 }
 
-std::string_view UnitManager::GetCanonicalUnit(UnitType type) noexcept {
+std::string_view_view UnitManager::GetCanonicalUnit(UnitType type) noexcept {
     switch (type) {
         case UnitType::Length: return "m";
         case UnitType::Mass: return "kg";
@@ -122,8 +122,8 @@ std::string_view UnitManager::GetCanonicalUnit(UnitType type) noexcept {
     }
 }
 
-AXIOM::FixedVector<std::string_view, 256> UnitManager::GetUnitsOfType(UnitType type) noexcept {
-    AXIOM::FixedVector<std::string_view, 256> result;
+AXIOM::FixedVector<std::string_view_view, 256> UnitManager::GetUnitsOfType(UnitType type) noexcept {
+    AXIOM::FixedVector<std::string_view_view, 256> result;
     for (const auto& [u_type, scale, symbol, name] : units_) {
         if (u_type == type) {
             result.push_back(symbol);

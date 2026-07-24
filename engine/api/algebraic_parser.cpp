@@ -12,7 +12,7 @@ namespace AXIOM {
 
 namespace {
     struct ParserState {
-        std::string_view input;
+        std::string_view_view input;
         size_t pos{0};
         Arena& arena;
         int depth{0};
@@ -60,7 +60,7 @@ namespace {
     NodePtr parse_identifier(ParserState& state) noexcept {
         size_t start = state.pos;
         while (state.has_more() && (std::isalnum(static_cast<unsigned char>(state.peek())) || state.peek() == '_')) state.get();
-        std::string_view name = state.input.substr(start, state.pos - start);
+        std::string_view_view name = state.input.substr(start, state.pos - start);
         
         state.skip_ws();
         if (state.peek() == '(') {
@@ -202,22 +202,22 @@ namespace {
         return left;
     }
 
-    bool ParseLimitArguments(std::string_view input, std::string_view& expr, std::string_view& var, double& point) noexcept {
+    bool ParseLimitArguments(std::string_view_view input, std::string_view_view& expr, std::string_view_view& var, double& point) noexcept {
         auto start = input.find('(');
         auto end = input.rfind(')');
-        if (start == std::string_view::npos || end == std::string_view::npos || end <= start) return false;
+        if (start == std::string_view_view::npos || end == std::string_view_view::npos || end <= start) return false;
         
-        std::string_view content = input.substr(start + 1, end - start - 1);
+        std::string_view_view content = input.substr(start + 1, end - start - 1);
         size_t c1 = content.find(',');
-        if (c1 == std::string_view::npos) return false;
+        if (c1 == std::string_view_view::npos) return false;
         
         expr = Utils::Trim(content.substr(0, c1));
-        std::string_view rest = content.substr(c1 + 1);
+        std::string_view_view rest = content.substr(c1 + 1);
         size_t c2 = rest.find(',');
-        if (c2 == std::string_view::npos) return false;
+        if (c2 == std::string_view_view::npos) return false;
         
         var = Utils::Trim(rest.substr(0, c2));
-        std::string_view point_str = Utils::Trim(rest.substr(c2 + 1));
+        std::string_view_view point_str = Utils::Trim(rest.substr(c2 + 1));
         auto point_val = Utils::FastParseDouble(point_str);
         if (!point_val) return false;
         
@@ -225,27 +225,27 @@ namespace {
         return true;
     }
 
-    bool ParseIntegrateArguments(std::string_view input, std::string_view& expr, std::string_view& var, double& a, double& b) noexcept {
+    bool ParseIntegrateArguments(std::string_view_view input, std::string_view_view& expr, std::string_view_view& var, double& a, double& b) noexcept {
         auto start = input.find('(');
         auto end = input.rfind(')');
-        if (start == std::string_view::npos || end == std::string_view::npos || end <= start) return false;
+        if (start == std::string_view_view::npos || end == std::string_view_view::npos || end <= start) return false;
         
-        std::string_view content = input.substr(start + 1, end - start - 1);
+        std::string_view_view content = input.substr(start + 1, end - start - 1);
         size_t c1 = content.find(',');
-        if (c1 == std::string_view::npos) return false;
+        if (c1 == std::string_view_view::npos) return false;
         
         expr = Utils::Trim(content.substr(0, c1));
-        std::string_view rest1 = content.substr(c1 + 1);
+        std::string_view_view rest1 = content.substr(c1 + 1);
         size_t c2 = rest1.find(',');
-        if (c2 == std::string_view::npos) return false;
+        if (c2 == std::string_view_view::npos) return false;
         
         var = Utils::Trim(rest1.substr(0, c2));
-        std::string_view rest2 = rest1.substr(c2 + 1);
+        std::string_view_view rest2 = rest1.substr(c2 + 1);
         size_t c3 = rest2.find(',');
-        if (c3 == std::string_view::npos) return false;
+        if (c3 == std::string_view_view::npos) return false;
         
-        std::string_view a_str = Utils::Trim(rest2.substr(0, c3));
-        std::string_view b_str = Utils::Trim(rest2.substr(c3 + 1));
+        std::string_view_view a_str = Utils::Trim(rest2.substr(0, c3));
+        std::string_view_view b_str = Utils::Trim(rest2.substr(c3 + 1));
         auto a_val = Utils::FastParseDouble(a_str);
         auto b_val = Utils::FastParseDouble(b_str);
         if (!a_val || !b_val) return false;
@@ -257,26 +257,26 @@ namespace {
 }
 
 void AlgebraicParser::RegisterSpecialCommands() noexcept {}
-NodePtr AlgebraicParser::ParseExpression(std::string_view input) noexcept { ParserState state{input, 0, arena_}; return parse_expression(state); }
+NodePtr AlgebraicParser::ParseExpression(std::string_view_view input) noexcept { ParserState state{input, 0, arena_}; return parse_expression(state); }
 
-EngineResult AlgebraicParser::ParseAndExecute(std::string_view input) noexcept { 
-    std::string_view trimmed = Utils::Trim(input);
+EngineResult AlgebraicParser::ParseAndExecute(std::string_view_view input) noexcept {
+    std::string_view_view trimmed = Utils::Trim(input);
     if (trimmed.rfind("derive ", 0) == 0) return HandleDerivative(trimmed);
     if (trimmed.rfind("limit(", 0) == 0) return HandleLimit(trimmed);
     if (trimmed.rfind("integrate(", 0) == 0) return HandleIntegrate(trimmed);
     return ParseAndExecuteWithContext(trimmed, SymbolTable{}); 
 }
 
-EngineResult AlgebraicParser::HandleLimit(std::string_view input) noexcept {
-    std::string_view expr, var;
+EngineResult AlgebraicParser::HandleLimit(std::string_view_view input) noexcept {
+    std::string_view_view expr, var;
     double point = 0;
     if (!ParseLimitArguments(input, expr, var, point)) return CreateErrorResult(CalcErr::ParseError);
     SymbolTable ctx; ctx.push_back({var, Number(point)});
     return ParseAndExecuteWithContext(expr, ctx);
 }
 
-EngineResult AlgebraicParser::HandleIntegrate(std::string_view input) noexcept {
-    std::string_view expr, var;
+EngineResult AlgebraicParser::HandleIntegrate(std::string_view_view input) noexcept {
+    std::string_view_view expr, var;
     double a = 0, b = 0;
     if (!ParseIntegrateArguments(input, expr, var, a, b)) return CreateErrorResult(CalcErr::ParseError);
     
@@ -296,7 +296,7 @@ EngineResult AlgebraicParser::HandleIntegrate(std::string_view input) noexcept {
     return CreateSuccessResult(sum * h);
 }
 
-EngineResult AlgebraicParser::ParseAndExecuteWithContext(std::string_view input, const SymbolTable& context) noexcept {
+EngineResult AlgebraicParser::ParseAndExecuteWithContext(std::string_view_view input, const SymbolTable& context) noexcept {
     auto root = ParseExpression(input); if (!root) return CreateErrorResult(CalcErr::StackOverflow);
     auto res = NodeDispatcher::Evaluate(root, context); if (res.HasValue()) {
         if (res.matrix.has_value()) return CreateSuccessResult(std::move(*res.matrix));
@@ -306,12 +306,12 @@ EngineResult AlgebraicParser::ParseAndExecuteWithContext(std::string_view input,
     return CreateErrorResult(res.error);
 }
 
-EngineResult AlgebraicParser::HandleDerivative(std::string_view input) noexcept {
+EngineResult AlgebraicParser::HandleDerivative(std::string_view_view input) noexcept {
     // [FIX]: Use a transient (temporary) arena for this symbolic operation
     // to prevent dangling pointers from nodes created during simplification.
     Arena transient_arena(1 * 1024 * 1024); // 1MB arena for this operation only
 
-    std::string_view target = input; if (target.rfind("derive ", 0) == 0) target = target.substr(7);
+    std::string_view_view target = input; if (target.rfind("derive ", 0) == 0) target = target.substr(7);
     
     // Parse expression using the transient arena
     ParserState state{target, 0, transient_arena};
@@ -328,10 +328,10 @@ EngineResult AlgebraicParser::HandleDerivative(std::string_view input) noexcept 
     return CreateSuccessResult(NodeDispatcher::ToString(simplified, transient_arena));
 }
 
-EngineResult AlgebraicParser::HandleQuadratic(std::string_view input) noexcept { return CreateErrorResult(CalcErr::OperationNotFound); }
-EngineResult AlgebraicParser::HandleNonLinearSolve(std::string_view input) noexcept { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult AlgebraicParser::HandleQuadratic(std::string_view_view input) noexcept { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult AlgebraicParser::HandleNonLinearSolve(std::string_view_view input) noexcept { return CreateErrorResult(CalcErr::OperationNotFound); }
 EngineResult AlgebraicParser::SolveQuadratic(double a, double b, double c) noexcept { return CreateErrorResult(CalcErr::OperationNotFound); }
-EngineResult AlgebraicParser::SolveNonLinearSystem(const FixedVector<std::string_view, 256>& equations, SymbolTable& guess) noexcept { return CreateErrorResult(CalcErr::OperationNotFound); }
-EngineResult AlgebraicParser::HandlePlotFunction(std::string_view input) noexcept { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult AlgebraicParser::SolveNonLinearSystem(const FixedVector<std::string_view_view, 256>& equations, SymbolTable& guess) noexcept { return CreateErrorResult(CalcErr::OperationNotFound); }
+EngineResult AlgebraicParser::HandlePlotFunction(std::string_view_view input) noexcept { return CreateErrorResult(CalcErr::OperationNotFound); }
 
 } // namespace AXIOM

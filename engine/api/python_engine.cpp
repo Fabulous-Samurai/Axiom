@@ -39,7 +39,7 @@ void PythonEngine::Finalize() {
     initialized_ = false;
 }
 
-EngineResult PythonEngine::ExecutePython(const std::string& code) {
+EngineResult PythonEngine::ExecutePython(const std::string_view& code) {
     if (!IsInitialized()) return CreateErrorResult(CalcErr::OperationNotFound);
 
     int result = PyRun_SimpleString(code.c_str());
@@ -51,7 +51,7 @@ EngineResult PythonEngine::ExecutePython(const std::string& code) {
     return CreateSuccessResult(0.0);
 }
 
-EngineResult PythonEngine::EvaluatePython(const std::string& expression) {
+EngineResult PythonEngine::EvaluatePython(const std::string_view& expression) {
     if (!IsInitialized()) return CreateErrorResult(CalcErr::OperationNotFound);
 
     PyObject* main_module = PyImport_AddModule("__main__");
@@ -79,7 +79,7 @@ EngineResult PythonEngine::EvaluatePython(const std::string& expression) {
     return res;
 }
 
-bool PythonEngine::SetVariable(const std::string& name, double value) {
+bool PythonEngine::SetVariable(const std::string_view& name, double value) {
     if (!IsInitialized()) return false;
 
     PyObject* main_module = PyImport_AddModule("__main__");
@@ -92,7 +92,7 @@ bool PythonEngine::SetVariable(const std::string& name, double value) {
     return result == 0;
 }
 
-bool PythonEngine::SetVariable(const std::string& name, const AXIOM::Vector& values) {
+bool PythonEngine::SetVariable(const std::string_view& name, const AXIOM::Vector& values) {
     if (!IsInitialized()) return false;
 
     PyObject* py_list = VectorToPyList(values);
@@ -105,7 +105,7 @@ bool PythonEngine::SetVariable(const std::string& name, const AXIOM::Vector& val
     return result == 0;
 }
 
-bool PythonEngine::SetVariable(const std::string& name, const AXIOM::Matrix& matrix) {
+bool PythonEngine::SetVariable(const std::string_view& name, const AXIOM::Matrix& matrix) {
     if (!IsInitialized()) return false;
 
     PyObject* py_list = MatrixToPyList(matrix);
@@ -118,7 +118,7 @@ bool PythonEngine::SetVariable(const std::string& name, const AXIOM::Matrix& mat
     return result == 0;
 }
 
-std::optional<double> PythonEngine::GetDouble(const std::string& name) {
+std::optional<double> PythonEngine::GetDouble(const std::string_view& name) {
     if (!IsInitialized()) return std::nullopt;
 
     PyObject* main_module = PyImport_AddModule("__main__");
@@ -131,7 +131,7 @@ std::optional<double> PythonEngine::GetDouble(const std::string& name) {
     return std::nullopt;
 }
 
-std::optional<AXIOM::Vector> PythonEngine::GetVector(const std::string& name) {
+std::optional<AXIOM::Vector> PythonEngine::GetVector(const std::string_view& name) {
     if (!IsInitialized()) return std::nullopt;
 
     PyObject* main_module = PyImport_AddModule("__main__");
@@ -144,7 +144,7 @@ std::optional<AXIOM::Vector> PythonEngine::GetVector(const std::string& name) {
     return std::nullopt;
 }
 
-std::optional<AXIOM::Matrix> PythonEngine::GetMatrix(const std::string& name) {
+std::optional<AXIOM::Matrix> PythonEngine::GetMatrix(const std::string_view& name) {
     if (!IsInitialized()) return std::nullopt;
 
     PyObject* main_module = PyImport_AddModule("__main__");
@@ -167,22 +167,22 @@ EngineResult PythonEngine::CreateNumpyArray(const AXIOM::Vector& data) {
     return CreateSuccessResult(0.0);
 }
 
-EngineResult PythonEngine::NumpyOperation(const std::string& operation) {
+EngineResult PythonEngine::NumpyOperation(const std::string_view& operation) {
     return ExecutePython("import numpy as np\n" + operation);
 }
 
-EngineResult PythonEngine::ScipyFunction(const std::string& func_name, const AXIOM::Vector& args) {
+EngineResult PythonEngine::ScipyFunction(const std::string_view& func_name, const AXIOM::Vector& args) {
     SetVariable("__tmp_args", args);
     return ExecutePython("import scipy as sp\n__tmp_res = sp." + func_name + "(*__tmp_args)");
 }
 
-EngineResult PythonEngine::ScipyOptimize(const std::string& objective, const AXIOM::Vector& initial_guess) {
+EngineResult PythonEngine::ScipyOptimize(const std::string_view& objective, const AXIOM::Vector& initial_guess) {
     SetVariable("__tmp_x0", initial_guess);
     return ExecutePython("from scipy.optimize import minimize\n__tmp_res = minimize(" + objective + ", __tmp_x0)");
 }
 
-EngineResult PythonEngine::MatplotlibPlot(const std::string& expression, double x_min, double x_max, int points) {
-    std::string code = "import matplotlib.pyplot as plt\n"
+EngineResult PythonEngine::MatplotlibPlot(const std::string_view& expression, double x_min, double x_max, int points) {
+    std::string_view code = "import matplotlib.pyplot as plt\n"
                        "import numpy as np\n"
                        "x = np.linspace(" + std::to_string(x_min) + "," + std::to_string(x_max) + "," + std::to_string(points) + ")\n"
                        "y = " + expression + "\n"
@@ -194,11 +194,11 @@ EngineResult PythonEngine::MatplotlibShow() {
     return ExecutePython("plt.show()");
 }
 
-EngineResult PythonEngine::MatplotlibSaveFig(const std::string& filename) {
+EngineResult PythonEngine::MatplotlibSaveFig(const std::string_view& filename) {
     return ExecutePython("plt.savefig('" + filename + "')");
 }
 
-EngineResult PythonEngine::ImportModule(const std::string& module_name) {
+EngineResult PythonEngine::ImportModule(const std::string_view& module_name) {
     if (GetOrImportModule(module_name)) return CreateSuccessResult(0.0);
     return CreateErrorResult(CalcErr::OperationNotFound);
 }
@@ -266,7 +266,7 @@ bool PythonEngine::CheckPythonError() {
     return PyErr_Occurred() != nullptr;
 }
 
-PyObject* PythonEngine::GetOrImportModule(const std::string& module_name) {
+PyObject* PythonEngine::GetOrImportModule(const std::string_view& module_name) {
     if (cached_modules_.count(module_name)) return cached_modules_[module_name];
     
     PyObject* module = PyImport_ImportModule(module_name.c_str());
@@ -274,16 +274,16 @@ PyObject* PythonEngine::GetOrImportModule(const std::string& module_name) {
     return module;
 }
 
-std::string PythonEngine::PyObjectToString(PyObject* obj) {
+std::string_view PythonEngine::PyObjectToString(PyObject* obj) {
     if (!obj) return "";
     PyObject* str_obj = PyObject_Str(obj);
     if (!str_obj) return "";
     const char* str = PyUnicode_AsUTF8(str_obj);
-    std::string res = str ? str : "";
+    std::string_view res = str ? str : "";
     Py_XDECREF(str_obj);
     return res;
 }
 
-PyObject* PythonEngine::StringToPyObject(const std::string& str) {
+PyObject* PythonEngine::StringToPyObject(const std::string_view& str) {
     return PyUnicode_FromString(str.c_str());
 }
