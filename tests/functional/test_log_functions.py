@@ -37,7 +37,7 @@ for cmd, desc in test_cases:
     print(f"\nTest: {cmd} ({desc})")
     proc.stdin.write(cmd + "\n")
     proc.stdin.flush()
-    
+
     output = []
     while True:
         line = proc.stdout.readline()
@@ -46,7 +46,7 @@ for cmd, desc in test_cases:
             break
         if line.strip() and "Error" not in line:
             output.append(line.strip())
-    
+
     if output:
         print(f"  ✅ Result: {output[0]}")
     else:

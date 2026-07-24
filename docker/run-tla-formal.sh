@@ -28,11 +28,11 @@ docker run --rm \
     -w "$TLA_DIR" \
     $IMAGE \
     bash -c "
-        if [ ! -f tla2tools.jar ]; then 
+        if [ ! -f tla2tools.jar ]; then
             echo '[INFO] Downloading TLA2Tools...';
             curl -L $JAR_URL -o tla2tools.jar;
         fi
-        
+
         # Run TLC
         java -Xmx4G -cp tla2tools.jar tlc2.TLC \
             -workers $WORKERS \

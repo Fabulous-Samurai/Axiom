@@ -57,12 +57,12 @@ for i, (name, expr, context) in enumerate(tests, 1):
         expr_to_run = expr.replace("x", "5")
     else:
         expr_to_run = expr
-    
+
     start = time.time()
     result = engine.execute_command(expr_to_run)
     elapsed_ms = (time.time() - start) * 1000
     total_time += elapsed_ms
-    
+
     if result["success"]:
         if elapsed_ms < 5:
             speed = "⚡ SENNA"
@@ -74,7 +74,7 @@ for i, (name, expr, context) in enumerate(tests, 1):
     else:
         speed = "❌ ERROR"
         status = "⚠️ "
-    
+
     print(f"{i:<3} {name:<15} {expr_to_run:<25} {elapsed_ms:>10.2f}ms  {speed:<10}")
     results.append((name, expr_to_run, elapsed_ms, result["success"]))
 
