@@ -17,7 +17,7 @@ namespace AXIOM {
  * @brief Internal helper to append characters to a FixedVector
  */
 template<size_t N>
-static void AppendChars(FixedVector<char, N>& buffer, std::string_view_view sv) noexcept {
+static void AppendChars(FixedVector<char, N>& buffer, std::string_view sv) noexcept {
     for (const char c : sv) {
         if (buffer.size() < buffer.capacity()) {
             buffer.push_back(c);
@@ -36,7 +36,7 @@ static void FormatChars(FixedVector<char, N>& buffer, const char* format, ...) n
     const int len = vsnprintf(temp, sizeof(temp), format, args);
     va_end(args);
     if (len > 0) {
-        AppendChars(buffer, std::string_view_view(temp, static_cast<size_t>(len)));
+        AppendChars(buffer, std::string_view(temp, static_cast<size_t>(len)));
     }
 }
 
@@ -71,7 +71,7 @@ std::pair<int, int> PlotEngine::MapToScreen(double x, double y, const PlotConfig
     return {screen_x, screen_y};
 }
 
-std::string_view_view PlotEngine::PlotFunction(std::string_view_view expression, const PlotConfig& config) noexcept {
+std::string_view PlotEngine::PlotFunction(std::string_view expression, const PlotConfig& config) noexcept {
     arena_.reset();
     AlgebraicParser parser;
     const int width = std::clamp(config.width, 1, 256);
@@ -135,10 +135,10 @@ std::string_view_view PlotEngine::PlotFunction(std::string_view_view expression,
         result_buffer.push_back('\n');
     }
 
-    return arena_.allocString(std::string_view_view(result_buffer.data(), result_buffer.size()));
+    return arena_.allocString(std::string_view(result_buffer.data(), result_buffer.size()));
 }
 
-std::string_view_view PlotEngine::PlotParametric(std::string_view_view x_expr, std::string_view_view y_expr,
+std::string_view PlotEngine::PlotParametric(std::string_view x_expr, std::string_view y_expr,
                                            double t_min, double t_max, const PlotConfig& config) noexcept {
     arena_.reset();
     AlgebraicParser parser;
@@ -187,10 +187,10 @@ std::string_view_view PlotEngine::PlotParametric(std::string_view_view x_expr, s
         for (int col = 0; col < width; ++col) result_buffer.push_back(grid[row * width + col]);
         result_buffer.push_back('\n');
     }
-    return arena_.allocString(std::string_view_view(result_buffer.data(), result_buffer.size()));
+    return arena_.allocString(std::string_view(result_buffer.data(), result_buffer.size()));
 }
 
-Matrix PlotEngine::ComputeFunctionData(std::string_view_view expression, const PlotConfig& config, int samples) noexcept {
+Matrix PlotEngine::ComputeFunctionData(std::string_view expression, const PlotConfig& config, int samples) noexcept {
     AlgebraicParser parser;
     Matrix data;
     const int n = (samples > 0) ? std::min(samples, 256) : std::max(2, std::min(config.width, 256));
@@ -216,7 +216,7 @@ Matrix PlotEngine::ComputeFunctionData(std::string_view_view expression, const P
     return data;
 }
 
-std::string_view_view PlotEngine::PlotData(const Vector& x_data, const Vector& y_data, const PlotConfig& config) noexcept {
+std::string_view PlotEngine::PlotData(const Vector& x_data, const Vector& y_data, const PlotConfig& config) noexcept {
     arena_.reset();
     if (x_data.size() != y_data.size() || x_data.empty()) {
         return arena_.allocString("Error: Data vectors must be same size and non-empty\n");
@@ -248,10 +248,10 @@ std::string_view_view PlotEngine::PlotData(const Vector& x_data, const Vector& y
         for (int col = 0; col < width; ++col) result_buffer.push_back(grid[row * width + col]);
         result_buffer.push_back('\n');
     }
-    return arena_.allocString(std::string_view_view(result_buffer.data(), result_buffer.size()));
+    return arena_.allocString(std::string_view(result_buffer.data(), result_buffer.size()));
 }
 
-std::string_view_view PlotEngine::Histogram(const Vector& data, int bins, const PlotConfig& config) noexcept {
+std::string_view PlotEngine::Histogram(const Vector& data, int bins, const PlotConfig& config) noexcept {
     arena_.reset();
     if (data.empty() || bins <= 0) {
         return arena_.allocString("Error: Data must be non-empty and bins > 0\n");
@@ -300,10 +300,10 @@ std::string_view_view PlotEngine::Histogram(const Vector& data, int bins, const 
         FormatChars(result_buffer, " (%d)\n", hist[i]);
     }
     
-    return arena_.allocString(std::string_view_view(result_buffer.data(), result_buffer.size()));
+    return arena_.allocString(std::string_view(result_buffer.data(), result_buffer.size()));
 }
 
-std::string_view_view PlotEngine::BoxPlot(const Vector& data, const PlotConfig& config) noexcept {
+std::string_view PlotEngine::BoxPlot(const Vector& data, const PlotConfig& config) noexcept {
     arena_.reset();
     if (data.empty()) return arena_.allocString("Error: Data is empty\n");
 
@@ -334,15 +334,15 @@ std::string_view_view PlotEngine::BoxPlot(const Vector& data, const PlotConfig& 
 
     FixedVector<char, 4096> result;
     AppendChars(result, "Box Plot:\n");
-    AppendChars(result, std::string_view_view(line1.data(), line1.size())); AppendChars(result, "\n");
-    AppendChars(result, std::string_view_view(line2.data(), line2.size())); AppendChars(result, "\n");
-    AppendChars(result, std::string_view_view(line1.data(), line1.size())); AppendChars(result, "\n");
+    AppendChars(result, std::string_view(line1.data(), line1.size())); AppendChars(result, "\n");
+    AppendChars(result, std::string_view(line2.data(), line2.size())); AppendChars(result, "\n");
+    AppendChars(result, std::string_view(line1.data(), line1.size())); AppendChars(result, "\n");
     FormatChars(result, "Min: %.2f, Q1: %.2f, Median: %.2f, Q3: %.2f, Max: %.2f\n", min_val, q1, median, q3, max_val);
 
-    return arena_.allocString(std::string_view_view(result.data(), result.size()));
+    return arena_.allocString(std::string_view(result.data(), result.size()));
 }
 
-std::string_view_view PlotEngine::PlotSurface(std::string_view_view expression, const PlotConfig& config) noexcept {
+std::string_view PlotEngine::PlotSurface(std::string_view expression, const PlotConfig& config) noexcept {
     arena_.reset();
     AlgebraicParser parser;
     const int width = std::clamp(config.width, 1, 256);
@@ -379,15 +379,15 @@ std::string_view_view PlotEngine::PlotSurface(std::string_view_view expression, 
         for (int col = 0; col < width; ++col) result_buffer.push_back(grid[row * width + col]);
         result_buffer.push_back('\n');
     }
-    return arena_.allocString(std::string_view_view(result_buffer.data(), result_buffer.size()));
+    return arena_.allocString(std::string_view(result_buffer.data(), result_buffer.size()));
 }
 
-std::string_view_view PlotEngine::PlotComplex(const Vector& real_parts, const Vector& imag_parts, const PlotConfig& config) noexcept {
+std::string_view PlotEngine::PlotComplex(const Vector& real_parts, const Vector& imag_parts, const PlotConfig& config) noexcept {
     // Treat real as X, imag as Y for standard complex plane plot
     return PlotData(real_parts, imag_parts, config);
 }
 
-std::string_view_view PlotEngine::PolarPlot(std::string_view_view r_expression, const PlotConfig& config) noexcept {
+std::string_view PlotEngine::PolarPlot(std::string_view r_expression, const PlotConfig& config) noexcept {
     arena_.reset();
     AlgebraicParser parser;
     const int width = std::clamp(config.width, 1, 256);
@@ -433,7 +433,7 @@ std::string_view_view PlotEngine::PolarPlot(std::string_view_view r_expression, 
         for (int col = 0; col < width; ++col) result_buffer.push_back(grid[row * width + col]);
         result_buffer.push_back('\n');
     }
-    return arena_.allocString(std::string_view_view(result_buffer.data(), result_buffer.size()));
+    return arena_.allocString(std::string_view(result_buffer.data(), result_buffer.size()));
 }
 
 } // namespace AXIOM

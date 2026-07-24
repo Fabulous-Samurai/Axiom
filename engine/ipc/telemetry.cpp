@@ -23,7 +23,7 @@ public:
         cleanup();
     }
 
-    bool init(const std::string_view& name, size_t size) {
+    bool init(const std::string& name, size_t size) {
         if (buffer_) cleanup();
         name_ = name;
         size_ = size;
@@ -54,7 +54,7 @@ public:
 #else
         // POSIX implementation for Linux and macOS
         // Ensure name starts with '/' for POSIX compliance
-        std::string_view posix_name = (name[0] == '/') ? name : "/" + name;
+        std::string posix_name = (name[0] == '/') ? name : "/" + name;
         
         fd_ = shm_open(posix_name.c_str(), O_CREAT | O_RDWR, 0666);
         if (fd_ == -1) return false;
@@ -101,12 +101,12 @@ private:
     SharedMemoryManager() = default;
     void* buffer_ = nullptr;
     size_t size_ = 0;
-    std::string_view name_;
+    std::string name_;
 #ifdef _WIN32
     HANDLE handle_ = nullptr;
 #else
     int fd_ = -1;
-    std::string_view posix_path_;
+    std::string posix_path_;
 #endif
 };
 
@@ -120,7 +120,7 @@ void TelemetryScribe::log_throughput(double ops_per_sec) {
     }
 }
 
-bool TelemetryScribe::start(const std::string_view& name) {
+bool TelemetryScribe::start(const std::string& name) {
     return SharedMemoryManager::instance().init(name, 1024 * 1024); // 1MB shared buffer
 }
 

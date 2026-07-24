@@ -877,14 +877,14 @@ AXIOM::FixedVector<MemoryProfiler::AllocationProfile, 128> MemoryProfiler::get_r
     return result;
 }
 
-AXIOM::FixedVector<std::string_view_view, 16> MemoryProfiler::analyze_patterns() const noexcept {
-    AXIOM::FixedVector<std::string_view_view, 16> patterns;
+AXIOM::FixedVector<std::string_view, 16> MemoryProfiler::analyze_patterns() const noexcept {
+    AXIOM::FixedVector<std::string_view, 16> patterns;
     patterns.push_back("Standard allocation pattern detected.");
     return patterns;
 }
 
-AXIOM::FixedVector<std::string_view_view, 16> MemoryProfiler::get_optimization_suggestions() const noexcept {
-    AXIOM::FixedVector<std::string_view_view, 16> suggestions;
+AXIOM::FixedVector<std::string_view, 16> MemoryProfiler::get_optimization_suggestions() const noexcept {
+    AXIOM::FixedVector<std::string_view, 16> suggestions;
     suggestions.push_back("Consider increasing bank size for heavy workloads.");
     return suggestions;
 }

@@ -386,8 +386,8 @@ EigenEngine::Vector EigenEngine::Normalize(const Vector& data) const {
     return (data.array() - mean_val) / std_val;
 }
 
-std::string_view EigenEngine::MatrixToString(const Matrix& mat, int precision) const {
-    std::string_viewstream ss;
+std::string EigenEngine::MatrixToString(const Matrix& mat, int precision) const {
+    std::stringstream ss;
     ss << std::fixed << std::setprecision(precision);
     
     ss << "Matrix " << mat.rows() << "x" << mat.cols() << ":\n";
@@ -403,8 +403,8 @@ std::string_view EigenEngine::MatrixToString(const Matrix& mat, int precision) c
     return ss.str();
 }
 
-std::string_view EigenEngine::VectorToString(const Vector& vec, int precision) const {
-    std::string_viewstream ss;
+std::string EigenEngine::VectorToString(const Vector& vec, int precision) const {
+    std::stringstream ss;
     ss << std::fixed << std::setprecision(precision);
     
     ss << "Vector " << vec.size() << ":\n[ ";
@@ -422,8 +422,8 @@ void EigenEngine::ResetMetrics() {
     last_metrics_.operation_type = "None";
 }
 
-std::string_view EigenEngine::GetPerformanceReport() const {
-    std::string_viewstream ss;
+std::string EigenEngine::GetPerformanceReport() const {
+    std::stringstream ss;
     ss << "Eigen Engine Performance Report:\n";
     ss << "   Last Operation: " << last_metrics_.operation_type << "\n";
     ss << "   Execution Time: " << last_metrics_.execution_time_ms << " ms\n";
@@ -488,7 +488,7 @@ void EigenEngine::EnableSSE41() {
 #endif
 
 // Performance Timer implementation
-PerformanceTimer::PerformanceTimer(const std::string_view& operation_name)
+PerformanceTimer::PerformanceTimer(const std::string& operation_name)
     : operation_name_(operation_name) {
 }
 
@@ -504,7 +504,7 @@ double PerformanceTimer::GetElapsedMs() const {
 }
 
 template<typename Func>
-auto EigenEngine::MeasurePerformance(Func&& func, const std::string_view& operation) const -> decltype(func()) {
+auto EigenEngine::MeasurePerformance(Func&& func, const std::string& operation) const -> decltype(func()) {
     auto start = std::chrono::high_resolution_clock::now();
     
     auto result = func();
@@ -518,7 +518,7 @@ auto EigenEngine::MeasurePerformance(Func&& func, const std::string_view& operat
     return result;
 }
 
-void EigenEngine::UpdateMetrics(const std::string_view& operation, double time_ms, size_t memory_bytes) const {
+void EigenEngine::UpdateMetrics(const std::string& operation, double time_ms, size_t memory_bytes) const {
     // THREAD-SAFETY FIX: No const_cast needed - last_metrics_ is mutable
     last_metrics_.operation_type = operation;
     last_metrics_.execution_time_ms = time_ms;

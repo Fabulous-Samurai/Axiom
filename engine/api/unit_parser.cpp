@@ -12,24 +12,24 @@ static const std::regex& GetUnitConversionPattern() {
     return kPattern;
 }
 
-EngineResult UnitParser::ParseAndExecute(std::string_view_view input) noexcept {
+EngineResult UnitParser::ParseAndExecute(std::string_view input) noexcept {
     return ParseAndExecuteView(input);
 }
 
-EngineResult UnitParser::ParseAndExecuteView(std::string_view_view input) noexcept {
+EngineResult UnitParser::ParseAndExecuteView(std::string_view input) noexcept {
     if (IsUnitConversion(input)) {
         return ParseConversion(input);
     }
     return CreateErrorResult(CalcErr::ParseError);
 }
 
-bool UnitParser::IsUnitConversion(std::string_view_view input) noexcept {
-    std::string_view s(input);
+bool UnitParser::IsUnitConversion(std::string_view input) noexcept {
+    std::string s(input);
     return std::regex_search(s, GetUnitConversionPattern());
 }
 
-EngineResult UnitParser::ParseConversion(std::string_view_view input) noexcept {
-    std::string_view s(input);
+EngineResult UnitParser::ParseConversion(std::string_view input) noexcept {
+    std::string s(input);
     std::smatch matches;
 
     if (std::regex_search(s, matches, GetUnitConversionPattern())) {
@@ -37,8 +37,8 @@ EngineResult UnitParser::ParseConversion(std::string_view_view input) noexcept {
         if (!value_opt) return CreateErrorResult(CalcErr::ParseError);
         
         double value = *value_opt;
-        std::string_view from_unit = matches[3].str();
-        std::string_view to_unit = matches[4].str();
+        std::string from_unit = matches[3].str();
+        std::string to_unit = matches[4].str();
 
         return unit_manager_->ConvertUnit(value, from_unit, to_unit);
     }

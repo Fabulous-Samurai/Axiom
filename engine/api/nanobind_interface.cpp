@@ -46,8 +46,8 @@ void NanobindInterface::RegisterEigenMethods() {
 }
 
 nb::object NanobindInterface::CallPythonFunction(
-    const std::string_view& module_name,
-    const std::string_view& function_name,
+    const std::string& module_name,
+    const std::string& function_name,
     const std::vector<nb::object>& args) {
 
     return MeasureCall(module_name + "." + function_name, [&]() -> nb::object {
@@ -186,7 +186,7 @@ nb::ndarray<nb::numpy, double> NanobindInterface::ConvertToNumPyVector(const AXI
 }
 #endif
 
-nb::object NanobindInterface::ExecutePythonCode(const std::string_view& code) {
+nb::object NanobindInterface::ExecutePythonCode(const std::string& code) {
     return MeasureCall("ExecutePythonCode", [&]() -> nb::object {
         nb::gil_scoped_acquire gil;
 
@@ -223,12 +223,12 @@ nb::object NanobindInterface::ExecutePythonCode(const std::string_view& code) {
     });
 }
 
-nb::object NanobindInterface::ImportModule(const std::string_view& module_name) {
+nb::object NanobindInterface::ImportModule(const std::string& module_name) {
     nb::gil_scoped_acquire gil;
     return nb::module_::import_(module_name.c_str());
 }
 
-void NanobindInterface::AddToSysPath(const std::string_view& path) {
+void NanobindInterface::AddToSysPath(const std::string& path) {
     try {
         nb::gil_scoped_acquire gil;
         auto sys = nb::module_::import_("sys");
@@ -238,7 +238,7 @@ void NanobindInterface::AddToSysPath(const std::string_view& path) {
     }
 }
 
-std::string_view NanobindInterface::GetLastPythonError() const {
+std::string NanobindInterface::GetLastPythonError() const {
     return last_error_;
 }
 
@@ -250,8 +250,8 @@ void NanobindInterface::ResetMetrics() {
     metrics_ = InteropMetrics{};
 }
 
-std::string_view NanobindInterface::GetPerformanceReport() const {
-    std::string_viewstream ss;
+std::string NanobindInterface::GetPerformanceReport() const {
+    std::stringstream ss;
     ss << "Nanobind Interface Performance Report\n";
     ss << "Last Function: " << metrics_.last_function_called << "\n";
     ss << "Call Overhead (us): " << metrics_.call_overhead_us << "\n";
@@ -276,7 +276,7 @@ size_t NanobindInterface::GetPythonMemoryUsage() const {
 }
 
 template<typename Func>
-auto NanobindInterface::MeasureCall(const std::string_view& function_name, Func&& func) -> decltype(func()) {
+auto NanobindInterface::MeasureCall(const std::string& function_name, Func&& func) -> decltype(func()) {
     auto start = std::chrono::high_resolution_clock::now();
     auto result = func();
     auto end = std::chrono::high_resolution_clock::now();
@@ -287,7 +287,7 @@ auto NanobindInterface::MeasureCall(const std::string_view& function_name, Func&
     return result;
 }
 
-void NanobindInterface::UpdateMetrics(const std::string_view& function_name,
+void NanobindInterface::UpdateMetrics(const std::string& function_name,
                                       double overhead_us,
                                       size_t data_bytes,
                                       bool zero_copy) {
@@ -302,14 +302,14 @@ GILGuard::~GILGuard() {}
 
 namespace Nanobind {
 
-nb::object Execute(const std::string_view& code) {
+nb::object Execute(const std::string& code) {
     if (!g_nanobind_interface) {
         g_nanobind_interface = std::make_unique<NanobindInterface>();
     }
     return g_nanobind_interface->ExecutePythonCode(code);
 }
 
-nb::object Import(const std::string_view& module_name) {
+nb::object Import(const std::string& module_name) {
     if (!g_nanobind_interface) {
         g_nanobind_interface = std::make_unique<NanobindInterface>();
     }
@@ -336,7 +336,7 @@ nb::ndarray<nb::numpy, T> ToNumPy(const std::vector<T>& data) {
     return nb::cast<nb::ndarray<nb::numpy, T>>(arr);
 }
 
-std::string_view GetPerformanceReport() {
+std::string GetPerformanceReport() {
     if (!g_nanobind_interface) {
         return "Nanobind interface not initialized";
     }

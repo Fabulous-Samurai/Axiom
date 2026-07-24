@@ -6,31 +6,31 @@
 
 namespace AXIOM {
 
-AXIOM::FixedVector<double, 256> StatisticsParser::ParseVector(const std::string_view& s) {
+AXIOM::FixedVector<double, 256> StatisticsParser::ParseVector(const std::string& s) {
     AXIOM::FixedVector<double, 256> out;
     size_t lb = s.find('[');
     size_t rb = s.rfind(']');
-    if (lb == std::string_view::npos || rb == std::string_view::npos || rb <= lb) return out;
+    if (lb == std::string::npos || rb == std::string::npos || rb <= lb) return out;
     
-    std::string_view body = s.substr(lb + 1, rb - lb - 1);
+    std::string body = s.substr(lb + 1, rb - lb - 1);
     size_t pos = 0;
     while (pos < body.size()) {
         size_t next = body.find_first_of(",;", pos);
-        std::string_view_view token = Utils::Trim(std::string_view_view(body).substr(pos, next == std::string_view::npos ? std::string_view_view::npos : next - pos));
+        std::string_view token = Utils::Trim(std::string_view(body).substr(pos, next == std::string::npos ? std::string_view::npos : next - pos));
         if (!token.empty()) {
             if (auto val = Utils::FastParseDouble(token)) {
                 out.push_back(*val);
             }
         }
-        if (next == std::string_view::npos) break;
+        if (next == std::string::npos) break;
         pos = next + 1;
     }
     return out;
 }
 
-EngineResult StatisticsParser::ParseAndExecute(std::string_view_view input) noexcept {
-    std::string_view s = std::string_view(input);
-    std::string_view lower;
+EngineResult StatisticsParser::ParseAndExecute(std::string_view input) noexcept {
+    std::string s = std::string(input);
+    std::string lower;
     lower.reserve(s.size());
     for (char c : s) lower.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
 
@@ -53,12 +53,12 @@ EngineResult StatisticsParser::ParseAndExecute(std::string_view_view input) noex
     if (lower.find("correlation(") == 0 || lower.find("statscorrelation(") == 0) {
         size_t lp = s.find('(');
         size_t rp = s.rfind(')');
-        if (lp != std::string_view::npos && rp != std::string_view::npos && rp > lp) {
-            std::string_view args = s.substr(lp + 1, rp - lp - 1);
+        if (lp != std::string::npos && rp != std::string::npos && rp > lp) {
+            std::string args = s.substr(lp + 1, rp - lp - 1);
             size_t mid = args.find("],[");
-            if (mid != std::string_view::npos) {
-                std::string_view xpart = args.substr(0, mid + 1);
-                std::string_view ypart = args.substr(mid + 1);
+            if (mid != std::string::npos) {
+                std::string xpart = args.substr(0, mid + 1);
+                std::string ypart = args.substr(mid + 1);
                 return engine_->Correlation(ParseVector(xpart), ParseVector(ypart));
             }
         }

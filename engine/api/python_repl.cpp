@@ -21,7 +21,7 @@ void PythonREPL::StartInteractiveSession() {
     python_engine_->ExecutePython("sys.ps2 = '... '");
     
     // Set up helpful REPL environment
-    std::string_view setup_code = R"(
+    std::string setup_code = R"(
 # REPL Helper functions
 def help_vars():
     """List all user-defined variables"""
@@ -46,7 +46,7 @@ void PythonREPL::StopInteractiveSession() {
     ClearMultiLineBuffer();
 }
 
-std::string_view PythonREPL::ExecuteInteractive(const std::string_view& input) {
+std::string PythonREPL::ExecuteInteractive(const std::string& input) {
     if (!session_active_) {
         return "Error: REPL session not active";
     }
@@ -74,8 +74,8 @@ std::string_view PythonREPL::ExecuteInteractive(const std::string_view& input) {
     auto result = python_engine_->EvaluatePython(input);
     if (result.result.has_value()) {
         auto& res = result.result.value();
-        if (std::holds_alternative<std::string_view>(res)) {
-            last_output_ = std::get<std::string_view>(res);
+        if (std::holds_alternative<std::string>(res)) {
+            last_output_ = std::get<std::string>(res);
             return FormatOutput(last_output_);
         }
     }
@@ -87,9 +87,9 @@ std::string_view PythonREPL::ExecuteInteractive(const std::string_view& input) {
     return "";
 }
 
-bool PythonREPL::IsMultiLineInput(const std::string_view& input) {
+bool PythonREPL::IsMultiLineInput(const std::string& input) {
     // Check for constructs that typically require multiple lines
-    std::string_view trimmed = input;
+    std::string trimmed = input;
     trimmed.erase(0, trimmed.find_first_not_of(" \t"));
     
     return trimmed.find("def ") == 0 ||
@@ -106,7 +106,7 @@ bool PythonREPL::IsMultiLineInput(const std::string_view& input) {
            input.back() == ':';
 }
 
-void PythonREPL::AddToMultiLineBuffer(const std::string_view& input) {
+void PythonREPL::AddToMultiLineBuffer(const std::string& input) {
     multiline_buffer_.push_back(input);
     
     // Update indent level based on input
@@ -117,26 +117,26 @@ void PythonREPL::AddToMultiLineBuffer(const std::string_view& input) {
     }
 }
 
-std::string_view PythonREPL::ExecuteMultiLineBuffer() {
+std::string PythonREPL::ExecuteMultiLineBuffer() {
     if (multiline_buffer_.empty()) {
         return "";
     }
     
     // Join multi-line buffer
-    std::string_viewstream code_stream;
+    std::stringstream code_stream;
     for (const auto& line : multiline_buffer_) {
         code_stream << line << "\n";
     }
     
-    std::string_view code = code_stream.str();
+    std::string code = code_stream.str();
     ClearMultiLineBuffer();
     
     // Execute the complete multi-line code
     auto result = python_engine_->ExecutePython(code);
     if (result.result.has_value()) {
         auto& res = result.result.value();
-        if (std::holds_alternative<std::string_view>(res)) {
-            last_output_ = std::get<std::string_view>(res);
+        if (std::holds_alternative<std::string>(res)) {
+            last_output_ = std::get<std::string>(res);
             return FormatOutput(last_output_);
         }
     }
@@ -153,12 +153,12 @@ void PythonREPL::ClearMultiLineBuffer() {
     indent_level_ = 0;
 }
 
-bool PythonREPL::NeedsMoreInput(const std::string_view& input) {
+bool PythonREPL::NeedsMoreInput(const std::string& input) {
     // If we're in a multi-line context and the input isn't empty
     return indent_level_ > 0 || (!input.empty() && input.back() == ':');
 }
 
-int PythonREPL::CountLeadingSpaces(const std::string_view& line) {
+int PythonREPL::CountLeadingSpaces(const std::string& line) {
     int count = 0;
     for (char c : line) {
         if (c == ' ') count++;
@@ -168,7 +168,7 @@ int PythonREPL::CountLeadingSpaces(const std::string_view& line) {
     return count;
 }
 
-std::string_view PythonREPL::FormatOutput(const std::string_view& output, bool is_error) {
+std::string PythonREPL::FormatOutput(const std::string& output, bool is_error) {
     if (output.empty()) {
         return "";
     }
@@ -180,7 +180,7 @@ std::string_view PythonREPL::FormatOutput(const std::string_view& output, bool i
     return output;
 }
 
-std::string_view PythonREPL::GeneratePrompt() const {
+std::string PythonREPL::GeneratePrompt() const {
     if (indent_level_ > 0 || !multiline_buffer_.empty()) {
         return "... ";
     }
@@ -193,27 +193,27 @@ void PythonREPL::ResetREPLState() {
     last_output_.clear();
 }
 
-std::string_view PythonREPL::GetVariableList() {
+std::string PythonREPL::GetVariableList() {
     auto result = python_engine_->ExecutePython("help_vars()");
-    if (result.result.has_value() && std::holds_alternative<std::string_view>(result.result.value())) {
-        return std::get<std::string_view>(result.result.value());
+    if (result.result.has_value() && std::holds_alternative<std::string>(result.result.value())) {
+        return std::get<std::string>(result.result.value());
     }
     return "No variables defined";
 }
 
-std::string_view PythonREPL::GetModuleList() {
+std::string PythonREPL::GetModuleList() {
     auto result = python_engine_->ExecutePython("help_modules()");
-    if (result.result.has_value() && std::holds_alternative<std::string_view>(result.result.value())) {
-        return std::get<std::string_view>(result.result.value());
+    if (result.result.has_value() && std::holds_alternative<std::string>(result.result.value())) {
+        return std::get<std::string>(result.result.value());
     }
     return "No modules imported";
 }
 
-std::string_view PythonREPL::DescribeVariable(const std::string_view& var_name) {
-    std::string_view code = "print(f\"" + var_name + ": {type(" + var_name + ").__name__} = {repr(" + var_name + ")}\")";
+std::string PythonREPL::DescribeVariable(const std::string& var_name) {
+    std::string code = "print(f\"" + var_name + ": {type(" + var_name + ").__name__} = {repr(" + var_name + ")}\")";
     auto result = python_engine_->ExecutePython(code);
-    if (result.result.has_value() && std::holds_alternative<std::string_view>(result.result.value())) {
-        return std::get<std::string_view>(result.result.value());
+    if (result.result.has_value() && std::holds_alternative<std::string>(result.result.value())) {
+        return std::get<std::string>(result.result.value());
     }
     return "Variable '" + var_name + "' not found";
 }
