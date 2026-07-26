@@ -32,7 +32,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: "Download TLA2Tools"
-        run: wget https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -O tla2tools.jar
+        run: curl -sSL https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -o tla2tools.jar
       - name: "Run TLA+ Model Checks"
         run: |
           cp tla2tools.jar formal/tla/
