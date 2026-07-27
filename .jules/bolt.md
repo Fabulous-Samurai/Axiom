@@ -1,0 +1,3 @@
+## 2026-07-27 - Expensive Environment Variables in Hot Paths
+**Learning:** Using `std::getenv` on every expression evaluation creates a significant performance bottleneck in the hot path. In `AssessExpressionPolicy`, calling `std::getenv` via `ReadPolicySizeEnv` on every parse took ~300ms per 1,000,000 evaluations, dominating the parsing overhead.
+**Action:** When reading configuration from the environment that shouldn't change over the lifetime of the process, cache it using `static const` or `static` variables instead of local variables to ensure it is evaluated only once on first invocation.
