@@ -1,6 +1,8 @@
 import json
 import os
 import argparse
+import shlex
+import shutil
 import subprocess
 import sys
 
@@ -36,17 +38,23 @@ def open_issue(issue, ide_cmd="code"):
             print(f"Error: Could not find file {component}")
             return
 
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Safely parse IDE command, resolve executable, and disable shell execution.
+    # Why: Prevents command injection vulnerabilities from malicious --ide arguments.
     if ide_cmd == "code":
         # VS Code goto syntax: code --goto file:line
-        cmd = ["code", "--goto", f"{file_path}:{line}"]
+        exe = shutil.which("code") or "code"
+        cmd = [exe, "--goto", f"{file_path}:{line}"]
     else:
         # Generic fallback: just open the file
-        cmd = [ide_cmd, file_path]
+        parsed = shlex.split(ide_cmd, posix=os.name != 'nt')
+        exe = shutil.which(parsed[0]) or parsed[0] if parsed else ide_cmd
+        cmd = [exe] + parsed[1:] + [file_path] if parsed else [exe, file_path]
     
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
-    except Exception as e:
+        subprocess.run(cmd, check=True, shell=False)
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error opening IDE: {e}")
 
 def main():
