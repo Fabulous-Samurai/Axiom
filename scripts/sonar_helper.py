@@ -1,6 +1,8 @@
 import json
 import os
 import argparse
+import shlex
+import shutil
 import subprocess
 import sys
 
@@ -39,8 +41,6 @@ def open_issue(issue, ide_cmd="code"):
     # 🛡️ SENTINEL SECURITY FIX:
     # What: Safely parse IDE command, resolve executable, and disable shell execution.
     # Why: Prevents command injection vulnerabilities from malicious --ide arguments.
-    import shlex
-    import shutil
     if ide_cmd == "code":
         # VS Code goto syntax: code --goto file:line
         exe = shutil.which("code") or "code"
@@ -54,7 +54,7 @@ def open_issue(issue, ide_cmd="code"):
     print(f"Executing: {' '.join(cmd)}")
     try:
         subprocess.run(cmd, check=True, shell=False)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error opening IDE: {e}")
 
 def main():
