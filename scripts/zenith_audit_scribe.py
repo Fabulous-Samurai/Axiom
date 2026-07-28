@@ -5,7 +5,8 @@ import time
 
 def run_cmd(cmd):
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+        import shlex
+        result = subprocess.run(shlex.split(cmd), shell=False, capture_output=True, text=True, timeout=300)
         return {
             "cmd": cmd,
             "success": result.returncode == 0,
