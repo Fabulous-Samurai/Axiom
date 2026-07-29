@@ -55,7 +55,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y ninja-build python3-dev libnuma-dev valgrind ccache
           python -m pip install nanobind pytest numpy matplotlib
       - name: "Ccache Cache"
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        uses: actions/cache@v4 # v4.0.2
         with:
           path: ~/.cache/ccache
           key: ${{ runner.os }}-ccache-${{ github.sha }}
@@ -80,7 +80,7 @@ jobs:
         run: |
           build-wrapper-linux-x86-64 --out-dir ${{ env.BUILD_WRAPPER_OUT_DIR }} cmake --build build -j$(nproc)
       - name: "Upload Artifacts"
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        uses: actions/upload-artifact@v4 # v4.3.4
         with:
           name: axiom-linux-coverage
           path: |
@@ -101,7 +101,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y lcov
           python3 -m pip install pytest numpy matplotlib
       - name: "Download Artifacts"
-        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.7
+        uses: actions/download-artifact@v4 # v4.1.7
         with:
           name: axiom-linux-coverage
           path: build/
@@ -118,7 +118,7 @@ jobs:
           lcov --capture --directory build --output-file coverage-raw.info --ignore-errors mismatch
           lcov --remove coverage-raw.info '/usr/*' '*/_deps/*' '*/tests/*' '*/extern/*' --output-file coverage-filtered.info --ignore-errors unused
       - name: "Upload Coverage Report"
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        uses: actions/upload-artifact@v4 # v4.3.4
         with:
           name: axiom-coverage-report
           path: coverage-filtered.info
@@ -140,7 +140,7 @@ jobs:
           cmake -G "Ninja" -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build --config Release
       - name: "Upload Artifacts"
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        uses: actions/upload-artifact@v4 # v4.3.4
         with:
           name: axiom-windows-binaries
           path: |
@@ -155,7 +155,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4 # v4.1.7
       - name: "Download Artifacts"
-        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.7
+        uses: actions/download-artifact@v4 # v4.1.7
         with:
           name: axiom-windows-binaries
           path: build/
@@ -173,12 +173,12 @@ jobs:
         with:
           fetch-depth: 0
       - name: "Download Coverage Report"
-        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.7
+        uses: actions/download-artifact@v4 # v4.1.7
         with:
           name: axiom-coverage-report
           path: .
       - name: "SonarCloud Scan"
-        uses: SonarSource/sonarqube-scan-action@53c6b9f13962ae22901f056d6d4ba877f91f27ed # v5.0.0
+        uses: SonarSource/sonarqube-scan-action@master # v5.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
