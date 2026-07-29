@@ -45,7 +45,14 @@ def open_issue(issue, ide_cmd="code"):
     
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        import shutil
+        # 🛡️ SENTINEL SECURITY FIX:
+        # What: Removed shell=True, using list arguments and executable resolution.
+        # Why: Prevents command injection vulnerabilities (Sonar S2076).
+        executable = shutil.which(cmd[0])
+        if executable:
+            cmd[0] = executable
+        subprocess.run(cmd, check=True, shell=False)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 

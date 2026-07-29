@@ -2,10 +2,19 @@ import subprocess
 import json
 import os
 import time
+import shlex
+import shutil
 
 def run_cmd(cmd):
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+        # 🛡️ SENTINEL SECURITY FIX:
+        # What: Removed shell=True and used shlex.split with executable resolution.
+        # Why: Prevents command injection vulnerabilities (Sonar S2076).
+        args = shlex.split(cmd, posix=os.name != 'nt')
+        executable = shutil.which(args[0])
+        if executable:
+            args[0] = executable
+        result = subprocess.run(args, shell=False, capture_output=True, text=True, timeout=300)
         return {
             "cmd": cmd,
             "success": result.returncode == 0,
