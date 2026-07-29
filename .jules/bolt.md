@@ -1,3 +1,0 @@
-## 2024-07-29 - Trim Function Zero-Allocation
-**Learning:** `std::string` allocations are very expensive in tight parsing loops. The `Utils::Trim` function in `engine/core/string_helpers.cpp` currently takes a `std::string_view` but allocates and returns a new `std::string`. This violates the Zero-Allocation mandate for core modules and causes significant performance overhead since `Trim` is used extensively in parsing logic.
-**Action:** Modify `Utils::Trim` to return a `std::string_view` instead of `std::string`. This avoids allocating memory on every trim operation, resulting in a ~75% speedup for the trim operation itself, while adhering strictly to the Zenith Pillar zero-allocation guidelines.
