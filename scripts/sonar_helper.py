@@ -3,6 +3,8 @@ import os
 import argparse
 import subprocess
 import sys
+import shlex
+import shutil
 
 def list_issues(issues):
     print(f"{'#':<3} | {'Severity':<10} | {'Type':<12} | {'File:Line':<40} | {'Message'}")
@@ -36,16 +38,25 @@ def open_issue(issue, ide_cmd="code"):
             print(f"Error: Could not find file {component}")
             return
 
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Replaced shell=True with shell=False, used shlex.split to parse ide_cmd, and resolved executable with shutil.which.
+    # Why: Mitigates command injection vulnerability from user-provided ide_cmd and passes SonarCloud S2076.
     if ide_cmd == "code":
         # VS Code goto syntax: code --goto file:line
         cmd = ["code", "--goto", f"{file_path}:{line}"]
     else:
         # Generic fallback: just open the file
-        cmd = [ide_cmd, file_path]
+        parsed_ide = shlex.split(ide_cmd, posix=os.name != 'nt')
+        cmd = parsed_ide + [file_path]
     
+    if cmd:
+        resolved_exe = shutil.which(cmd[0])
+        if resolved_exe:
+            cmd[0] = resolved_exe
+
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        subprocess.run(cmd, check=True, shell=False)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
