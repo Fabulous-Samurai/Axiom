@@ -69,11 +69,21 @@ def main():
 
     args = parser.parse_args()
 
-    if not os.path.exists(args.json):
-        print(f"Error: {args.json} not found. Run sonar_issues.py first.")
+    # 🛡️ SENTINEL SECURITY FIX:
+    # What: Enforce that the provided JSON path is within the current working directory.
+    # Why: Prevents path traversal vulnerabilities when reading the JSON file.
+    base_dir = os.path.abspath(os.getcwd())
+    json_path = os.path.abspath(args.json)
+
+    if not json_path.startswith(base_dir):
+        print("Error: Invalid path. File must be within the working directory.")
         sys.exit(1)
 
-    with open(args.json, "r", encoding="utf-8") as f:
+    if not os.path.exists(json_path):
+        print(f"Error: {json_path} not found. Run sonar_issues.py first.")
+        sys.exit(1)
+
+    with open(json_path, "r", encoding="utf-8") as f:
         issues = json.load(f)
 
     if args.list or args.open is None:
