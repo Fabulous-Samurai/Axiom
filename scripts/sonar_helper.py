@@ -73,7 +73,12 @@ def main():
     # What: Enforce that the provided JSON path is within the current working directory.
     # Why: Prevents path traversal vulnerabilities when reading the JSON file.
     base_dir = os.path.abspath(os.getcwd())
-    json_path = os.path.abspath(args.json)
+    json_filename = os.path.basename(args.json)
+    if json_filename != args.json:
+        print("Error: Invalid path. Only filenames in the current directory are allowed.")
+        sys.exit(1)
+
+    json_path = os.path.abspath(json_filename)
 
     if not json_path.startswith(base_dir):
         print("Error: Invalid path. File must be within the working directory.")
@@ -83,8 +88,14 @@ def main():
         print(f"Error: {json_path} not found. Run sonar_issues.py first.")
         sys.exit(1)
 
-    with open(json_path, "r", encoding="utf-8") as f:
-        issues = json.load(f)
+    try:
+        # 🛡️ SENTINEL SECURITY FIX: Open with restrictive flags to ensure we only read existing files safely
+        fd = os.open(json_path, os.O_RDONLY | os.O_NOFOLLOW)
+        with os.fdopen(fd, "r", encoding="utf-8") as f:
+            issues = json.load(f)
+    except Exception as e:
+        print(f"Error reading JSON: {e}")
+        sys.exit(1)
 
     if args.list or args.open is None:
         list_issues(issues)
