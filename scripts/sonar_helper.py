@@ -3,6 +3,8 @@ import os
 import argparse
 import subprocess
 import sys
+import shlex
+import shutil
 
 def list_issues(issues):
     print(f"{'#':<3} | {'Severity':<10} | {'Type':<12} | {'File:Line':<40} | {'Message'}")
@@ -41,11 +43,17 @@ def open_issue(issue, ide_cmd="code"):
         cmd = ["code", "--goto", f"{file_path}:{line}"]
     else:
         # Generic fallback: just open the file
-        cmd = [ide_cmd, file_path]
+        cmd = shlex.split(ide_cmd, posix=os.name != 'nt') + [file_path]
     
     print(f"Executing: {' '.join(cmd)}")
     try:
-        subprocess.run(cmd, check=True, shell=True)
+        # 🛡️ SENTINEL SECURITY FIX:
+        # What: Removed shell=True and used shlex.split to parse ide_cmd. Resolved executable with shutil.which.
+        # Why: Prevents command injection vulnerabilities from unsanitized user input in --ide.
+        # Impact: Users can no longer execute arbitrary shell commands.
+        if cmd:
+            cmd[0] = shutil.which(cmd[0]) or cmd[0]
+            subprocess.run(cmd, check=True, shell=False)
     except Exception as e:
         print(f"Error opening IDE: {e}")
 
