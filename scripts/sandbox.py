@@ -1,6 +1,8 @@
 import os
 import sys
 import time
+import shlex
+import shutil
 import threading
 import subprocess
 import signal
@@ -36,7 +38,8 @@ def run_isolated_expression(expression):
     # What: Secure eval() by providing a restricted globals dictionary with a safe __builtins__ whitelist.
     # Why: Prevents arbitrary code execution via __import__ or other unsafe builtins.
     code = "env = {'__builtins__': {'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float}}; print(eval(%r, env, {}))" % expression
-    cmd = [sys.executable, "-c", code]
+    python_exe = shutil.which("python3") or sys.executable
+    cmd = shlex.split(f"{python_exe} -c {shlex.quote(code)}", posix=os.name != 'nt')
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=False)
