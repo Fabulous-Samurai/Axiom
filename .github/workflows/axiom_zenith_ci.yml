@@ -33,7 +33,7 @@ jobs:
           distribution: 'temurin'
       - name: "Download TLA2Tools"
         run: |
-          wget https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -O tla2tools.jar
+          wget --https-only https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -O tla2tools.jar
           echo "e22f8ffb4bacdea0a871f444dd94fe5fb0d8013b3388ae39e82e26f852c735d5  tla2tools.jar" | sha256sum -c -
       - name: "Run TLA+ Model Checks"
         run: |
@@ -64,7 +64,7 @@ jobs:
           restore-keys: ${{ runner.os }}-ccache-
       - name: "Install build-wrapper"
         run: |
-          curl -sSLo $HOME/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+          curl --proto '=https' --tlsv1.2 -sSLo $HOME/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
           echo "21f0d905bd3338f7d8736c6fc6af0ffdd8a14b2bb2eaae3a855457075e8ddfc9  $HOME/build-wrapper-linux-x86.zip" | sha256sum -c -
           unzip -o $HOME/build-wrapper-linux-x86.zip -d $HOME/
           echo "$HOME/build-wrapper-linux-x86" >> $GITHUB_PATH
