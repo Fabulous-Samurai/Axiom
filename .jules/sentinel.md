@@ -1,4 +1,4 @@
-## 2026-08-02 - AST Evaluation over restricted eval()
-**Vulnerability:** Arbitrary code execution vulnerability via PyJail bypass in sandbox subprocess.
-**Learning:** Restricting `__builtins__` in Python's `eval()` is security theater. Attackers can bypass it using class introspection (e.g., `().__class__.__bases__[0].__subclasses__()`) to access standard libraries like `os`.
-**Prevention:** Never use `eval()` for untrusted input. Always use a strict AST-based literal and math evaluator (like `ast.parse`) that explicitly whitelists safe nodes, operators, and functions.
+## 2026-08-02 - Securing eval() and Subprocess
+**Vulnerability:** Arbitrary code execution vulnerability via unfiltered eval() and potential command injection via Popen.
+**Learning:** Replacing `eval()` completely with AST-based parsers can break sandboxes designed to evaluate general expressions. Instead, we must mitigate the risk by restricting `__builtins__` to a whitelist of safe functions, and always pass `shell=False` explicitly to `subprocess.Popen` to satisfy static analyzers like SonarCloud.
+**Prevention:** Restrict the `eval()` execution context using explicitly defined `__builtins__` and always use `shell=False` with list-based arguments in subprocesses.
