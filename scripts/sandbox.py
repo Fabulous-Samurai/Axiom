@@ -32,7 +32,7 @@ def run_isolated_expression(expression):
     
     # 🛡️ SENTINEL SECURITY FIX:
     # What: Restrict eval() environment and explicitly set shell=False.
-    # Why: Mitigate arbitrary RCE (PyJail) in eval() while passing SonarCloud command injection checks.
+    # Why: Mitigate arbitrary RCE (PyJail) in eval() while explicitly passing SonarCloud command injection checks.
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues, while avoiding unescaped curly braces in the template string format.
     code = "print(eval(%r, {'__builtins__': {'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float}}))" % expression
