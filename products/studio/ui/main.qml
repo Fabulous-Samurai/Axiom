@@ -30,7 +30,7 @@ Window {
         property real latency: 0.05
         property real arenaUsage: 42.5
         property real jitCompiles: 12
-        
+
         property Timer updater: Timer {
             interval: 1000; running: true; repeat: true
             onTriggered: {
@@ -68,7 +68,7 @@ Window {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 56
                     color: "transparent"
-                    
+
                     Image {
                         anchors.left: parent.left
                         anchors.leftMargin: isSidebarExpanded ? 24 : 28
@@ -79,7 +79,7 @@ Window {
                         opacity: 0.8
                         Behavior on anchors.leftMargin { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
                     }
-                    
+
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
@@ -89,19 +89,19 @@ Window {
 
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: clrBorder; Layout.margins: 10 }
 
-                SidebarItem { 
+                SidebarItem {
                     iconSource: "assets/icons/dashboard.svg"; text: "DASHBOARD"
                     active: currentPage === "dashboard"
                     isExpanded: isSidebarExpanded
                     onClicked: currentPage = "dashboard"
                 }
-                SidebarItem { 
+                SidebarItem {
                     iconSource: "assets/icons/pluto.svg"; text: "PLUTO SWARM"
                     active: currentPage === "pluto"
                     isExpanded: isSidebarExpanded
                     onClicked: currentPage = "pluto"
                 }
-                SidebarItem { 
+                SidebarItem {
                     iconSource: "assets/icons/zenith.svg"; text: "ZENITH JIT"
                     active: currentPage === "zenith"
                     isExpanded: isSidebarExpanded
@@ -110,7 +110,7 @@ Window {
 
                 Item { Layout.fillHeight: true }
 
-                SidebarItem { 
+                SidebarItem {
                     iconSource: "assets/icons/settings.svg"; text: "SETTINGS"
                     active: currentPage === "settings"
                     isExpanded: isSidebarExpanded
@@ -225,11 +225,11 @@ Window {
                     GlassPanel {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 450
-                        
+
                         ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 25
-                            
+
                             RowLayout {
                                 Text { text: "Throughput Waveform"; color: "white"; font.pixelSize: 18; font.bold: true }
                                 Item { Layout.fillWidth: true }
@@ -257,13 +257,13 @@ Window {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 20
-                        
+
                         GlassPanel {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 200
                             Text { anchors.centerIn: parent; text: "MEMORY FRAGMENTATION ANALYSIS"; color: clrCyan; opacity: 0.2; font.letterSpacing: 2 }
                         }
-                        
+
                         GlassPanel {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 200
@@ -318,7 +318,7 @@ Window {
                     Layout.fillWidth: true
                     Text { text: "Pluto Swarm Navigator"; color: "white"; font.pixelSize: 32; font.bold: true }
                     Item { Layout.fillWidth: true }
-                    Text { 
+                    Text {
                         text: "Zoom: " + navigator.zoom.toFixed(2) + "x | Pan: " + Math.round(navigator.pan.x) + "," + Math.round(navigator.pan.y)
                         color: clrCyan
                         font.family: "JetBrains Mono"
@@ -337,7 +337,7 @@ Window {
                         id: navigator
                         anchors.fill: parent
                         nodeColor: clrCyan
-                        
+
                         WheelHandler {
                             onWheel: (event)=> {
                                 var delta = event.angleDelta.y / 1200.0
@@ -348,7 +348,7 @@ Window {
                         DragHandler {
                             target: null
                             onTranslationChanged: {
-                                navigator.pan = Qt.point(navigator.pan.x + translation.x / 10, 
+                                navigator.pan = Qt.point(navigator.pan.x + translation.x / 10,
                                                          navigator.pan.y + translation.y / 10)
                             }
                         }
@@ -397,7 +397,7 @@ Window {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 15
-                    
+
                     TextField {
                         id: exprInput
                         Layout.fillWidth: true
@@ -408,7 +408,7 @@ Window {
                         font.family: "JetBrains Mono"
                         onAccepted: jitExecutionManager.compileExpression(text)
                     }
-                    
+
                     Button {
                         text: "COMPILE"
                         onClicked: jitExecutionManager.compileExpression(exprInput.text)

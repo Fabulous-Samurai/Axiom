@@ -4,11 +4,11 @@ import QtQuick.Controls 2.15
 
 Rectangle {
     id: root
-    
+
     // ═══════════════════════════════════════════════════════════════
     // PUBLIC PROPERTIES
     // ═══════════════════════════════════════════════════════════════
-    
+
     property string stageId: ""
     property string stageName: "Select a Stage"
     property real messagesPerSecond: 0
@@ -16,23 +16,23 @@ Rectangle {
     property real queueFillRatio: 0
     property string errorMessage: ""
     property var history: [] // Array of {throughput, latency, time}
-    
+
     // ═══════════════════════════════════════════════════════════════
     // VISUAL
     // ═══════════════════════════════════════════════════════════════
-    
+
     width: 300
     height: parent.height - 40
     anchors.right: parent.right
     anchors.rightMargin: visible ? 20 : -width
     anchors.verticalCenter: parent.verticalCenter
     radius: 12
-    
+
     // Glass Background
     color: Qt.rgba(0.06, 0.08, 0.12, 0.95)
     border.color: "#1E293B"
     border.width: 1
-    
+
     Behavior on anchors.rightMargin {
         NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
     }
@@ -44,11 +44,11 @@ Rectangle {
         radius: parent.radius
         color: Qt.rgba(1, 1, 1, 0.05)
         anchors.top: parent.top
-        
+
         RowLayout {
             anchors.fill: parent
             anchors.margins: 16
-            
+
             Text {
                 text: stageName.toUpperCase()
                 font.pixelSize: 12
@@ -56,14 +56,14 @@ Rectangle {
                 font.letterSpacing: 1.2
                 color: "#F8FAFC"
             }
-            
+
             Item { Layout.fillWidth: true }
-            
+
             Text {
                 text: "✕"
                 font.pixelSize: 16
                 color: "#64748B"
-                
+
                 MouseArea {
                     anchors.fill: parent
                     onClicked: root.visible = false
@@ -102,7 +102,7 @@ Rectangle {
         ColumnLayout {
             spacing: 8
             Layout.fillWidth: true
-            
+
             Text {
                 text: "HISTORICAL TREND (LAST 10)"
                 font.pixelSize: 10
@@ -151,7 +151,7 @@ Rectangle {
         ColumnLayout {
             spacing: 8
             Layout.fillWidth: true
-            
+
             Text {
                 text: "DIAGNOSTIC LOGS"
                 font.pixelSize: 10
@@ -188,9 +188,9 @@ Rectangle {
         property string label: ""
         property string value: ""
         property color color: "#F8FAFC"
-        
+
         spacing: 4
-        
+
         Text {
             text: label
             font.pixelSize: 9

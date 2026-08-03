@@ -6,7 +6,7 @@ GlassPanel {
     id: root
     width: 300; height: 60
     property string message: ""
-    
+
     x: parent.width
     opacity: 0
     visible: opacity > 0
@@ -38,7 +38,7 @@ GlassPanel {
     Row {
         anchors.fill: parent; anchors.margins: Spacing.medium
         spacing: Spacing.small
-        
+
         Text {
             text: "ℹ️"
             font.pixelSize: Typography.h4
