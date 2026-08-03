@@ -1,5 +1,5 @@
 module AXUI.Components
- 
+
 # Layout
 AXColumn 1.0 layout/AXColumn.qml
 AXRow 1.0 layout/AXRow.qml

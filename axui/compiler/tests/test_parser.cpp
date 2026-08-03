@@ -1,34 +1,36 @@
-#include "axui/parser.h"
-#include "axui/compiler.h"
-#include "arena_allocator.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>
 
-void test_parser_minimal() {
-    axui::Parser parser;
-    AXIOM::MemoryArena arena(1024 * 1024);
-    AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
+#include "arena_allocator.h"
+#include "axui/compiler.h"
+#include "axui/parser.h"
 
-    auto root = parser.parse(R"({
+void test_parser_minimal() {
+  axui::Parser parser;
+  AXIOM::MemoryArena arena(1024 * 1024);
+  AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
+
+  auto root = parser.parse(R"({
         "$schema": "axui/1.0",
         "root": {
             "component": "Column",
             "layout": { "width": 100, "height": 100 }
         }
-    })", allocator);
+    })",
+                           allocator);
 
-    assert(!parser.hasErrors());
-    assert(root != nullptr);
-    assert(root->component_type == axui::ComponentType::Column);
+  assert(!parser.hasErrors());
+  assert(root != nullptr);
+  assert(root->component_type == axui::ComponentType::Column);
 }
 
 void test_parser_glass() {
-    axui::Parser parser;
-    AXIOM::MemoryArena arena(1024 * 1024);
-    AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
+  axui::Parser parser;
+  AXIOM::MemoryArena arena(1024 * 1024);
+  AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
 
-    auto root = parser.parse(R"({
+  auto root = parser.parse(R"({
         "root": {
             "component": "GlassPanel",
             "glass": {
@@ -38,20 +40,21 @@ void test_parser_glass() {
                 "noiseStrength": 0.02
             }
         }
-    })", allocator);
+    })",
+                           allocator);
 
-    assert(!parser.hasErrors());
-    assert(root != nullptr);
-    assert(root->glass.enabled == true);
-    assert(std::abs(root->glass.blur_radius - 64.0f) < 0.01f);
+  assert(!parser.hasErrors());
+  assert(root != nullptr);
+  assert(root->glass.enabled == true);
+  assert(std::abs(root->glass.blur_radius - 64.0f) < 0.01f);
 }
 
 void test_parser_hover() {
-    axui::Parser parser;
-    AXIOM::MemoryArena arena(1024 * 1024);
-    AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
+  axui::Parser parser;
+  AXIOM::MemoryArena arena(1024 * 1024);
+  AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
 
-    auto root = parser.parse(R"({
+  auto root = parser.parse(R"({
         "root": {
             "component": "KPICard",
             "hover": {
@@ -59,20 +62,21 @@ void test_parser_hover() {
                 "glowRadius": 16
             }
         }
-    })", allocator);
+    })",
+                           allocator);
 
-    assert(!parser.hasErrors());
-    assert(root != nullptr);
-    assert(root->hover.enabled == true);
-    assert(std::abs(root->hover.scale - 1.05f) < 0.01f);
+  assert(!parser.hasErrors());
+  assert(root != nullptr);
+  assert(root->hover.enabled == true);
+  assert(std::abs(root->hover.scale - 1.05f) < 0.01f);
 }
 
 void test_parser_children() {
-    axui::Parser parser;
-    AXIOM::MemoryArena arena(1024 * 1024);
-    AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
+  axui::Parser parser;
+  AXIOM::MemoryArena arena(1024 * 1024);
+  AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
 
-    auto root = parser.parse(R"({
+  auto root = parser.parse(R"({
         "root": {
             "component": "Column",
             "children": [
@@ -80,21 +84,22 @@ void test_parser_children() {
                 { "component": "Button", "props": { "text": "Click" } }
             ]
         }
-    })", allocator);
+    })",
+                           allocator);
 
-    assert(!parser.hasErrors());
-    assert(root != nullptr);
-    assert(root->children.size() == 2);
-    assert(root->children[0]->component_type == axui::ComponentType::Text);
-    assert(root->children[1]->component_type == axui::ComponentType::Button);
+  assert(!parser.hasErrors());
+  assert(root != nullptr);
+  assert(root->children.size() == 2);
+  assert(root->children[0]->component_type == axui::ComponentType::Text);
+  assert(root->children[1]->component_type == axui::ComponentType::Button);
 }
 
 void test_parser_binding() {
-    axui::Parser parser;
-    AXIOM::MemoryArena arena(1024 * 1024);
-    AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
+  axui::Parser parser;
+  AXIOM::MemoryArena arena(1024 * 1024);
+  AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
 
-    auto root = parser.parse(R"({
+  auto root = parser.parse(R"({
         "root": {
             "component": "KPICard",
             "props": {
@@ -102,44 +107,46 @@ void test_parser_binding() {
                 "bind": "@engine.throughput"
             }
         }
-    })", allocator);
+    })",
+                           allocator);
 
-    assert(!parser.hasErrors());
-    assert(root != nullptr);
+  assert(!parser.hasErrors());
+  assert(root != nullptr);
 
-    auto* bind_prop = root->getProperty("bind");
-    assert(bind_prop != nullptr);
-    
-    auto* binding = std::get_if<axui::Binding>(bind_prop);
-    assert(binding != nullptr);
-    assert(binding->path == "@engine.throughput");
+  auto* bind_prop = root->getProperty("bind");
+  assert(bind_prop != nullptr);
+
+  auto* binding = std::get_if<axui::Binding>(bind_prop);
+  assert(binding != nullptr);
+  assert(binding->path == "@engine.throughput");
 }
 
 void test_parser_empty() {
-    axui::Parser parser;
-    AXIOM::MemoryArena arena(1024 * 1024);
-    AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
+  axui::Parser parser;
+  AXIOM::MemoryArena arena(1024 * 1024);
+  AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
 
-    auto root = parser.parse(R"({
+  auto root = parser.parse(R"({
         "root": { "component": "Container" }
-    })", allocator);
+    })",
+                           allocator);
 
-    assert(!parser.hasErrors());
-    assert(root->component_type == axui::ComponentType::Container);
+  assert(!parser.hasErrors());
+  assert(root->component_type == axui::ComponentType::Container);
 }
 
 void test_parser_invalid_json() {
-    axui::Parser parser;
-    AXIOM::MemoryArena arena(1024 * 1024);
-    AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
+  axui::Parser parser;
+  AXIOM::MemoryArena arena(1024 * 1024);
+  AXIOM::ArenaAllocator<axui::UINode> allocator(&arena);
 
-    auto root = parser.parse("{ invalid json }}}", allocator);
-    assert(parser.hasErrors());
+  auto root = parser.parse("{ invalid json }}}", allocator);
+  assert(parser.hasErrors());
 }
 
 void test_compiler_basic() {
-    axui::Compiler compiler;
-    auto result = compiler.compile(R"({
+  axui::Compiler compiler;
+  auto result = compiler.compile(R"({
         "root": {
             "component": "Column",
             "children": [
@@ -147,6 +154,6 @@ void test_compiler_basic() {
             ]
         }
     })");
-    assert(result.success);
-    assert(result.root != nullptr);
+  assert(result.success);
+  assert(result.root != nullptr);
 }

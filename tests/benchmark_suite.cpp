@@ -1,51 +1,54 @@
 
-#include "../include/dynamic_calc.h"
+#include <benchmark/benchmark.h>
+
+#include <thread>
+#include <vector>
+
 #include "../include/daemon_engine.h"
+#include "../include/dynamic_calc.h"
 #include "../include/mantis_heuristic.h"
 #include "../include/mantis_solver.h"
-#include <benchmark/benchmark.h>
-#include <vector>
-#include <thread>
 
 using namespace AXIOM;
 
 static void BM_ScalarThroughput(benchmark::State& state) {
-    DynamicCalc engine;
-    engine.SetMode(CalculationMode::ALGEBRAIC);
-    for (auto _ : state) {
-        auto res = engine.Evaluate("2+2");
-        benchmark::DoNotOptimize(res);
-    }
+  DynamicCalc engine;
+  engine.SetMode(CalculationMode::ALGEBRAIC);
+  for (auto _ : state) {
+    auto res = engine.Evaluate("2+2");
+    benchmark::DoNotOptimize(res);
+  }
 }
 BENCHMARK(BM_ScalarThroughput);
 
 static void BM_TypedFastPath(benchmark::State& state) {
-    DynamicCalc engine;
-    double sink = 0.0;
-    int i = 0;
-    for (auto _ : state) {
-        const double lhs = static_cast<double>(i);
-        const double rhs = static_cast<double>((i % 97) + 1);
-        const auto result = engine.EvaluateFast(lhs, rhs, FastArithmeticOp::Multiply);
-        if (result.HasResult()) {
-            if (auto val = result.GetDouble()) {
-                sink += *val;
-            }
-        }
-        i++;
+  DynamicCalc engine;
+  double sink = 0.0;
+  int i = 0;
+  for (auto _ : state) {
+    const double lhs = static_cast<double>(i);
+    const double rhs = static_cast<double>((i % 97) + 1);
+    const auto result =
+        engine.EvaluateFast(lhs, rhs, FastArithmeticOp::Multiply);
+    if (result.HasResult()) {
+      if (auto val = result.GetDouble()) {
+        sink += *val;
+      }
     }
-    benchmark::DoNotOptimize(sink);
+    i++;
+  }
+  benchmark::DoNotOptimize(sink);
 }
 BENCHMARK(BM_TypedFastPath);
 
 static void BM_ZeroCopyVector(benchmark::State& state) {
-    for (auto _ : state) {
-        AXIOM::Vector large_vec;
-        // Fill up to capacity (256)
-        for(size_t i=0; i<256; ++i) large_vec.push_back(1.0);
-        auto res = CreateSuccessResult(std::move(large_vec));
-        benchmark::DoNotOptimize(res);
-    }
+  for (auto _ : state) {
+    AXIOM::Vector large_vec;
+    // Fill up to capacity (256)
+    for (size_t i = 0; i < 256; ++i) large_vec.push_back(1.0);
+    auto res = CreateSuccessResult(std::move(large_vec));
+    benchmark::DoNotOptimize(res);
+  }
 }
 BENCHMARK(BM_ZeroCopyVector);
 
@@ -54,68 +57,67 @@ BENCHMARK(BM_ZeroCopyVector);
 using namespace AXIOM;
 
 static void BM_LockFreeQueueIPC(benchmark::State& state) {
-    SPSCQueue<DaemonEngine::Request, 1024> queue;
-    int i = 0;
-    for (auto _ : state) {
-        DaemonEngine::Request req;
-        req.request_id = i++;
-        const std::string_view cmd = "benchmark_cmd";
-        size_t len = std::min(sizeof(req.command) - 1, cmd.size());
-        std::memcpy(req.command.data(), cmd.data(), len);
-        req.command[len] = '\0';
-        while (!queue.push(req)) std::this_thread::yield();
+  SPSCQueue<DaemonEngine::Request, 1024> queue;
+  int i = 0;
+  for (auto _ : state) {
+    DaemonEngine::Request req;
+    req.request_id = i++;
+    const std::string_view cmd = "benchmark_cmd";
+    size_t len = std::min(sizeof(req.command) - 1, cmd.size());
+    std::memcpy(req.command.data(), cmd.data(), len);
+    req.command[len] = '\0';
+    while (!queue.push(req)) std::this_thread::yield();
 
-        DaemonEngine::Request popped_req;
-        while (!queue.pop(popped_req)) std::this_thread::yield();
-    }
+    DaemonEngine::Request popped_req;
+    while (!queue.pop(popped_req)) std::this_thread::yield();
+  }
 }
 BENCHMARK(BM_LockFreeQueueIPC);
 
 // ... rest of the benchmarks ...
 
 int main(int argc, char** argv) {
-    ::benchmark::Initialize(&argc, argv);
-    if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
-    ::benchmark::RunSpecifiedBenchmarks();
-    ::benchmark::Shutdown();
-    return 0;
+  ::benchmark::Initialize(&argc, argv);
+  if (::benchmark::ReportUnrecognizedArguments(argc, argv)) return 1;
+  ::benchmark::RunSpecifiedBenchmarks();
+  ::benchmark::Shutdown();
+  return 0;
 }
 
 static AXIOM::Mantis::NodeFeatureVecF32 make_test_node_f32() {
-    AXIOM::Mantis::NodeFeatureVecF32 node;
-    for (size_t i = 0; i < AXIOM::Mantis::kFeatureDimFP32; ++i) {
-        node.data[i] = static_cast<float>(i + 1) * 0.1f;
-    }
-    return node;
+  AXIOM::Mantis::NodeFeatureVecF32 node;
+  for (size_t i = 0; i < AXIOM::Mantis::kFeatureDimFP32; ++i) {
+    node.data[i] = static_cast<float>(i + 1) * 0.1f;
+  }
+  return node;
 }
 
 static AXIOM::Mantis::TargetProfileF32 make_test_profile_f32() {
-    AXIOM::Mantis::TargetProfileF32 profile;
-    for (size_t i = 0; i < AXIOM::Mantis::kFeatureDimFP32; ++i) {
-        profile.weights[i] = static_cast<float>(8 - i) * 0.15f;
-    }
-    return profile;
+  AXIOM::Mantis::TargetProfileF32 profile;
+  for (size_t i = 0; i < AXIOM::Mantis::kFeatureDimFP32; ++i) {
+    profile.weights[i] = static_cast<float>(8 - i) * 0.15f;
+  }
+  return profile;
 }
 
 static void BM_MantisScalarF32(benchmark::State& state) {
-    const auto node = make_test_node_f32();
-    const auto profile = make_test_profile_f32();
-    float sink = 0.0f;
-    for (auto _ : state) {
-        sink = sink + AXIOM::Mantis::dot_scalar_f32(node, profile);
-    }
-    benchmark::DoNotOptimize(sink);
+  const auto node = make_test_node_f32();
+  const auto profile = make_test_profile_f32();
+  float sink = 0.0f;
+  for (auto _ : state) {
+    sink = sink + AXIOM::Mantis::dot_scalar_f32(node, profile);
+  }
+  benchmark::DoNotOptimize(sink);
 }
 BENCHMARK(BM_MantisScalarF32);
 
 static void BM_MantisSIMDF32(benchmark::State& state) {
-    const auto node = make_test_node_f32();
-    const auto profile = make_test_profile_f32();
-    float sink = 0.0f;
-    for (auto _ : state) {
-        sink = sink + AXIOM::Mantis::MantisHeuristic::evaluate_f32(node, profile);
-    }
-    benchmark::DoNotOptimize(sink);
+  const auto node = make_test_node_f32();
+  const auto profile = make_test_profile_f32();
+  float sink = 0.0f;
+  for (auto _ : state) {
+    sink = sink + AXIOM::Mantis::MantisHeuristic::evaluate_f32(node, profile);
+  }
+  benchmark::DoNotOptimize(sink);
 }
 BENCHMARK(BM_MantisSIMDF32);
-

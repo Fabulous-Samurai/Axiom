@@ -14,9 +14,9 @@ The **Giga Test Suite** is a monolithic, production-grade test suite for AXIOM E
 
 ###  Visual Reporting
 
-- **ANSI color codes**: 
+- **ANSI color codes**:
   -  Green = PASS
-  -  Red = FAIL  
+  -  Red = FAIL
   -  Cyan = Section headers and INFO
 - **Progress headers**: Clear section separation (e.g., "=== TESTING SYMBOLIC ENGINE ===")
 - **Detailed failure messages**: Shows exception messages and failed test names
@@ -149,11 +149,11 @@ cd ../scripts
 
 ```
 
-                                                               
-           AXIOM ENGINE v3.0 - GIGA TEST SUITE                 
-                                                               
-        Production-Grade Comprehensive Validation              
-                                                               
+
+           AXIOM ENGINE v3.0 - GIGA TEST SUITE
+
+        Production-Grade Comprehensive Validation
+
 
 
 ========================================
@@ -299,12 +299,12 @@ runner.RunTest("My New Test", [&]() {
 ```cpp
 void TestMyNewEngine(TestRunner& runner) {
     runner.StartSection("MY NEW ENGINE TESTS");
-    
+
     MyEngine engine;
-    
+
     runner.RunTest("Test 1", [&]() { /* ... */ });
     runner.RunTest("Test 2", [&]() { /* ... */ });
-    
+
     runner.EndSection();
 }
 
@@ -328,5 +328,3 @@ Typical execution times (Release build):
 ## License
 
 Same as AXIOM Engine - see LICENSE file.
-
-

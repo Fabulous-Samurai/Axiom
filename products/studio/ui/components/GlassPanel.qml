@@ -21,7 +21,7 @@ Rectangle {
         radius: root.radius
         border.color: Colors.glassBorder()
         border.width: 1
-        
+
         layer.enabled: true
         layer.effect: FastBlur {
             radius: root.blurRadius

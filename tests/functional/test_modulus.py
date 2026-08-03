@@ -23,7 +23,7 @@ print("Testing modulus operation...")
 result = engine.execute_command('938247290474946 % 342423423')
 print(f"Result with spaces: {result}")
 
-# Test without spaces  
+# Test without spaces
 result = engine.execute_command('938247290474946%342423423')
 print(f"Result without spaces: {result}")
 

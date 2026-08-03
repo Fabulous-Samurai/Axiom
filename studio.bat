@@ -9,4 +9,3 @@ if exist "%EXE_PATH%" (
     echo [ERROR] Please run build first.
     exit /b 1
 )
-
