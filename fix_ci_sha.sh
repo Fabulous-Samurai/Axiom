@@ -1,0 +1,6 @@
+sed -i -e 's|uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7|uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2|g' .github/workflows/axiom_zenith_ci.yml
+sed -i -e 's|uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1|uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0|g' .github/workflows/axiom_zenith_ci.yml
+sed -i -e 's|uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2|uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0|g' .github/workflows/axiom_zenith_ci.yml
+sed -i -e 's|uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4|uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3|g' .github/workflows/axiom_zenith_ci.yml
+sed -i -e 's|uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.7|uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8|g' .github/workflows/axiom_zenith_ci.yml
+sed -i -e 's|uses: SonarSource/sonarqube-scan-action@53c6b9f13962ae22901f056d6d4ba877f91f27ed # v5.0.0|uses: SonarSource/sonarqube-scan-action@0303d6b62e310685c0e34d0b9cde218036885c4d # v5.0.0|g' .github/workflows/axiom_zenith_ci.yml
