@@ -27,6 +27,9 @@ jobs:
       - name: "Run Zenith Pillar Verification"
         run: python3 scripts/verify_zenith_pillars.py
       - name: "Setup Java"
+      # 🛡️ SENTINEL SECURITY FIX:
+      # What: Pin setup-java action to verified v4.2.2 SHA
+      # Why: Mitigate supply chain attack risks from unverified SHAs
         uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018 # v4.2.2
         with:
           java-version: '17'
