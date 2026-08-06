@@ -1,4 +1,0 @@
-## 2026-08-06 - [Sandbox Bypass] Unrestricted eval() in AXIOM Sandbox
-**Vulnerability:** The `scripts/sandbox.py` module evaluates untrusted user input using Python's `eval()` without restricting the `__builtins__` environment. This allowed arbitrary code execution using malicious expressions like `__import__('os').system('...')`.
-**Learning:** Even when running in a subprocess with isolation, an unrestricted `eval()` allows attackers to trivially escape simple restraints or perform unintended actions within the Python context (e.g. leaking memory, making network calls, or modifying the environment).
-**Prevention:** Always restrict the execution environment when using `eval()`. Pass a highly restricted or empty `__builtins__` dict to limit accessible functions to safe math and basic types.

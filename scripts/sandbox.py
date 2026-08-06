@@ -32,12 +32,11 @@ def run_isolated_expression(expression):
 
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    # 🛡️ SENTINEL SECURITY FIX
-    code = "print(eval(%r, {'__builtins__': {'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float, 'round': round, 'sum': sum, 'len': len, 'bool': bool, 'str': str, 'dict': dict, 'list': list, 'set': set, 'tuple': tuple}}))" % expression
+    code = f"import os; print(eval({repr(expression)}))"
     cmd = [sys.executable, "-c", code]
 
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=False)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
