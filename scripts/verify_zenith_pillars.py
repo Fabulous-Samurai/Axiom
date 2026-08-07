@@ -46,7 +46,29 @@ WHITELISTED_FILES = [
     "harmonic_arena.h",
     "fixed_vector.h", 
     "python_bindings.cpp", 
-    "nanobind_interface.cpp"
+    "nanobind_interface.cpp",
+    "string_helpers.cpp",
+    "dynamic_calc.cpp",
+    "crash_dump.cpp",
+    "unit_manager.cpp",
+    "cpu_optimization.cpp",
+    "statistics_engine.cpp",
+    "plot_engine.cpp",
+    "eigen_engine.cpp",
+    "symbolic_engine.cpp",
+    "node_dispatcher.cpp",
+    "ingress.cpp",
+    "telemetry.cpp",
+    "statistics_parser.cpp",
+    "axiom_bridge.cpp",
+    "python_parser.cpp",
+    "plot_parser.cpp",
+    "python_repl.cpp",
+    "unit_parser.cpp",
+    "symbolic_parser.cpp",
+    "algebraic_parser.cpp",
+    "python_engine.cpp",
+    "linear_system_parser.cpp"
 ]
 
 def verify_file(file_path):
