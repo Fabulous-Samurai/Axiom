@@ -1,0 +1,4 @@
+## 2026-08-07 - Prevent Sandbox Code Injection
+**Vulnerability:** The Python isolated expression sandbox (`scripts/sandbox.py`) executed user input inside a subprocess using an unrestricted `eval()`. This permitted OS access, module imports, and potential command injection (e.g., `__import__('os').listdir('.')`).
+**Learning:** Subprocess isolation does not protect against malicious operations if the child process context is completely unrestricted. It's critical to lock down the `__builtins__` environment provided to `eval()`.
+**Prevention:** Always restrict the `__builtins__` mapping (e.g., `{'__builtins__': { ... }}`) in `eval()` to only explicitly allowed safe functions (like `abs`, `min`, `max`). Do not replace `eval()` with strict AST parsers if general expression support is mandatory.

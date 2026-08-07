@@ -29,27 +29,33 @@ def run_isolated_expression(expression):
     In production, this would use AppContainer (Windows) or seccomp (Linux).
     """
     print(f"[SANDBOX] Evaluating: {expression}")
-    
+
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # 🛡️ SENTINEL SECURITY FIX
+    # Restrict eval environment to prevent code injection via __builtins__
+    code = (
+        "safe_env = {'__builtins__': {'abs': abs, 'min': min, 'max': max, "
+        "'int': int, 'float': float, 'round': round}};"
+        f"print(eval({repr(expression)}, safe_env))"
+    )
     cmd = [sys.executable, "-c", code]
-    
+
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        
+
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
         monitor_thread.start()
-        
+
         stdout, stderr = proc.communicate()
         monitor_thread.join()
-        
+
         if proc.returncode == 0:
             return stdout.strip()
         else:
             return f"Error: {stderr.strip()}"
-            
+
     except Exception as e:
         return f"Sandbox Exception: {str(e)}"
 
