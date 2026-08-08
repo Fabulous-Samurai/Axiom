@@ -1,0 +1,4 @@
+## 2026-08-08 - Securing Python eval() in Sandboxes
+**Vulnerability:** The sandbox evaluator used an unrestricted eval() to process general mathematical expressions, which allowed arbitrary code execution (Command Injection).
+**Learning:** When process isolation is used in combination with eval() to evaluate general expressions, replacing eval() with a strict AST parser might break expected functionality (e.g., support for general mathematical expressions). To mitigate code injection without breaking support for expressions, the eval() environment must be restricted using a whitelist for __builtins__.
+**Prevention:** Always restrict the __builtins__ dictionary when using eval() in a restricted sandbox context. E.g., pass {'__builtins__': {'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float}} as the globals dictionary.
