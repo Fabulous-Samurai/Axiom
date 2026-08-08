@@ -145,14 +145,18 @@ nb::ndarray<nb::numpy, double, nb::ndim<2>> NanobindInterface::ConvertToNumPyMat
         const size_t rows = static_cast<size_t>(matrix.rows());
         const size_t cols = static_cast<size_t>(matrix.cols());
 
-        std::vector<std::vector<double>> nested(rows, std::vector<double>(cols));
+        // ⚡ BOLT OPTIMIZATION:
+        // What: Replaced nested std::vector allocations with a single flat std::vector allocation.
+        // Why: Nested std::vector<std::vector<double>> causes O(rows) separate memory allocations, leading to severe memory allocation overhead.
+        // Impact: Reduces allocations from O(N) to O(1), improving matrix conversion performance significantly.
+        std::vector<double> flat(rows * cols);
         for (size_t i = 0; i < rows; ++i) {
             for (size_t j = 0; j < cols; ++j) {
-                nested[i][j] = matrix(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j));
+                flat[i * cols + j] = matrix(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j));
             }
         }
 
-        auto arr = np.attr("array")(nested, "dtype"_a = "float64");
+        auto arr = np.attr("array")(flat, "dtype"_a = "float64").attr("reshape")(rows, cols);
         UpdateMetrics("ConvertToNumPyMatrix", 1.5, rows * cols * sizeof(double), false);
         return nb::cast<nb::ndarray<nb::numpy, double, nb::ndim<2>>>(arr);
     });
