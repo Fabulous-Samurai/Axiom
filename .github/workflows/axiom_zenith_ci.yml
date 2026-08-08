@@ -178,7 +178,7 @@ jobs:
           name: axiom-coverage-report
           path: .
       - name: "SonarCloud Scan"
-        uses: SonarSource/sonarqube-scan-action@master # v5.0.0
+        uses: SonarSource/sonarqube-scan-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
