@@ -15,37 +15,56 @@
 
 namespace Utils {
     
-    // Fast string-to-double conversion using std::from_chars (C++17)
+    // ⚡ BOLT OPTIMIZATION:
+    // What: Replaced std::string allocation in FastParseDouble with a stack-based buffer and fast path.
+    // Why: Avoids heap allocation (O(1) overhead) on every double parse, which is highly frequent in parsers.
+    // Impact: Significantly reduces latency and satisfies the Zero-Allocation Pillar.
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
-        
-        // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
-        }
-        // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
-        }
-        
         double result;
+
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
-        // Fallback for compilers with missing floating-point from_chars
+        // Fallback for compilers without from_chars support for double
+        char buf[64];
+        size_t len = sv.size();
+        if (len > 60) return std::nullopt;
+
+        size_t i = 0;
+        if (sv.front() == '.') buf[i++] = '0';
+        for (char c : sv) buf[i++] = c;
+        if (sv.back() == '.') buf[i++] = '0';
+        buf[i] = '\0';
+
         try {
             size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
+            result = std::stod(buf, &pos);
+            if (pos != i) return std::nullopt;
             return result;
         } catch (...) {
             return std::nullopt;
         }
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-        // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        // Fast path: Most normal numbers don't start or end with a bare decimal.
+        if (sv.front() != '.' && sv.back() != '.') {
+            auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
+            if (ec == std::errc{} && ptr == sv.data() + sv.size()) {
+                return result;
+            }
+        }
+
+        // Slow path: Handle ".5", "5." and un-null-terminated string edge cases using stack buffer.
+        char buf[64];
+        size_t len = sv.size();
+        if (len > 60) return std::nullopt; // Too long for reasonable double representation
+
+        size_t i = 0;
+        if (sv.front() == '.') buf[i++] = '0';
+        for (char c : sv) buf[i++] = c;
+        if (sv.back() == '.') buf[i++] = '0';
+
+        auto [ptr2, ec2] = std::from_chars(buf, buf + i, result);
+        return (ec2 == std::errc{} && ptr2 == buf + i) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
