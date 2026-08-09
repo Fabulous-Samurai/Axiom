@@ -1,0 +1,3 @@
+## 2026-08-09 - Zero-Allocation FastParseDouble
+**Learning:** `std::string` heap allocations in extremely hot-path functions like `FastParseDouble` (used in parsing numbers, checking `IsNumber`, etc.) cause unnecessary latency and violate the Project AXIOM "Zero-Allocation (SIFIR TAHSİS)" Zenith Pillar. Relying on implicit allocation for edge case handling (.5 to 0.5) degrades overall performance.
+**Action:** Replace dynamic `std::string` allocations with a fast path check and a fixed-size stack buffer (`char buf[64]`) for edge cases to eliminate heap overhead and adhere to the Zero-Allocation mandate.
