@@ -1,3 +1,0 @@
-## 2026-08-11 - [Zero-allocation double parsing via optimistic fast-path]
-**Learning:** Found a heap allocation of `std::string` taking place on every parse to handle edge cases before calling `std::from_chars` in C++17 string parsing. Previously tried to remove the string copy entirely, but this broke parsing for edge cases like `".5"` or `"."` which `std::from_chars` cannot handle natively.
-**Action:** When removing allocations for edge case handling, always introduce an optimistic fast-path that tries the zero-allocation route first. Only if it fails should it fall back to allocating memory to fix up the edge cases.
