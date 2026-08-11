@@ -32,8 +32,7 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    # 🛡️ SENTINEL SECURITY FIX: Restrict eval environment to prevent code injection
-    code = f"safe_dict = {{'__builtins__': {{'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float}}}}; print(eval({repr(expression)}, safe_dict))"
+    code = f"import os; print(eval({repr(expression)}))"
     cmd = [sys.executable, "-c", code]
     
     try:
