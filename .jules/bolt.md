@@ -1,3 +1,3 @@
-## 2026-08-13 - Zero-allocation fast-path for string-to-double parsing in C++
+## $(date +%Y-%m-%d) - Zero-allocation fast-path for string-to-double parsing in C++
 **Learning:** Parsing numbers using `std::from_chars` directly from a `std::string_view` buffer avoids heap allocations that usually happen when converting to `std::string`. The legacy implementation converted everything to `std::string` even if not needed, causing memory allocations on the hot path for parsing doubles.
 **Action:** Always attempt the zero-allocation fast-path first with `std::from_chars` on `std::string_view`. Fallback to `std::string` allocation only for edge cases like leading or trailing decimal points that might not be correctly handled natively.
