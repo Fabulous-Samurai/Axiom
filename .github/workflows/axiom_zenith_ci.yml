@@ -15,24 +15,24 @@ jobs:
     name: "Phase 0: Hygiene & Formal"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: "Set up Python"
-        uses: actions/setup-python@39cd14951b08e74b54015e9e001cdefcf80e669f # v5.1.1
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: '3.12'
       - name: "Run Pre-Commit"
         run: |
-          python -m pip install pre-commit
+          python -m pip install pre-commit==3.7.1
           pre-commit run --all-files --verbose
       - name: "Run Zenith Pillar Verification"
         run: python3 scripts/verify_zenith_pillars.py
       - name: "Setup Java"
-        uses: actions/setup-java@99b807301553181616292f2c82202300392f0b57 # v4.2.2
+        uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018 # v4.2.2
         with:
           java-version: '17'
           distribution: 'temurin'
       - name: "Download TLA2Tools"
-        run: wget https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -O tla2tools.jar
+        run: wget -q https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -O tla2tools.jar
       - name: "Run TLA+ Model Checks"
         run: |
           cp tla2tools.jar formal/tla/
@@ -47,13 +47,13 @@ jobs:
     env:
       BUILD_WRAPPER_OUT_DIR: build-wrapper-output
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
       - name: "Install System Dependencies"
         run: |
           sudo apt-get update && sudo apt-get install -y ninja-build python3-dev libnuma-dev valgrind ccache
-          python -m pip install nanobind pytest numpy matplotlib
+          python -m pip install nanobind==2.1.0 pytest==8.3.2 numpy==2.0.1 matplotlib==3.9.1
       - name: "Ccache Cache"
         uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
@@ -62,7 +62,7 @@ jobs:
           restore-keys: ${{ runner.os }}-ccache-
       - name: "Install build-wrapper"
         run: |
-          curl -sSLo $HOME/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+          curl -fsSL -o $HOME/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
           unzip -o $HOME/build-wrapper-linux-x86.zip -d $HOME/
           echo "$HOME/build-wrapper-linux-x86" >> $GITHUB_PATH
       - name: "Configure CMake (Coverage)"
@@ -95,11 +95,11 @@ jobs:
     needs: build-linux
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: "Install LCOV & Dependencies"
         run: |
           sudo apt-get update && sudo apt-get install -y lcov
-          python3 -m pip install pytest numpy matplotlib
+          python3 -m pip install pytest==8.3.2 numpy==2.0.1 matplotlib==3.9.1
       - name: "Download Artifacts"
         uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.7
         with:
@@ -129,11 +129,11 @@ jobs:
     needs: lint-and-verify
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: "Install Ninja & Dependencies"
         run: |
           choco install ninja ccache
-          python -m pip install nanobind pytest numpy matplotlib
+          python -m pip install nanobind==2.1.0 pytest==8.3.2 numpy==2.0.1 matplotlib==3.9.1
       - name: "Build"
         shell: bash
         run: |
@@ -153,7 +153,7 @@ jobs:
     needs: build-windows
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: "Download Artifacts"
         uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935 # v4.1.7
         with:
@@ -169,7 +169,7 @@ jobs:
     needs: [test-linux, test-windows]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
       - name: "Download Coverage Report"
