@@ -183,4 +183,3 @@ def _entry_from_row(row: tuple) -> Any:
     # Late import avoids circular dependency; VarEntry lives in axiom_qt_gui.
     from gui.qt.panels.workspace_panel import VarEntry
     return VarEntry(row[0], row[1], row[2])
-
