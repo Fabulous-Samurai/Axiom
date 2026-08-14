@@ -26,7 +26,7 @@ plot(x, -5, 5, -5, 5)
 
 # Expected: Diagonal line from bottom-left to top-right
 
-# Test 2: Steep linear function  
+# Test 2: Steep linear function
 
 plot(2*x, -5, 5, -10, 10)
 
@@ -372,6 +372,4 @@ plot(exp(x), -2, 2, 0, 8)
 plot(1/x, -5, 5, -10, 10)
 ```
 
-These tests will help verify that the plotting engine correctly renders mathematical functions and integrates well with your new calculus capabilities! 
-
-
+These tests will help verify that the plotting engine correctly renders mathematical functions and integrates well with your new calculus capabilities!
