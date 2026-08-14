@@ -1,0 +1,3 @@
+## 2026-08-14 - Zero-Allocation String Parsing
+**Learning:** `std::from_chars` can parse numbers directly from `std::string_view` buffers without heap allocation, but `engine/include/string_helpers.h` allocates a `std::string` every time to handle edge cases like `.5`. Additionally, `std::from_chars` fails on valid inputs with a leading `+` sign (e.g. `+3.14`).
+**Action:** Use an optimistic fast-path with `std::from_chars` directly on `std::string_view`. Include a fallback check for leading `+` signs. Fall back to `std::string` allocation only for unhandled edge cases (e.g. leading decimals) to achieve zero-allocation for standard numbers.
