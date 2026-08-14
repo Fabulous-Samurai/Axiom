@@ -19,6 +19,27 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
+        double result;
+
+#if !defined(__apple_build_version__) && (!defined(__GNUC__) || __GNUC__ >= 11 || defined(__clang__))
+        // ⚡ BOLT OPTIMIZATION:
+        // What: Optimistic zero-allocation fast path for string parsing
+        // Why: std::from_chars can directly parse most numbers without heap allocation
+        // Impact: Eliminates heap allocation on standard number parsing (e.g., "123", "3.14").
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
+        if (ec == std::errc{} && ptr == sv.data() + sv.size()) {
+            return result;
+        }
+
+        // For leading '+', we can just skip it and try again to avoid allocation
+        if (sv.front() == '+' && sv.size() > 1) {
+            auto [ptr2, ec2] = std::from_chars(sv.data() + 1, sv.data() + sv.size(), result);
+            if (ec2 == std::errc{} && ptr2 == sv.data() + sv.size()) {
+                return result;
+            }
+        }
+#endif
+
         // Handle edge cases that std::from_chars might not handle well
         std::string str(sv);
         
@@ -31,7 +52,6 @@ namespace Utils {
             str += "0";
         }
         
-        double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
         try {
@@ -43,9 +63,9 @@ namespace Utils {
             return std::nullopt;
         }
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+        auto [fb_ptr, fb_ec] = std::from_chars(str.data(), str.data() + str.size(), result);
         // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        return (fb_ec == std::errc{} && fb_ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
