@@ -19,39 +19,8 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        double result;
-
-#if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
+        // Handle edge cases that std::from_chars might not handle well
         std::string str(sv);
-        if (str.front() == '.') {
-            str = "0" + str;
-        } else if (str.back() == '.') {
-            str += "0";
-        }
-        // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
-            return result;
-        } catch (...) {
-            return std::nullopt;
-        }
-#else
-        // ⚡ BOLT OPTIMIZATION:
-        // What: Try zero-allocation std::from_chars directly on string_view first
-        // Why: Avoids O(N) std::string heap allocations per parse for the common case
-        // Impact: Eliminates heap allocations during expression parsing
-        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
-        if (ec == std::errc{} && ptr == sv.data() + sv.size()) {
-            return result;
-        }
-
-        std::string str(sv);
-        if (str.front() == '+') {
-            str.erase(0, 1);
-        }
-        if (str.empty()) return std::nullopt;
 
         // Handle leading decimal point (e.g., ".5" -> "0.5")
         if (str.front() == '.') {
@@ -62,8 +31,21 @@ namespace Utils {
             str += "0";
         }
 
-        auto [fallback_ptr, fallback_ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-        return (fallback_ec == std::errc{} && fallback_ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        double result;
+#if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
+        // Fallback for compilers with missing floating-point from_chars
+        try {
+            size_t pos;
+            result = std::stod(str, &pos);
+            if (pos != str.size()) return std::nullopt;
+            return result;
+        } catch (...) {
+            return std::nullopt;
+        }
+#else
+        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+        // Check if conversion was successful AND we consumed the entire string
+        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
