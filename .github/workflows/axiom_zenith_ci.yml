@@ -133,7 +133,7 @@ jobs:
       - name: "Install Ninja & Dependencies"
         run: |
           choco install ninja ccache
-          python3 -m pip install nanobind pytest numpy matplotlib
+          python -m pip install nanobind pytest numpy matplotlib
       - name: "Build"
         shell: bash
         run: |
