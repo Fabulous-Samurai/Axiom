@@ -1,0 +1,4 @@
+## 2026-08-15 - Prevent Arbitrary Code Execution in Python Sandbox
+**Vulnerability:** The `scripts/sandbox.py` module evaluated user input using an unrestricted `eval()` call within a subprocess, allowing an attacker to escape the sandbox and execute arbitrary system commands via `__import__('os').system(...)`.
+**Learning:** Using `eval()` to parse and execute math functions or generic expressions natively in Python without passing a safe whitelist for `__builtins__` leaves the system open to arbitrary code execution.
+**Prevention:** Always sanitize or restrict the execution environment when evaluating expressions dynamically. In Python, passing a dictionary defining explicitly safe operations via the `__builtins__` dictionary (e.g., `{'__builtins__': {'abs': abs}}`) prevents access to dangerous modules like `os` or `sys`.
