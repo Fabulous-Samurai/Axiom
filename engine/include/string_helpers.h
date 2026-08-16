@@ -19,7 +19,43 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
+        double result;
+
+        // ⚡ BOLT OPTIMIZATION:
+        // What: Added zero-allocation fast-path to FastParseDouble using std::from_chars directly on string_view.
+        // Why: Prevent unnecessary std::string heap allocation for valid floats, improving overall engine parse speed and complying with zero-allocation zenith pillar.
+        // Impact: Avoids 1 heap allocation per parse operation for typical values.
+
+        // Fast path for numbers without leading or trailing decimal point
+        if (sv.front() != '.' && sv.back() != '.') {
+#if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
+            // Legacy fallback - keeping original logic for old compilers
+            std::string str(sv);
+            try {
+                size_t pos;
+                result = std::stod(str, &pos);
+                if (pos != str.size()) return std::nullopt;
+                return result;
+            } catch (...) {
+                return std::nullopt;
+            }
+#else
+            const char* start = sv.data();
+            const char* end = sv.data() + sv.size();
+
+            // std::from_chars doesn't handle leading '+'
+            if (start != end && *start == '+') {
+                start++;
+            }
+
+            auto [ptr, ec] = std::from_chars(start, end, result);
+            if (ec == std::errc{} && ptr == end) {
+                return result;
+            }
+#endif
+        }
+
+        // Handle edge cases that std::from_chars might not handle well or slow fallback
         std::string str(sv);
         
         // Handle leading decimal point (e.g., ".5" -> "0.5")
@@ -31,7 +67,6 @@ namespace Utils {
             str += "0";
         }
         
-        double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
         try {
