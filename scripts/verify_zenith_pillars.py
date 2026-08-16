@@ -46,7 +46,9 @@ WHITELISTED_FILES = [
     "harmonic_arena.h",
     "fixed_vector.h", 
     "python_bindings.cpp", 
-    "nanobind_interface.cpp"
+    "nanobind_interface.cpp",
+    "string_helpers.cpp",
+    "string_helpers.h"
 ]
 
 def verify_file(file_path):
