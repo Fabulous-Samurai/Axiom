@@ -32,10 +32,40 @@ def run_isolated_expression(expression):
     
     # 🛡️ SENTINEL SECURITY FIX
     # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues. We also restrict eval() environment
-    # to prevent arbitrary code execution while still allowing math functions.
-    safe_env = "{'__builtins__': {'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float}}"
-    code = f"print(eval({repr(expression)}, {safe_env}))"
+    # to avoid shell quoting issues. We use an AST-based secure evaluator
+    # instead of dangerous eval().
+    safe_eval_code = """
+import ast
+import operator
+
+def safe_eval(expr):
+    allowed_ops = {
+        ast.Add: operator.add, ast.Sub: operator.sub,
+        ast.Mult: operator.mul, ast.Div: operator.truediv,
+        ast.Pow: operator.pow, ast.BitXor: operator.xor,
+        ast.USub: operator.neg
+    }
+    allowed_funcs = {'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float}
+
+    def eval_node(node):
+        if isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.BinOp):
+            return allowed_ops[type(node.op)](eval_node(node.left), eval_node(node.right))
+        elif isinstance(node, ast.UnaryOp):
+            return allowed_ops[type(node.op)](eval_node(node.operand))
+        elif isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name) and node.func.id in allowed_funcs:
+                args = [eval_node(arg) for arg in node.args]
+                return allowed_funcs[node.func.id](*args)
+            raise ValueError("Disallowed function call")
+        else:
+            raise ValueError("Unsupported syntax")
+
+    tree = ast.parse(expr, mode='eval')
+    return eval_node(tree.body)
+"""
+    code = safe_eval_code + f"\nprint(safe_eval({repr(expression)}))"
     cmd = [sys.executable, "-c", code]
     
     try:
