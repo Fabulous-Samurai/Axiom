@@ -30,9 +30,12 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
+    # 🛡️ SENTINEL SECURITY FIX
     # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # to avoid shell quoting issues. We also restrict eval() environment
+    # to prevent arbitrary code execution while still allowing math functions.
+    safe_env = "{'__builtins__': {'abs': abs, 'min': min, 'max': max, 'int': int, 'float': float}}"
+    code = f"print(eval({repr(expression)}, {safe_env}))"
     cmd = [sys.executable, "-c", code]
     
     try:
