@@ -1,4 +1,4 @@
-## 2026-08-17 - Prevent eval() command injection in Python sandbox
-**Vulnerability:** AXIOM expression evaluator used unrestricted `eval()` in a subprocess, allowing arbitrary Python execution.
-**Learning:** To support general mathematical expressions while avoiding command injection, `eval()` must have a strict whitelist of allowed `__builtins__`. Completely replacing it with AST parsing breaks expected sandbox functionality.
-**Prevention:** Always pass a restricted `__builtins__` dictionary to `eval()` when executing untrusted expressions.
+## 2026-08-17 - Prevent eval() command injection and SonarCloud S2076 in Python sandbox
+**Vulnerability:** AXIOM expression evaluator used unrestricted `eval()` in a subprocess, allowing arbitrary Python execution and command injection. Additionally, `subprocess.Popen` lacked an explicit `shell=False` directive, triggering SonarCloud S2076.
+**Learning:** To support general mathematical expressions while avoiding command injection, `eval()` must have a strict whitelist of allowed `__builtins__`. Replacing it completely with AST parsing breaks expected sandbox functionality. Furthermore, always explicitly set `shell=False` when using `subprocess` to satisfy static analysis and prevent shell injection.
+**Prevention:** Always pass a restricted `__builtins__` dictionary to `eval()` when executing untrusted expressions. Always set `shell=False` for `subprocess.Popen` unless shell features are explicitly required.
