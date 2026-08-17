@@ -16,9 +16,24 @@
 namespace Utils {
     
     // Fast string-to-double conversion using std::from_chars (C++17)
+    // ⚡ BOLT OPTIMIZATION:
+    // What: Implement zero-allocation fast path for number parsing
+    // Why: `FastParseDouble` currently unconditionally allocates a `std::string` buffer. This is a hot path for number parsing, called recursively in expression trees.
+    // Impact: Eliminates O(N) heap allocations during numerical parsing.
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
+        // Optimistic fast-path: attempt zero-allocation route first
+        double fast_result;
+
+        // std::from_chars doesn't support leading '+' sign
+        if (sv.front() != '+') {
+            auto [fast_ptr, fast_ec] = std::from_chars(sv.data(), sv.data() + sv.size(), fast_result);
+            if (fast_ec == std::errc{} && fast_ptr == sv.data() + sv.size()) {
+                return fast_result;
+            }
+        }
+
         // Handle edge cases that std::from_chars might not handle well
         std::string str(sv);
         
@@ -45,7 +60,15 @@ namespace Utils {
 #else
         auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
         // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        if (ec == std::errc{} && ptr == str.data() + str.size()) return result;
+
+        // Also try to skip leading '+' sign if any
+        if (str.front() == '+') {
+            auto [ptr2, ec2] = std::from_chars(str.data() + 1, str.data() + str.size(), result);
+            if (ec2 == std::errc{} && ptr2 == str.data() + str.size()) return result;
+        }
+
+        return std::nullopt;
 #endif
     }
 

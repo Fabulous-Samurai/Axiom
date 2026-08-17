@@ -1,0 +1,3 @@
+## 2026-08-17 - Zero-allocation Fast Paths in String Parsing
+**Learning:** Even modern string parsing functions (like `std::from_chars`) have edge cases (like unsupported leading '+' signs) that often lead engineers to defensively allocate intermediate standard strings (`std::string`). This pattern, when placed inside hot loops or recursive parsers, quietly becomes a massive bottleneck due to compounding O(N) heap allocations.
+**Action:** Implement optimistic zero-allocation fast paths utilizing `std::string_view` and `std::from_chars` first, and only fall back to allocating `std::string` buffers for the minority of unparseable edge cases (like leading/trailing decimals or unsupported signs).
