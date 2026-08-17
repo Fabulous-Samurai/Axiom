@@ -23,18 +23,20 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Optimistic fast-path: attempt zero-allocation route first
-        double fast_result;
-
+        double result;
+#if !(defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__)))
+        // Optimistic fast-path: attempt zero-allocation route first on supported platforms
         // std::from_chars doesn't support leading '+' sign
         if (sv.front() != '+') {
-            auto [fast_ptr, fast_ec] = std::from_chars(sv.data(), sv.data() + sv.size(), fast_result);
+            auto [fast_ptr, fast_ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
             if (fast_ec == std::errc{} && fast_ptr == sv.data() + sv.size()) {
-                return fast_result;
+                return result;
             }
         }
+#endif
 
-        // Handle edge cases that std::from_chars might not handle well
+        // Fallback path: Handle edge cases that std::from_chars might not handle well,
+        // or handle all parsing on older platforms.
         std::string str(sv);
         
         // Handle leading decimal point (e.g., ".5" -> "0.5")
@@ -46,7 +48,6 @@ namespace Utils {
             str += "0";
         }
         
-        double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
         try {
