@@ -19,19 +19,42 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
+        double result;
+
+#if !defined(__apple_build_version__) && (!defined(__GNUC__) || __GNUC__ >= 11 || defined(__clang__))
+        // Optimistic fast-path: Zero-allocation attempt
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
+        if (ec == std::errc{} && ptr == sv.data() + sv.size()) {
+            return result;
+        }
+
+        // Check leading + (std::from_chars doesn't support leading +)
+        if (sv.front() == '+') {
+            std::string_view sub = sv.substr(1);
+            if (!sub.empty()) {
+                auto [ptr2, ec2] = std::from_chars(sub.data(), sub.data() + sub.size(), result);
+                if (ec2 == std::errc{} && ptr2 == sub.data() + sub.size()) {
+                    return result;
+                }
+            }
+        }
+#endif
+
+        // Fallback: Handle edge cases (like .5, 5., or +.5) that require allocation
         std::string str(sv);
+        if (str.front() == '+') {
+            str = str.substr(1); // Remove +
+        }
+
+        if (str.empty()) return std::nullopt;
         
-        // Handle leading decimal point (e.g., ".5" -> "0.5")
         if (str.front() == '.') {
             str = "0" + str;
         }
-        // Handle trailing decimal point (e.g., "5." -> "5.0")
         else if (str.back() == '.') {
             str += "0";
         }
         
-        double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
         try {
@@ -43,9 +66,8 @@ namespace Utils {
             return std::nullopt;
         }
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-        // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        auto [ptr_fb, ec_fb] = std::from_chars(str.data(), str.data() + str.size(), result);
+        return (ec_fb == std::errc{} && ptr_fb == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
