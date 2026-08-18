@@ -30,9 +30,24 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # 🛡️ SENTINEL SECURITY FIX: Replaced vulnerable eval() with safe AST evaluator
+    code = f'''
+import ast
+import operator
+ops = {{
+    ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+    ast.Div: operator.truediv, ast.Pow: operator.pow, ast.BitXor: operator.xor,
+    ast.USub: operator.neg, ast.UAdd: operator.pos, ast.Mod: operator.mod
+}}
+def _eval(node):
+    if isinstance(node, ast.Expression): return _eval(node.body)
+    elif isinstance(node, ast.Constant): return node.value
+    elif isinstance(node, (ast.NameConstant, ast.Num, ast.Str)): return getattr(node, 'value', getattr(node, 'n', getattr(node, 's', None)))
+    elif isinstance(node, ast.BinOp): return ops[type(node.op)](_eval(node.left), _eval(node.right))
+    elif isinstance(node, ast.UnaryOp): return ops[type(node.op)](_eval(node.operand))
+    else: raise ValueError(f"Unsupported syntax: {{type(node).__name__}}")
+print(_eval(ast.parse({repr(expression)}, mode='eval')))
+'''
     cmd = [sys.executable, "-c", code]
     
     try:
