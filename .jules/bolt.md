@@ -1,0 +1,3 @@
+## 2024-08-19 - Avoid heap allocations in fast numeric parsing
+**Learning:** Found that `FastParseDouble` in `engine/include/string_helpers.h` allocates a `std::string` on every invocation to handle edge cases like `.5` and `5.` before parsing with `std::from_chars`. This defeats the zero-allocation performance benefit of `std::from_chars`.
+**Action:** When implementing zero-allocation fast paths using `std::from_chars`, attempt parsing directly from the `std::string_view` buffer first. Only fall back to a `std::string` allocation if it's an edge case that `std::from_chars` fails to parse (e.g. leading `+` sign or missing leading/trailing zeros).
