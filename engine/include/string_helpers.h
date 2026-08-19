@@ -19,19 +19,33 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
+        double result;
+
+#if !defined(__apple_build_version__) && (!defined(__GNUC__) || __GNUC__ >= 11 || defined(__clang__))
+        // Fast path: attempt zero-allocation parsing directly from string_view
+        auto [fast_ptr, fast_ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
+        if (fast_ec == std::errc{} && fast_ptr == sv.data() + sv.size()) {
+            return result;
+        }
+#endif
+
+        // Handle edge cases that std::from_chars might not handle well (e.g. leading +)
+        std::string str;
+        if (sv.front() == '+') {
+            str = std::string(sv.substr(1));
+        } else {
+            str = std::string(sv);
+        }
         
         // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
+        if (!str.empty() && str.front() == '.') {
             str = "0" + str;
         }
         // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
+        else if (!str.empty() && str.back() == '.') {
             str += "0";
         }
         
-        double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
         try {
