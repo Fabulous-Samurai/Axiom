@@ -19,9 +19,10 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
+        double result;
+
+#if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         std::string str(sv);
-        
         // Handle leading decimal point (e.g., ".5" -> "0.5")
         if (str.front() == '.') {
             str = "0" + str;
@@ -30,9 +31,6 @@ namespace Utils {
         else if (str.back() == '.') {
             str += "0";
         }
-        
-        double result;
-#if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
         try {
             size_t pos;
@@ -43,9 +41,36 @@ namespace Utils {
             return std::nullopt;
         }
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-        // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        // Fast path: Try parsing without any allocations
+        std::string_view parse_sv = sv;
+        if (parse_sv.front() == '+') {
+            parse_sv.remove_prefix(1);
+        }
+        auto [ptr, ec] = std::from_chars(parse_sv.data(), parse_sv.data() + parse_sv.size(), result);
+        if (ec == std::errc{} && ptr == parse_sv.data() + parse_sv.size()) {
+            return result;
+        }
+
+        // Slow path: Handle edge cases (e.g., ".5", "5.") by allocating a string
+        std::string str(sv);
+        // Handle leading decimal point (e.g., ".5" -> "0.5")
+        if (str.front() == '.') {
+            str = "0" + str;
+        } else if (str.front() == '+' && str.size() > 1 && str[1] == '.') {
+            str = "+0." + str.substr(2);
+        }
+        // Handle trailing decimal point (e.g., "5." -> "5.0")
+        else if (str.back() == '.') {
+            str += "0";
+        }
+
+        std::string_view fallback_sv = str;
+        if (fallback_sv.front() == '+') {
+            fallback_sv.remove_prefix(1);
+        }
+
+        auto [ptr2, ec2] = std::from_chars(fallback_sv.data(), fallback_sv.data() + fallback_sv.size(), result);
+        return (ec2 == std::errc{} && ptr2 == fallback_sv.data() + fallback_sv.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
