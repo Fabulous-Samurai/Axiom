@@ -30,9 +30,56 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # 🛡️ SENTINEL SECURITY FIX: Replaced eval() with AST-based safe evaluation
+    # to prevent command injection and sandbox escapes.
+    code = f'''
+import ast
+import operator
+import sys
+
+def safe_eval(expr):
+    allowed_ops = {{
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.Pow: operator.pow,
+        ast.BitXor: operator.xor,
+        ast.USub: operator.neg,
+        ast.UAdd: operator.pos,
+    }}
+
+    def _eval(node):
+        if isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.BinOp):
+            left = _eval(node.left)
+            right = _eval(node.right)
+            op = type(node.op)
+            if op in allowed_ops:
+                return allowed_ops[op](left, right)
+            else:
+                raise ValueError(f"Unsupported operator: {{op}}")
+        elif isinstance(node, ast.UnaryOp):
+            operand = _eval(node.operand)
+            op = type(node.op)
+            if op in allowed_ops:
+                return allowed_ops[op](operand)
+            else:
+                raise ValueError(f"Unsupported unary operator: {{op}}")
+        elif isinstance(node, ast.Expression):
+            return _eval(node.body)
+        else:
+            raise ValueError(f"Unsupported node type: {{type(node)}}")
+
+    try:
+        tree = ast.parse(expr, mode='eval')
+        return _eval(tree)
+    except Exception as e:
+        return f"Error: {{str(e)}}"
+
+print(safe_eval({repr(expression)}))
+'''
     cmd = [sys.executable, "-c", code]
     
     try:
