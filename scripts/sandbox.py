@@ -37,15 +37,43 @@ def run_isolated_expression(expression):
 import ast, operator
 class SafeEvaluator(ast.NodeVisitor):
     def __init__(self):
-        self.ops = {{ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv, ast.FloorDiv: operator.floordiv, ast.Pow: operator.pow, ast.Mod: operator.mod, ast.USub: operator.neg, ast.UAdd: operator.pos}}
+        self.ops = {{
+            ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv, ast.Pow: operator.pow, ast.Mod: operator.mod,
+            ast.USub: operator.neg, ast.UAdd: operator.pos, ast.BitAnd: operator.and_,
+            ast.BitOr: operator.or_, ast.BitXor: operator.xor, ast.LShift: operator.lshift,
+            ast.RShift: operator.rshift, ast.Invert: operator.invert
+        }}
+        self.cmp = {{
+            ast.Eq: operator.eq, ast.NotEq: operator.ne, ast.Lt: operator.lt, ast.LtE: operator.le,
+            ast.Gt: operator.gt, ast.GtE: operator.ge, ast.Is: operator.is_, ast.IsNot: operator.is_not,
+            ast.In: lambda a, b: a in b, ast.NotIn: lambda a, b: a not in b
+        }}
     def evaluate(self, expr):
         return self.visit(ast.parse(expr, mode='eval').body)
     def visit(self, node):
         if isinstance(node, ast.Constant): return node.value
+        elif isinstance(node, ast.List): return [self.visit(e) for e in node.elts]
+        elif isinstance(node, ast.Tuple): return tuple(self.visit(e) for e in node.elts)
+        elif isinstance(node, ast.Set): return {{self.visit(e) for e in node.elts}}
+        elif isinstance(node, ast.Dict): return {{self.visit(k): self.visit(v) for k, v in zip(node.keys, node.values)}}
         elif isinstance(node, ast.BinOp) and type(node.op) in self.ops:
             return self.ops[type(node.op)](self.visit(node.left), self.visit(node.right))
         elif isinstance(node, ast.UnaryOp) and type(node.op) in self.ops:
             return self.ops[type(node.op)](self.visit(node.operand))
+        elif isinstance(node, ast.Compare):
+            left = self.visit(node.left)
+            for op, comparator in zip(node.ops, node.comparators):
+                if type(op) not in self.cmp: raise ValueError("Unsupported operator")
+                right = self.visit(comparator)
+                if not self.cmp[type(op)](left, right): return False
+                left = right
+            return True
+        elif isinstance(node, ast.BoolOp):
+            if isinstance(node.op, ast.And):
+                return all(self.visit(v) for v in node.values)
+            elif isinstance(node.op, ast.Or):
+                return any(self.visit(v) for v in node.values)
         raise ValueError("Unsupported expression")
 print(SafeEvaluator().evaluate({repr(expression)}))
 """
