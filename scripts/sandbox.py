@@ -32,11 +32,27 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"""
+# 🛡️ SENTINEL SECURITY FIX: Prevent command injection by using a safe AST evaluator instead of eval()
+import ast, operator
+class SafeEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.ops = {{ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv, ast.FloorDiv: operator.floordiv, ast.Pow: operator.pow, ast.Mod: operator.mod, ast.USub: operator.neg, ast.UAdd: operator.pos}}
+    def evaluate(self, expr):
+        return self.visit(ast.parse(expr, mode='eval').body)
+    def visit(self, node):
+        if isinstance(node, ast.Constant): return node.value
+        elif isinstance(node, ast.BinOp) and type(node.op) in self.ops:
+            return self.ops[type(node.op)](self.visit(node.left), self.visit(node.right))
+        elif isinstance(node, ast.UnaryOp) and type(node.op) in self.ops:
+            return self.ops[type(node.op)](self.visit(node.operand))
+        raise ValueError("Unsupported expression")
+print(SafeEvaluator().evaluate({repr(expression)}))
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=False)
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
