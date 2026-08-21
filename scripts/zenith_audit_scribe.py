@@ -3,9 +3,13 @@ import json
 import os
 import time
 
+import shlex
+import os
+
 def run_cmd(cmd):
     try:
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+        safe_cmd = shlex.split(cmd, posix=os.name != 'nt')
+        result = subprocess.run(safe_cmd, shell=False, capture_output=True, text=True, timeout=300)
         return {
             "cmd": cmd,
             "success": result.returncode == 0,
