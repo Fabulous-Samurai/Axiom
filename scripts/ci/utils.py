@@ -53,16 +53,20 @@ class CIResult:
             "stages": self.stages
         }
 
+import shlex
+import os
+
 def run_command(cmd, cwd=None, timeout=None, capture=True):
     start = time.time()
     try:
+        safe_cmd = shlex.split(cmd, posix=os.name != 'nt') if isinstance(cmd, str) else cmd
         process = subprocess.run(
-            cmd,
+            safe_cmd,
             cwd=cwd,
             capture_output=capture,
             text=True,
             timeout=timeout,
-            shell=isinstance(cmd, str)
+            shell=False
         )
         duration = time.time() - start
         return process.returncode, process.stdout or "", process.stderr or "", duration
