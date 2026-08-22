@@ -1,0 +1,3 @@
+## 2024-05-18 - C++17 std::from_chars Zero-Allocation Fast Path
+**Learning:** C++17's `std::from_chars` natively supports parsing floating-point numbers with leading or trailing decimal points (e.g., `.5` or `5.`) when using general format, meaning they do not need to be manually padded with zeros using memory-allocating string operations. However, it does not support parsing numbers with a leading `+` sign.
+**Action:** When implementing zero-allocation fast-paths for string parsing, rely on `std::from_chars` directly for decimals but add a fast-path fallback using `substr(1)` to strip the leading `+` without triggering a heap allocation. Always ensure a fallback path (`std::stod`) is maintained for older compilers without full `from_chars` floating-point support.
