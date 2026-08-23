@@ -30,9 +30,82 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # 🛡️ SENTINEL SECURITY FIX: Replaced dangerous eval() with a secure ast-based SafeEvaluator
+    # to avoid command injection vulnerabilities while preserving math evaluation capabilities.
+    code = f"""import sys
+import ast
+import operator
+
+class SafeEvaluator(ast.NodeVisitor):
+    allowed_operators = {{
+        ast.Add: operator.add, ast.Sub: operator.sub,
+        ast.Mult: operator.mul, ast.Div: operator.truediv,
+        ast.FloorDiv: operator.floordiv, ast.Mod: operator.mod,
+        ast.Pow: operator.pow, ast.BitXor: operator.xor,
+        ast.BitOr: operator.or_, ast.BitAnd: operator.and_,
+        ast.UAdd: operator.pos, ast.USub: operator.neg,
+        ast.Eq: operator.eq, ast.NotEq: operator.ne,
+        ast.Lt: operator.lt, ast.LtE: operator.le,
+        ast.Gt: operator.gt, ast.GtE: operator.ge,
+        ast.And: lambda x, y: x and y, ast.Or: lambda x, y: x or y,
+        ast.Not: operator.not_,
+    }}
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_UnaryOp(self, node):
+        op = type(node.op)
+        if op not in self.allowed_operators:
+            raise ValueError(f"Unsupported unary operator: {{op}}")
+        return self.allowed_operators[op](self.visit(node.operand))
+
+    def visit_BinOp(self, node):
+        op = type(node.op)
+        if op not in self.allowed_operators:
+            raise ValueError(f"Unsupported binary operator: {{op}}")
+        return self.allowed_operators[op](self.visit(node.left), self.visit(node.right))
+
+    def visit_BoolOp(self, node):
+        op = type(node.op)
+        if op not in self.allowed_operators:
+            raise ValueError(f"Unsupported boolean operator: {{op}}")
+        values = [self.visit(v) for v in node.values]
+        if op == ast.And:
+            return all(values)
+        if op == ast.Or:
+            return any(values)
+
+    def visit_Compare(self, node):
+        left = self.visit(node.left)
+        for op, comparator in zip(node.ops, node.comparators):
+            op_type = type(op)
+            if op_type not in self.allowed_operators:
+                raise ValueError(f"Unsupported comparison operator: {{op_type}}")
+            right = self.visit(comparator)
+            if not self.allowed_operators[op_type](left, right):
+                return False
+            left = right
+        return True
+
+    def visit_Dict(self, node):
+        return {{self.visit(k): self.visit(v) for k, v in zip(node.keys, node.values)}}
+
+    def visit_List(self, node):
+        return [self.visit(x) for x in node.elts]
+
+    def visit_Tuple(self, node):
+        return tuple(self.visit(x) for x in node.elts)
+
+    def visit_Set(self, node):
+        return {{self.visit(x) for x in node.elts}}
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported expression node: {{type(node).__name__}}")
+
+tree = ast.parse({repr(expression)}, mode='eval')
+print(SafeEvaluator().visit(tree.body))
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
