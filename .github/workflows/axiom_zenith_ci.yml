@@ -27,7 +27,7 @@ jobs:
       - name: "Run Zenith Pillar Verification"
         run: python3 scripts/verify_zenith_pillars.py
       - name: "Setup Java"
-        uses: actions/setup-java@99b807301553181616292f2c82202300392f0b57 # v4.2.2
+        uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018 # v4.2.2
         with:
           java-version: '17'
           distribution: 'temurin'
