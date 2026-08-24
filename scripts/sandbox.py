@@ -81,7 +81,7 @@ class SafeEvaluator(ast.NodeVisitor):
         return tuple(self.visit(elt) for elt in node.elts)
 
     def visit_Set(self, node):
-        return set(self.visit(elt) for elt in node.elts)
+        return {self.visit(elt) for elt in node.elts}
 
     def visit_Dict(self, node):
         return {self.visit(k): self.visit(v) for k, v in zip(node.keys, node.values)}
