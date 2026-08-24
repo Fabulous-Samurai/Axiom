@@ -30,7 +30,7 @@ namespace Utils {
         else if (str.back() == '.') {
             str += "0";
         }
-        
+
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
