@@ -19,21 +19,16 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
-        
-        // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
-        }
-        // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
-        }
-        
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
+        std::string str(sv);
+        if (str.front() == '.') {
+            str = "0" + str;
+        } else if (str.back() == '.') {
+            str += "0";
+        }
+#if defined(__cpp_exceptions)
         try {
             size_t pos;
             result = std::stod(str, &pos);
@@ -43,9 +38,28 @@ namespace Utils {
             return std::nullopt;
         }
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-        // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        char* end;
+        result = std::strtod(str.c_str(), &end);
+        if (end == str.c_str() || *end != '\0') return std::nullopt;
+        return result;
+#endif
+#else
+        // Fast-path: Zero-allocation parsing
+        const char* first = sv.data();
+        const char* last = sv.data() + sv.size();
+
+        // std::from_chars doesn't support leading '+'
+        if (sv.front() == '+') {
+            first++;
+            if (first == last) return std::nullopt;
+        }
+
+        auto [ptr, ec] = std::from_chars(first, last, result);
+        if (ec == std::errc{} && ptr == last) {
+            return result;
+        }
+
+        return std::nullopt;
 #endif
     }
 
