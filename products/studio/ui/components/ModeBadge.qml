@@ -3,11 +3,11 @@ import "../theme"
 
 Rectangle {
     property string mode: "algebraic"
-    
+
     width: 80; height: 24
     radius: Spacing.radiusSmall
     color: "transparent"
-    
+
     function getModeColor() {
         if (mode === "algebraic") return Colors.modeAlgebraic
         if (mode === "linear") return Colors.modeLinear

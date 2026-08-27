@@ -14,24 +14,24 @@
 namespace axui {
 
 class AppRunner {
-public:
-    AppRunner(int& argc, char** argv, const std::string& app_name);
+ public:
+  AppRunner(int& argc, char** argv, const std::string& app_name);
 
-    QQmlApplicationEngine& engine() { return engine_; }
-    
-    // Register a context property before running
-    template<typename T>
-    void registerContextProperty(const QString& name, T* object) {
-        engine_.rootContext()->setContextProperty(name, object);
-    }
+  QQmlApplicationEngine& engine() { return engine_; }
 
-    int run(const std::string& main_qml_path, const std::string& window_title);
+  // Register a context property before running
+  template <typename T>
+  void registerContextProperty(const QString& name, T* object) {
+    engine_.rootContext()->setContextProperty(name, object);
+  }
 
-private:
-    QGuiApplication app_;
-    QQmlApplicationEngine engine_;
+  int run(const std::string& main_qml_path, const std::string& window_title);
 
-    static void setupMessageHandler();
+ private:
+  QGuiApplication app_;
+  QQmlApplicationEngine engine_;
+
+  static void setupMessageHandler();
 };
 
-} // namespace axui
+}  // namespace axui
