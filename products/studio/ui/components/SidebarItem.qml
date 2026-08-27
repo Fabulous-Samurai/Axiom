@@ -17,9 +17,9 @@ Rectangle {
         anchors.fill: parent
         anchors.margins: { top: 4; bottom: 4; left: 8; right: 8 }
         radius: 8
-        color: root.active ? Qt.rgba(125/255, 211/255, 252/255, 0.15) : 
+        color: root.active ? Qt.rgba(125/255, 211/255, 252/255, 0.15) :
                (mArea.containsMouse ? Qt.rgba(255/255, 255/255, 255/255, 0.05) : "transparent")
-        
+
         Behavior on color { ColorAnimation { duration: 150 } }
 
         // Dirac Accent Line
@@ -55,7 +55,7 @@ Rectangle {
                     Behavior on opacity { NumberAnimation { duration: 150 } }
                 }
             }
-            
+
             Text {
                 Layout.fillWidth: true
                 text: root.text

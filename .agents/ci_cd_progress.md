@@ -39,7 +39,7 @@ This document tracks the journey of integrating and stabilizing the AXIOM Engine
 - **Case Sensitivity:** Renamed `iParser.h` to `IParser.h` and updated all `#include` statements to fix Linux build failures.
 - **AsmJit Includes:** Corrected `asmjit` include path in `CMakeLists.txt` to `${asmjit_SOURCE_DIR}/src`.
 - **Nanobind Integration:** Added `nanobind` and `robin-map` to `FetchContent` and included necessary source files in the build.
-- **Portability Fixes:** 
+- **Portability Fixes:**
     - Replaced `_mm_lfence()` with `AXIOM_LFENCE` in `src/pmu_orchestrator.cpp`.
     - Fixed `ArenaBlock` memory leak on Linux by implementing a custom deleter capturing capacity for `munmap`.
 

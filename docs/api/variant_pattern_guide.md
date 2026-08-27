@@ -88,10 +88,10 @@ auto result = stats.Mean(data);
 if (result.result.has_value()) {
     // Step 1: Extract AXIOM::Number from outer variant
     AXIOM::Number num = std::get<AXIOM::Number>(*result.result);
-    
+
     // Step 2: Unwrap double from AXIOM::Number
     double val = AXIOM::GetReal(num);
-    
+
     std::cout << "Mean: " << val << std::endl;
 }
 ```
@@ -254,7 +254,7 @@ runner.RunTest("Mean test", [&]() {
 ```cpp
 runner.RunTest("Mean test", [&]() {
     auto result = stats.Mean(data);
-    return result.HasResult() && 
+    return result.HasResult() &&
            std::abs(*result.GetDouble() - 3.0) < 0.01;  // âœ…
 });
 ```
@@ -266,11 +266,11 @@ class MyCustomEngine {
     EngineResult ProcessNumber(double input) {
         // Process input...
         double result = input * 2;
-        
+
         // Return wrapped in AXIOM::Number
         return EngineSuccessResult(result);  // Automatically wraps
     }
-    
+
     void UseResult(EngineResult& res) {
         if (res.HasResult()) {
             // Correct unwrapping
@@ -439,4 +439,3 @@ Run the full test suite to verify changes:
 - [AXIOM::Number Type Definition](dynamic_calc_types.h)
 - [Fix Report - Variant Access Bugs](../FIX_REPORT_100_PERCENT.md)
 - [Test Examples](../../tests/giga_test_suite.cpp)
-

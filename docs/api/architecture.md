@@ -56,12 +56,12 @@ axiom/
 
 - **Purpose**: Intelligent operation routing to optimal engines
 - **Location**: `core/dispatch/selective_dispatcher.cpp`
-- **Features**: 
+- **Features**:
   - Performance-based engine selection
   - Automatic fallback mechanisms
   - Error handling and recovery
 
-#### âš¡ Eigen CPU Engine  
+#### âš¡ Eigen CPU Engine
 
 - **Purpose**: Hardware-optimized mathematical computations
 - **Location**: `src/eigen_engine.cpp`
@@ -115,7 +115,7 @@ axiom/
 #### ğŸ¯ 3D Visualization Suite
 
 - **Purpose**: Advanced 3D plotting and visualization
-- **Location**: `tools/visualization/advanced_3d_visualization.py` 
+- **Location**: `tools/visualization/advanced_3d_visualization.py`
 - **Features**:
   - Interactive surface plots
   - Parametric curves
@@ -177,7 +177,7 @@ class SelectiveDispatcher {
 private:
     std::unique_ptr<EigenEngine> eigen_engine;
     std::unique_ptr<PythonEngine> python_engine;
-    
+
 public:
     EngineResult calculate(const std::string& expression) {
         // 1. Analyze expression complexity
@@ -198,4 +198,3 @@ public:
 | Visualization | <200ms | Python/GPU |
 
 This architecture ensures AXIOM v3.0 delivers professional-grade performance while maintaining ease of use and extensibility.
-

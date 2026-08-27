@@ -10,7 +10,7 @@ def load_config():
 # Trigger SonarQube analysis
 def trigger_sonar_analysis(config):
     base_url = config.get('sonarURL', 'https://sonarcloud.io')
-    
+
     # Basic URL validation
     parsed = urlparse(base_url)
     if parsed.scheme not in ('http', 'https'):
