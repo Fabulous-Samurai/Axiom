@@ -31,8 +31,9 @@ def run_isolated_expression(expression):
     print(f"[SANDBOX] Evaluating: {expression}")
     
     # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # to avoid shell quoting issues. Use the safe AST evaluator instead of eval()
+    import os
+    code = f"import sys; sys.path.insert(0, {repr(os.path.dirname(os.path.abspath(__file__)))}); from safe_eval import evaluate; print(evaluate({repr(expression)}))"
     cmd = [sys.executable, "-c", code]
     
     try:
