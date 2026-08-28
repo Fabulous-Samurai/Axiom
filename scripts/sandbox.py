@@ -32,7 +32,8 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    code = f"import sys; sys.path.insert(0, {repr(script_dir)}); from safe_eval import evaluate; print(evaluate({repr(expression)}))"
     cmd = [sys.executable, "-c", code]
     
     try:
