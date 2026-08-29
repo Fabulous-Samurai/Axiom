@@ -4,6 +4,7 @@ project(axiom_unittest)
 
 set(TEST_SOURCES
     sample_test.cpp
+    string_helpers_test.cpp
     ../detailed_hardware_alignment_test.cpp
 )
 
@@ -22,3 +23,4 @@ target_link_libraries(axiom_unit_tests PRIVATE
     axiom_engine_lib
     axiom_engine_core
 )
+# add string_helpers_test.cpp to tests

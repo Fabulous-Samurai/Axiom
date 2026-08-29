@@ -1,0 +1,3 @@
+## 2024-05-24 - Exception-free fallback for string parsing in C++
+**Learning:** Using `std::stod` inside a `try/catch` block for fallback string-to-number parsing (especially during failure paths) causes huge performance regressions (5500 ms vs 47 ms for 2M calls) because C++ exception handling on invalid input is extremely slow. Additionally, we found that `std::from_chars` natively supports `.5` and `5.` without the need to do `0.5` and `5.0` conversion and string allocations beforehand.
+**Action:** Replace `std::stod` with `std::strtod` in fallback paths, utilizing `errno` and pointer checks for exception-free validation. Remove string allocation and modification for standard float parsing with `from_chars`.
