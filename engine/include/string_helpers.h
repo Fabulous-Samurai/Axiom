@@ -9,6 +9,8 @@
 #include <charconv>
 #include <optional>
 #include <string_view>
+#include <cstdlib>
+#include <cerrno>
 
 #include "axiom_export.h"
 #include "fixed_vector.h"
@@ -34,14 +36,16 @@ namespace Utils {
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
-            return result;
-        } catch (...) {
-            return std::nullopt;
-        }
+        if (str.size() >= 256) return std::nullopt;
+        char buf[256];
+        std::copy(str.begin(), str.end(), buf);
+        buf[str.size()] = '\0';
+
+        char* pos;
+        errno = 0;
+        result = std::strtod(buf, &pos);
+        if (pos == buf || pos != buf + str.size() || errno == ERANGE) return std::nullopt;
+        return result;
 #else
         auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
         // Check if conversion was successful AND we consumed the entire string
