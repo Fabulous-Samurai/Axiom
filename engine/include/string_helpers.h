@@ -22,6 +22,8 @@ namespace Utils {
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
+        // Using strtod avoids the severe performance penalties of exceptions on invalid input
+        // unlike stod, satisfying zero-exception pillar while keeping logic robust.
         std::string str(sv);
         char* end;
         errno = 0;
@@ -29,6 +31,9 @@ namespace Utils {
         if (end == str.c_str() || end != str.c_str() + str.size() || errno == ERANGE) return std::nullopt;
         return result;
 #else
+        // Using std::from_chars allows completely allocation-free fast parsing directly from string_view.
+        // It correctly handles floating point formatting like ".5" and "5." without needing manual
+        // zero-padding string manipulation, satisfying the zero-allocation pillar.
         auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
         // Check if conversion was successful AND we consumed the entire string
         return (ec == std::errc{} && ptr == sv.data() + sv.size()) ? std::optional<double>(result) : std::nullopt;
