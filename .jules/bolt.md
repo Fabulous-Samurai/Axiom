@@ -1,0 +1,3 @@
+## 2024-05-18 - FastParseDouble optimization (Zero-Allocation & Zero-Exception)
+**Learning:** In hot path string-to-number parsing, `std::stod` can throw exceptions (violating Zenith Pillar 5) and `std::string` allocations cause memory fragmentation (violating Zenith Pillar 1). `std::from_chars` natively supports leading/trailing decimals and doesn't require string manipulation. For fallbacks, `std::strtod` with a stack buffer is an exception-free, zero-heap alternative.
+**Action:** Always prefer `std::from_chars` for C++17 string-to-number parsing. If fallbacks are needed, use exception-free `std::strtod` with stack-allocated buffers and rigorous errno/bounds checking instead of `std::stod` inside a `try/catch`.
