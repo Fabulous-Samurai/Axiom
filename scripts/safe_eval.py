@@ -94,20 +94,20 @@ class SafeEvaluator(ast.NodeVisitor):
             return result
         raise ValueError(f"Unsupported bool operator: {op}")
 
+    def _eval_compare(self, op_type, left, right):
+        if op_type == ast.NotIn:
+            return left not in right
+        if op_type not in self.allowed_operators:
+            raise ValueError(f"Unsupported compare operator: {op_type}")
+        func = self.allowed_operators[op_type]
+        return func(right, left) if op_type == ast.In else func(left, right)
+
     def visit_Compare(self, node):
         left = self.visit(node.left)
         for op, comparator in zip(node.ops, node.comparators):
-            op_type = type(op)
             right = self.visit(comparator)
-            if op_type == ast.NotIn:
-                if left in right:
-                    return False
-            else:
-                if op_type not in self.allowed_operators:
-                    raise ValueError(f"Unsupported compare operator: {op_type}")
-                func = self.allowed_operators[op_type]
-                if not (func(right, left) if op_type == ast.In else func(left, right)):
-                    return False
+            if not self._eval_compare(type(op), left, right):
+                return False
             left = right
         return True
 
