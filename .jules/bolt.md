@@ -1,0 +1,3 @@
+## 2024-05-19 - FastParseDouble Heap Allocation Removal
+**Learning:** `Utils::FastParseDouble` was creating a `std::string` and appending "0" for numbers starting/ending with a decimal point. This violates Project AXIOM's Zero-Allocation Pillar for Core modules and adds significant overhead to parsing numbers. C++17's `std::from_chars` natively supports general formatting with implicit decimals, and for the fallback path, we can use `std::strtod` with a stack-allocated buffer.
+**Action:** Replace heap-allocating string operations in `FastParseDouble` with zero-allocation stack buffer + `std::strtod` fallback, and use `std::from_chars` directly for modern compilers.
