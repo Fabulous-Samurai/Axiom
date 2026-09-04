@@ -22,7 +22,7 @@ jobs:
           python-version: '3.12'
       - name: "Run Pre-Commit"
         run: |
-          python -m pip install pre-commit
+          python -m pip install pre-commit==4.6.2
           pre-commit run --all-files --verbose
       - name: "Run Zenith Pillar Verification"
         run: python3 scripts/verify_zenith_pillars.py
@@ -32,7 +32,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: "Download TLA2Tools"
-        run: wget https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar -O tla2tools.jar
+        run: curl --proto "=https" -sSLo tla2tools.jar https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar
       - name: "Run TLA+ Model Checks"
         run: |
           cp tla2tools.jar formal/tla/
@@ -53,7 +53,7 @@ jobs:
       - name: "Install System Dependencies"
         run: |
           sudo apt-get update && sudo apt-get install -y ninja-build python3-dev libnuma-dev valgrind ccache
-          python -m pip install nanobind pytest numpy matplotlib
+          python -m pip install nanobind==3.0.1 pytest==9.1.1 numpy==2.5.2 matplotlib==3.11.1
       - name: "Ccache Cache"
         uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
@@ -62,7 +62,7 @@ jobs:
           restore-keys: ${{ runner.os }}-ccache-
       - name: "Install build-wrapper"
         run: |
-          curl -sSLo $HOME/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+          curl --proto "=https" -sSLo $HOME/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
           unzip -o $HOME/build-wrapper-linux-x86.zip -d $HOME/
           echo "$HOME/build-wrapper-linux-x86" >> $GITHUB_PATH
       - name: "Configure CMake (Coverage)"
@@ -99,7 +99,7 @@ jobs:
       - name: "Install LCOV & Dependencies"
         run: |
           sudo apt-get update && sudo apt-get install -y lcov
-          python3 -m pip install pytest numpy matplotlib
+          python3 -m pip install pytest==9.1.1 numpy==2.5.2 matplotlib==3.11.1
       - name: "Download Artifacts"
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
@@ -133,7 +133,7 @@ jobs:
       - name: "Install Ninja & Dependencies"
         run: |
           choco install ninja ccache
-          python -m pip install nanobind pytest numpy matplotlib
+          python -m pip install nanobind==3.0.1 pytest==9.1.1 numpy==2.5.2 matplotlib==3.11.1
       - name: "Build"
         shell: bash
         run: |
