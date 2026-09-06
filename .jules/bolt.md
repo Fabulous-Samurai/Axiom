@@ -1,0 +1,1 @@
+## 2024-05-15 - [Initial Insight]\n**Learning:** Learned about Zenith Pillar constraints (Zero-Allocation, No RTTI, Zero-Exception).\n**Action:** Apply fast, exception-free string-to-number parsing where possible.
