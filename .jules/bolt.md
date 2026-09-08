@@ -1,0 +1,3 @@
+## 2024-03-08 - Eliminate C++ Exceptions in High-Frequency String Parsing Fallbacks
+**Learning:** Using `try/catch` with `std::stod` for string-to-number fallback parsing in core libraries violates Zenith Pillar 5 (Zero-Exception) and causes severe performance regressions on invalid inputs. The stack unwinding and exception handling overhead dominate the instruction cycle count during parsing failures.
+**Action:** Always replace `std::stod` with the C-style `std::strtod` (or `std::from_chars` if fully supported) combined with strict `errno = 0` and pointer position validation (`pos == str.c_str() || pos != str.c_str() + str.size()`) in critical parsing loops.
