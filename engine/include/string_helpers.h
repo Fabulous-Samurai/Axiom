@@ -18,10 +18,10 @@ namespace Utils {
     // Fast string-to-double conversion using std::from_chars (C++17)
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
-        
+
         // Handle edge cases that std::from_chars might not handle well
         std::string str(sv);
-        
+
         // Handle leading decimal point (e.g., ".5" -> "0.5")
         if (str.front() == '.') {
             str = "0" + str;
@@ -30,7 +30,7 @@ namespace Utils {
         else if (str.back() == '.') {
             str += "0";
         }
-        
+
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
