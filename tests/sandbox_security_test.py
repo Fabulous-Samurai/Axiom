@@ -31,8 +31,8 @@ def test_file_access():
     print("[INFO] Testing OS access restriction...")
     res = run_isolated_expression("__import__('os').listdir('.')")
     print(f"File access result: {res}")
-    # Python eval üzerinde basit bir test yapıyoruz. 
-    # Gerçek sistemde seccomp/AppContainer engeller ancak burada Python eval()'in döndürdüğü sonucu logluyoruz.
+    # Using safe_evaluate, arbitrary code execution with eval is blocked.
+    assert "Error: Name '__import__' is not allowed" in res or "Error: " in res, f"Expected safe_evaluate error, got: {res}"
     print("[PASS] OS access test executed.")
 
 if __name__ == "__main__":
