@@ -9,6 +9,7 @@ import re
 import math
 from pathlib import Path
 
+from tools.visualization.utils.secure_eval import secure_eval
 project_root = Path(__file__).parent.parent.parent
 
 EXPRESSIONS = [
@@ -107,7 +108,7 @@ def main():
                     'exp': np.exp,
                     'log': np.log,
                 }
-                val = eval(expr, {"__builtins__": {}}, env)
+                val = secure_eval(expr, env)
                 sval = f"{float(val):.6f}" if isinstance(val, (int, float, np.floating)) else str(val)
                 ok = (abs(float(val) - expected_val) <= tol) or (expected_str in sval)
                 print(f"{expr:16s} -> {'✅' if ok else '❌'} (val: {sval})")

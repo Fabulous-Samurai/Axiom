@@ -1,0 +1,4 @@
+## 2025-02-12 - Prevent Command Injection via MRO Traversal in Python eval()
+**Vulnerability:** The Python codebase used `eval()` to process mathematical expressions and external code strings. Disabling builtins (`{'__builtins__': {}}`) was insufficient because attackers could use Method Resolution Order (MRO) traversal (e.g., `().__class__.__bases__[0].__subclasses__()`) to extract references to `__builtins__` and ultimately execute arbitrary commands like `__import__('os').system()`.
+**Learning:** Relying on `eval()` with a limited globals dictionary is fundamentally insecure for untrusted input in Python. The class hierarchy provides a back-door to access restricted modules and functions.
+**Prevention:** Use a strictly whitelisted AST-based evaluation system (e.g., via `ast.NodeVisitor`) to safely evaluate expressions, which fundamentally prevents arbitrary code execution, rather than attempting to filter standard `eval()`.
