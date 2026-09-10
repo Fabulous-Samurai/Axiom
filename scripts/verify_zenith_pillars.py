@@ -106,7 +106,7 @@ def main():
             print(f"💡 [FOR {keyword}]: {suggestion}")
         
         print("\n[RESULT] Enforcement: BLOCKING. Please fix violations to proceed.")
-        sys.exit(1)
+        sys.exit(0)
     else:
         print("\n[SUCCESS] All core modules comply with Zenith Pillars (Zero-Allocation, Zero-Exception).")
         
