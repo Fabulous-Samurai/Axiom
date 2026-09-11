@@ -19,33 +19,68 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
+        // Handle edge cases that std::from_chars might not handle well using a stack buffer
+        char buffer[128];
+
+        // If string is too long, fallback to dynamic allocation
+        if (sv.size() >= sizeof(buffer) - 2) {
+            std::string str(sv);
+            if (str.front() == '.') {
+                str = "0" + str;
+            } else if (str.back() == '.') {
+                str += "0";
+            }
+            double result;
+#if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
+            try {
+                size_t pos;
+                result = std::stod(str, &pos);
+                if (pos != str.size()) return std::nullopt;
+                return result;
+            } catch (...) {
+                return std::nullopt;
+            }
+#else
+            auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+            return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+#endif
+        }
+
+        size_t len = 0;
         
         // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
+        if (sv.front() == '.') {
+            buffer[0] = '0';
+            std::copy(sv.begin(), sv.end(), buffer + 1);
+            len = sv.size() + 1;
+        } else {
+            std::copy(sv.begin(), sv.end(), buffer);
+            len = sv.size();
         }
+
         // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
+        if (buffer[len - 1] == '.') {
+            buffer[len] = '0';
+            len++;
         }
         
+        buffer[len] = '\0';
+
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
-            return result;
-        } catch (...) {
+        errno = 0;
+        char* end_ptr = nullptr;
+        result = std::strtod(buffer, &end_ptr);
+
+        if (end_ptr == buffer || end_ptr != buffer + len || (errno == ERANGE && result != 0.0)) {
             return std::nullopt;
         }
+        return result;
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+        auto [ptr, ec] = std::from_chars(buffer, buffer + len, result);
         // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        return (ec == std::errc{} && ptr == buffer + len) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
