@@ -19,33 +19,61 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
+        char stack_buf[128];
+        char* buf_ptr = stack_buf;
         
-        // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
-        }
-        // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
+        bool use_heap = sv.size() + 2 >= sizeof(stack_buf);
+        std::string heap_buf;
+        size_t final_size = 0;
+
+        if (use_heap) {
+            heap_buf = std::string(sv);
+            if (heap_buf.front() == '.') {
+                heap_buf = "0" + heap_buf;
+            } else if (heap_buf.back() == '.') {
+                heap_buf += "0";
+            }
+            buf_ptr = heap_buf.data();
+            final_size = heap_buf.size();
+        } else {
+            size_t i = 0;
+            if (sv.front() == '.') {
+                stack_buf[i++] = '0';
+                std::copy(sv.begin(), sv.end(), stack_buf + i);
+                i += sv.size();
+            } else {
+                std::copy(sv.begin(), sv.end(), stack_buf + i);
+                i += sv.size();
+                if (sv.back() == '.') {
+                    stack_buf[i++] = '0';
+                }
+            }
+            stack_buf[i] = '\0';
+            final_size = i;
         }
         
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
-            return result;
-        } catch (...) {
+        char* end_ptr = nullptr;
+        errno = 0;
+        result = std::strtod(buf_ptr, &end_ptr);
+
+        if (end_ptr != buf_ptr + final_size) {
             return std::nullopt;
         }
+        if (errno == ERANGE) {
+            if (result == 0.0) {
+                // Underflow is accepted
+            } else {
+                return std::nullopt; // Overflow
+            }
+        }
+        return result;
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+        auto [ptr, ec] = std::from_chars(buf_ptr, buf_ptr + final_size, result);
         // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        return (ec == std::errc{} && ptr == buf_ptr + final_size) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 

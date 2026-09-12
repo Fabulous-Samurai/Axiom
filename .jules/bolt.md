@@ -1,0 +1,3 @@
+## 2025-03-05 - Zero-Allocation FastParseDouble
+**Learning:** In highly-frequent parsing paths (like algebraic expression evaluation), `std::string` allocations cause unacceptable memory fragmentation and latency overhead. In addition, using `std::stod` relies on `try/catch` which violates zero-exception constraints.
+**Action:** Always prefer stack-allocated buffers for string normalization prior to parsing (e.g., `std::from_chars` or `std::strtod`). Retain a dynamic allocation fallback for edge cases where the input exceeds the stack buffer to avoid functional regressions, but ensure all paths are exception-free.
