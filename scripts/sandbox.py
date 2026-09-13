@@ -32,8 +32,47 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    eval_code = f"""
+import ast
+import operator
+
+def safe_eval(expr):
+    binops = {{
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.Mod: operator.mod,
+        ast.Pow: operator.pow,
+        ast.FloorDiv: operator.floordiv,
+        ast.BitXor: operator.xor,
+    }}
+    unops = {{
+        ast.USub: operator.neg,
+        ast.UAdd: operator.pos,
+    }}
+
+    def _eval(node):
+        if isinstance(node, ast.Expression):
+            return _eval(node.body)
+        elif isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.BinOp):
+            left = _eval(node.left)
+            right = _eval(node.right)
+            return binops[type(node.op)](left, right)
+        elif isinstance(node, ast.UnaryOp):
+            operand = _eval(node.operand)
+            return unops[type(node.op)](operand)
+        else:
+            raise ValueError(f"Unsupported node type: {{type(node).__name__}}")
+
+    tree = ast.parse(expr, mode='eval')
+    return _eval(tree)
+
+print(safe_eval({repr(expression)}))
+"""
+    cmd = [sys.executable, "-c", eval_code]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
