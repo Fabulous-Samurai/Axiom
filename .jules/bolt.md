@@ -1,0 +1,3 @@
+## 2024-09-14 - Replace std::string allocation in string_helpers.h
+**Learning:** `std::from_chars` can handle floating point parsing natively without needing to create a temporary `std::string` just to pad leading or trailing zeros (e.g., `.5` -> `0.5`, `5.` -> `5.0`). Project AXIOM's Pillar 1 mandates Zero-Allocation in Core modules, meaning temporary strings should be avoided. We can pass the raw string view to `std::from_chars`.
+**Action:** Update `FastParseDouble` in `engine/include/string_helpers.h` to pass `sv` directly to `std::from_chars` without padding via `std::string` copies, while correctly retaining the `std::strtod` fallback mechanism.
