@@ -1,3 +1,0 @@
-## 2024-03-20 - [Zero-Allocation Numeric Parsing]
-**Learning:** `std::from_chars` in C++17 inherently supports parsing strings with leading or trailing decimal points (e.g., `.5` or `5.`). Pre-processing `std::string_view` to pad with zeros using a temporary `std::string` causes unnecessary heap allocations and degrades parsing performance by over 2x.
-**Action:** Always parse numbers directly from `std::string_view` using `std::from_chars` without creating temporary `std::string` copies to adhere strictly to Zero-Allocation policies. Use `std::strtod` as a fallback instead of `std::stod` for systems without floating-point `std::from_chars` to maintain the zero-allocation zero-exception principles.
