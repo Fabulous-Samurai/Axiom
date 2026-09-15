@@ -32,7 +32,70 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"""
+import sys
+import ast
+import operator
+import math
+
+class SafeEval(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_ops = {{
+            ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+            ast.Div: operator.truediv, ast.Pow: operator.pow,
+            ast.USub: operator.neg, ast.UAdd: operator.pos,
+            ast.Mod: operator.mod, ast.FloorDiv: operator.floordiv
+        }}
+        self.allowed_funcs = {{
+            'abs': abs, 'min': min, 'max': max, 'round': round,
+            **{{k: v for k, v in math.__dict__.items() if not k.startswith('_')}}
+        }}
+
+    def visit_Constant(self, node):
+        return node.value
+
+    # For Python < 3.8 compatibility where Num, Str, NameConstant were used instead of Constant
+    def visit_Num(self, node):
+        return node.n
+
+    def visit_Str(self, node):
+        return node.s
+
+    def visit_NameConstant(self, node):
+        return node.value
+
+    def visit_Name(self, node):
+        if node.id in self.allowed_funcs:
+            return self.allowed_funcs[node.id]
+        raise ValueError(f"Unknown variable: {{node.id}}")
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        if type(node.op) in self.allowed_ops:
+            return self.allowed_ops[type(node.op)](left, right)
+        raise ValueError(f"Unsupported operation: {{type(node.op).__name__}}")
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        if type(node.op) in self.allowed_ops:
+            return self.allowed_ops[type(node.op)](operand)
+        raise ValueError(f"Unsupported unary operation: {{type(node.op).__name__}}")
+
+    def visit_Call(self, node):
+        func = self.visit(node.func)
+        args = [self.visit(arg) for arg in node.args]
+        return func(*args)
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported syntax: {{type(node).__name__}}")
+
+try:
+    tree = ast.parse({repr(expression)}, mode='eval').body
+    print(SafeEval().visit(tree))
+except Exception as e:
+    print(f"Error: {{str(e)}}")
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
