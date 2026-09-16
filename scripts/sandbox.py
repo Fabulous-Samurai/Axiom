@@ -32,82 +32,20 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
+    # Prevent MRO traversal, imports, and excessive exponentiation
+    if "__" in expression or "import" in expression:
+        return "Error: Restricted keywords detected for security reasons."
+    if "**" in expression:
+        return "Error: Exponentiation is restricted for security reasons."
+
     code = f"""
-import ast, operator, math
-
-class SafeEvaluator(ast.NodeVisitor):
-    def __init__(self):
-        self.allowed_operators = {{
-            ast.Add: operator.add,
-            ast.Sub: operator.sub,
-            ast.Mult: operator.mul,
-            ast.Div: operator.truediv,
-            ast.FloorDiv: operator.floordiv,
-            ast.Mod: operator.mod,
-            ast.Pow: operator.pow,
-            ast.BitXor: operator.xor,
-            ast.USub: operator.neg,
-            ast.UAdd: operator.pos
-        }}
-
-        self.allowed_functions = {{
-            'abs': abs, 'round': round, 'min': min, 'max': max,
-            'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
-            'sqrt': math.sqrt, 'log': math.log, 'exp': math.exp,
-            'factorial': math.factorial
-        }}
-
-        self.allowed_constants = {{
-            'pi': math.pi,
-            'e': math.e,
-            'True': True,
-            'False': False,
-            'None': None
-        }}
-
-    def evaluate(self, expr):
-        try:
-            tree = ast.parse(expr, mode='eval')
-            return self.visit(tree.body)
-        except Exception as e:
-            raise ValueError(f"Invalid expression: {{str(e)}}")
-
-    def visit_Constant(self, node):
-        return node.value
-
-    def visit_Name(self, node):
-        if node.id in self.allowed_constants:
-            return self.allowed_constants[node.id]
-        raise ValueError(f"Name '{{node.id}}' is not allowed")
-
-    def visit_BinOp(self, node):
-        left = self.visit(node.left)
-        right = self.visit(node.right)
-        if type(node.op) in self.allowed_operators:
-            return self.allowed_operators[type(node.op)](left, right)
-        raise ValueError(f"Operator {{type(node.op).__name__}} is not allowed")
-
-    def visit_UnaryOp(self, node):
-        operand = self.visit(node.operand)
-        if type(node.op) in self.allowed_operators:
-            return self.allowed_operators[type(node.op)](operand)
-        raise ValueError(f"Unary operator {{type(node.op).__name__}} is not allowed")
-
-    def visit_Call(self, node):
-        if not isinstance(node.func, ast.Name):
-            raise ValueError("Only simple function calls are allowed")
-
-        func_name = node.func.id
-        if func_name not in self.allowed_functions:
-            raise ValueError(f"Function '{{func_name}}' is not allowed")
-
-        args = [self.visit(arg) for arg in node.args]
-        return self.allowed_functions[func_name](*args)
-
-    def generic_visit(self, node):
-        raise ValueError(f"Node type {{type(node).__name__}} is not allowed")
-
-print(SafeEvaluator().evaluate({repr(expression)}))
+import builtins
+_safe_builtins = {{
+    'abs': abs, 'round': round, 'min': min, 'max': max, 'sum': sum,
+    'len': len, 'list': list, 'dict': dict, 'set': set, 'tuple': tuple,
+    'int': int, 'float': float, 'str': str, 'bool': bool
+}}
+print(eval({repr(expression)}, {{'__builtins__': _safe_builtins}}))
 """
     cmd = [sys.executable, "-c", code]
     

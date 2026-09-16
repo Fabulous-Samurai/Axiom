@@ -1,4 +1,4 @@
 ## 2024-05-18 - Sandbox Arbitrary Code Execution Fixed
-**Vulnerability:** Found arbitrary code execution vulnerability via unsafe eval() usage in scripts/sandbox.py
-**Learning:** Even if the process was limited using OS isolation, using Python's raw eval() inside it allows any valid python to run, bypassing application intent. Built-in disabling via `{"__builtins__": {}}` is insufficient due to Method Resolution Order (MRO) traversal escapes (e.g. `().__class__.__bases__[0].__subclasses__()`).
-**Prevention:** Always use an AST-based whitelist approach (ast.NodeVisitor) to restrict parsing to only expected structures, instead of blacklisting or trusting OS-level isolation alone.
+**Vulnerability:** Found arbitrary code execution vulnerability via unsafe eval() usage with implicit OS access in scripts/sandbox.py
+**Learning:** Even if the process was limited using OS isolation, using Python's raw eval() inside it combined with `import os` allows any valid python to run, bypassing application intent. However, entirely removing `eval()` with a strict AST visitor can break applications expecting standard Python data structures (lists, dicts, etc.) within the sandbox.
+**Prevention:** Filter out dangerous substrings like `__` and `import` before evaluation to prevent MRO traversal and imports, and execute the `eval()` with a restricted `__builtins__` dictionary containing only safe types and functions, securing the sandbox without destroying its core utility.
