@@ -19,33 +19,39 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
-        
-        // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
-        }
-        // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
-        }
-        
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
-            return result;
-        } catch (...) {
-            return std::nullopt;
+
+        // Zero-allocation fallback using stack buffer, with dynamic fallback for very long strings
+        constexpr size_t MAX_STACK_BUF = 256;
+        char stack_buf[MAX_STACK_BUF];
+        std::string heap_buf;
+        const char* str_ptr = nullptr;
+
+        if (sv.size() < MAX_STACK_BUF) {
+            std::copy(sv.begin(), sv.end(), stack_buf);
+            stack_buf[sv.size()] = '\0';
+            str_ptr = stack_buf;
+        } else {
+            heap_buf = std::string(sv);
+            str_ptr = heap_buf.c_str();
         }
+
+        char* end_ptr = nullptr;
+        errno = 0;
+        result = std::strtod(str_ptr, &end_ptr);
+
+        // Handle error cases properly (underflow shouldn't necessarily fail parsing if it's treated as 0.0)
+        if (end_ptr != str_ptr + sv.size()) return std::nullopt;
+        if (errno == ERANGE && (result != 0.0 && result != -0.0)) return std::nullopt; // underflow to 0.0 is ok, overflow is not
+
+        return result;
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+        // Modern C++17 from_chars natively supports '.5' and '5.' forms without string copies
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
         // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        return (ec == std::errc{} && ptr == sv.data() + sv.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
