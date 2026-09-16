@@ -32,7 +32,21 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # Prevent MRO traversal, imports, and excessive exponentiation
+    if "__" in expression or "import" in expression:
+        return "Error: Restricted keywords detected for security reasons."
+    if "**" in expression:
+        return "Error: Exponentiation is restricted for security reasons."
+
+    code = f"""
+import builtins
+_safe_builtins = {{
+    'abs': abs, 'round': round, 'min': min, 'max': max, 'sum': sum,
+    'len': len, 'list': list, 'dict': dict, 'set': set, 'tuple': tuple,
+    'int': int, 'float': float, 'str': str, 'bool': bool
+}}
+print(eval({repr(expression)}, {{'__builtins__': _safe_builtins}}))
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
