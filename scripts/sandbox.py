@@ -30,9 +30,24 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # Use ast.parse to validate the expression before evaluating
+    # to prevent arbitrary code execution (like MRO traversal or imports).
+    code = f"""
+import ast
+try:
+    expr = {repr(expression)}
+    tree = ast.parse(expr, mode='eval')
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Call, ast.Attribute, ast.Import, ast.ImportFrom, ast.Assign)):
+            print("Error: Sandbox security violation - forbidden operation")
+            exit(1)
+
+    print(eval(compile(tree, filename='<ast>', mode='eval'), {{"__builtins__": {{}}}}, {{}}))
+except SyntaxError:
+    print("Error: Invalid syntax")
+except Exception as e:
+    print(f"Error: {{str(e)}}")
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
