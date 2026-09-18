@@ -31,8 +31,26 @@ def run_isolated_expression(expression):
     print(f"[SANDBOX] Evaluating: {expression}")
     
     # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # to avoid shell quoting issues. Secure evaluation blocks MRO traversal.
+    sandbox_dir = os.path.dirname(os.path.abspath(__file__))
+    code = f"""
+import sys
+
+expr = {repr(expression)}
+
+# Fast-fail for obviously dangerous patterns
+if '__' in expr or 'import' in expr or 'eval' in expr or 'exec' in expr or 'globals' in expr or 'locals' in expr:
+    print("Error: Unsafe expression detected", file=sys.stderr)
+    sys.exit(1)
+
+try:
+    # Disable builtins and evaluate with empty context
+    result = eval(expr, {{'__builtins__': {{}}}})
+    print(result)
+except Exception as e:
+    print(f"Error: {{e}}", file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
