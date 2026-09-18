@@ -22,14 +22,25 @@ namespace Utils {
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
-        // Allocate only here because strtod requires null termination
         std::string str(sv);
-        char* end;
-        errno = 0;
-        result = std::strtod(str.c_str(), &end);
-        if (end != str.c_str() + str.size()) return std::nullopt;
-        if (errno == ERANGE && result != 0.0) return std::nullopt;
-        return result;
+
+        // Handle leading decimal point (e.g., ".5" -> "0.5")
+        if (str.front() == '.') {
+            str = "0" + str;
+        }
+        // Handle trailing decimal point (e.g., "5." -> "5.0")
+        else if (str.back() == '.') {
+            str += "0";
+        }
+
+        try {
+            size_t pos;
+            result = std::stod(str, &pos);
+            if (pos != str.size()) return std::nullopt;
+            return result;
+        } catch (...) {
+            return std::nullopt;
+        }
 #else
         auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
         // Check if conversion was successful AND we consumed the entire string
