@@ -19,9 +19,11 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
+        double result;
+#if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
+        // Fallback for compilers with missing floating-point from_chars
         std::string str(sv);
-        
+
         // Handle leading decimal point (e.g., ".5" -> "0.5")
         if (str.front() == '.') {
             str = "0" + str;
@@ -30,10 +32,7 @@ namespace Utils {
         else if (str.back() == '.') {
             str += "0";
         }
-        
-        double result;
-#if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
-        // Fallback for compilers with missing floating-point from_chars
+
         try {
             size_t pos;
             result = std::stod(str, &pos);
@@ -43,9 +42,9 @@ namespace Utils {
             return std::nullopt;
         }
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
         // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        return (ec == std::errc{} && ptr == sv.data() + sv.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
