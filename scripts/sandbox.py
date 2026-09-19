@@ -32,7 +32,40 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"""import sys
+import ast
+import operator
+
+class SafeEval(ast.NodeVisitor):
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        ops = {{
+            ast.Add: operator.add, ast.Sub: operator.sub,
+            ast.Mult: operator.mul, ast.Div: operator.truediv,
+            ast.Mod: operator.mod, ast.Pow: operator.pow,
+            ast.FloorDiv: operator.floordiv
+        }}
+        if type(node.op) in ops:
+            return ops[type(node.op)](left, right)
+        raise ValueError("Unsupported operation")
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        if isinstance(node.op, ast.USub): return -operand
+        if isinstance(node.op, ast.UAdd): return +operand
+        raise ValueError("Unsupported unary op")
+    def visit_Constant(self, node):
+        return node.value
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported node: {{type(node).__name__}}")
+
+try:
+    tree = ast.parse({repr(expression)}, mode='eval')
+    print(SafeEval().visit(tree.body))
+except Exception as e:
+    print(f"Error: {{e}}", file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
