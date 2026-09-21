@@ -19,7 +19,9 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
+        double result;
+#if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
+        // Fallback for compilers with missing floating-point from_chars
         std::string str(sv);
         
         // Handle leading decimal point (e.g., ".5" -> "0.5")
@@ -31,21 +33,20 @@ namespace Utils {
             str += "0";
         }
         
-        double result;
-#if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
-        // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
-            return result;
-        } catch (...) {
-            return std::nullopt;
-        }
+        // Use std::strtod instead of std::stod to adhere to Zenith Pillar 5: Zero-Exception
+        char* end;
+        errno = 0;
+        result = std::strtod(str.c_str(), &end);
+
+        if (end != str.c_str() + str.size()) return std::nullopt;
+        if (errno == ERANGE && result != 0.0) return std::nullopt; // Allow underflow to 0.0
+
+        return result;
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+        // Zero-Allocation constraint: std::from_chars handles leading/trailing dots well in C++17
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
         // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        return (ec == std::errc{} && ptr == sv.data() + sv.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
