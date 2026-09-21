@@ -32,7 +32,37 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"""import sys, ast, math, operator
+class SafeEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed = {{k: v for k, v in math.__dict__.items() if not k.startswith('_')}}
+        self.allowed.update({{'abs': abs, 'round': round, 'min': min, 'max': max}})
+        self.binops = {{ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+                       ast.Div: operator.truediv, ast.FloorDiv: operator.floordiv,
+                       ast.Mod: operator.mod, ast.Pow: operator.pow, ast.BitXor: operator.xor,
+                       ast.BitOr: operator.or_, ast.BitAnd: operator.and_}}
+        self.unops = {{ast.USub: operator.neg, ast.UAdd: operator.pos}}
+    def visit_Constant(self, node): return node.value
+    def visit_Name(self, node):
+        if node.id in self.allowed: return self.allowed[node.id]
+        raise ValueError(f"Name '{{node.id}}' is not allowed")
+    def visit_BinOp(self, node):
+        return self.binops[type(node.op)](self.visit(node.left), self.visit(node.right))
+    def visit_UnaryOp(self, node):
+        return self.unops[type(node.op)](self.visit(node.operand))
+    def visit_Call(self, node):
+        return self.visit(node.func)(*[self.visit(a) for a in node.args])
+    def visit_Expression(self, node): return self.visit(node.body)
+    def evaluate(self, expr_str):
+        tree = ast.parse(expr_str, mode='eval')
+        return self.visit(tree)
+
+try:
+    print(SafeEvaluator().evaluate({repr(expression)}))
+except Exception as e:
+    print(f'Error: {{e}}', file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
