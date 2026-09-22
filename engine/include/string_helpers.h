@@ -19,33 +19,32 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
-        
-        // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
-        }
-        // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
-        }
-        
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
+        // Zenith Pillar 1 (Zero-Allocation) and Pillar 5 (Zero-Exception) compliance
+        // We use a small stack buffer to avoid std::string allocation and std::strtod to avoid exceptions
+        char buffer[256];
+        if (sv.size() >= sizeof(buffer)) {
+            // Fallback for giant strings without allocation, using dynamic allocation if absolutely needed but trying to avoid it
+            std::string str(sv);
+            char* end = nullptr;
+            errno = 0;
+            result = std::strtod(str.c_str(), &end);
+            if (end != str.c_str() + str.size() || (errno == ERANGE && result != 0.0)) return std::nullopt;
             return result;
-        } catch (...) {
-            return std::nullopt;
         }
+        std::copy(sv.begin(), sv.end(), buffer);
+        buffer[sv.size()] = '\0';
+        char* end = nullptr;
+        errno = 0;
+        result = std::strtod(buffer, &end);
+        if (end != buffer + sv.size() || (errno == ERANGE && result != 0.0)) return std::nullopt;
+        return result;
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
         // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        return (ec == std::errc{} && ptr == sv.data() + sv.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
