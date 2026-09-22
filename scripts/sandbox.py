@@ -1,9 +1,87 @@
-import os
+import ast
+import math
+import operator
 import sys
 import time
 import threading
 import subprocess
-import signal
+import os
+
+allowed_operators = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.Pow: operator.pow,
+    ast.USub: operator.neg,
+    ast.UAdd: operator.pos,
+    ast.Mod: operator.mod
+}
+
+allowed_math_funcs = {
+    'sin': math.sin,
+    'cos': math.cos,
+    'tan': math.tan,
+    'sqrt': math.sqrt,
+    'pi': math.pi,
+    'e': math.e,
+    'log': math.log,
+    'math.sin': math.sin,
+    'math.cos': math.cos,
+    'math.tan': math.tan,
+    'math.sqrt': math.sqrt,
+    'math.pi': math.pi,
+    'math.e': math.e,
+    'math.log': math.log,
+}
+
+class SafeEvaluator(ast.NodeVisitor):
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op = type(node.op)
+        if op in allowed_operators:
+            return allowed_operators[op](left, right)
+        raise ValueError(f"Unsupported operator: {op}")
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op = type(node.op)
+        if op in allowed_operators:
+            return allowed_operators[op](operand)
+        raise ValueError(f"Unsupported operator: {op}")
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_Num(self, node):
+        return node.n
+
+    def visit_Name(self, node):
+        if node.id in allowed_math_funcs:
+            return allowed_math_funcs[node.id]
+        raise ValueError(f"Unsupported variable/function: {node.id}")
+
+    def visit_Attribute(self, node):
+        if isinstance(node.value, ast.Name) and node.value.id == 'math':
+            attr_name = f"math.{node.attr}"
+            if attr_name in allowed_math_funcs:
+                return allowed_math_funcs[attr_name]
+        raise ValueError(f"Unsupported attribute access: {node.attr}")
+
+    def visit_Call(self, node):
+        func = self.visit(node.func)
+        args = [self.visit(arg) for arg in node.args]
+        if callable(func):
+            return func(*args)
+        raise ValueError("Unsupported function call")
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported AST node: {type(node).__name__}")
+
+def evaluate(expr):
+    tree = ast.parse(expr, mode='eval')
+    return SafeEvaluator().visit(tree.body)
 
 class ComplexityGuard:
     """
@@ -18,7 +96,7 @@ class ComplexityGuard:
         start_time = time.time()
         while process.poll() is None:
             if (time.time() - start_time) > self.timeout:
-                print(f"[SANDBOX] Timeout exceeded ({self.timeout}s). Terminating.")
+                print(f"[SANDBOX] Timeout exceeded ({self.timeout}s). Terminating.", file=sys.stderr)
                 process.kill()
                 return
             time.sleep(0.1)
@@ -30,10 +108,19 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    sandbox_dir = os.path.dirname(os.path.abspath(__file__))
+
+    script_content = f"""
+import sys
+sys.path.insert(0, {repr(sandbox_dir)})
+try:
+    from sandbox import evaluate
+    print(evaluate({repr(expression)}))
+except Exception as e:
+    print(f"Error: {{str(e)}}", file=sys.stderr)
+    sys.exit(1)
+"""
+    cmd = [sys.executable, "-c", script_content]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -58,5 +145,5 @@ if __name__ == "__main__":
         expr = sys.argv[1]
         print(run_isolated_expression(expr))
     else:
-        # Example adversarial expression (if eval was used directly)
+        # Example adversarial expression
         print(run_isolated_expression("__import__('os').listdir('.')"))
