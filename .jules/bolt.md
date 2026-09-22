@@ -1,0 +1,3 @@
+## YYYY-MM-DD - [Zero Allocation C++17 from_chars]
+**Learning:** `std::from_chars` in C++17 natively supports floating-point representations with leading or trailing decimals (e.g., `.5` or `5.`). Creating temporary `std::string` copies to pad zeroes is unnecessary overhead and violates zero-allocation constraints.
+**Action:** When parsing numeric values, directly pass the `std::string_view` span to `std::from_chars`. Replace `std::stod` fallbacks with `std::strtod` using a stack buffer to adhere to Zero-Exception and Zero-Allocation pillars. Ensure that `ERANGE` with `result == 0.0` is accepted for underflow.
