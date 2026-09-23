@@ -1,0 +1,3 @@
+## 2024-09-23 - Zero-Allocation Number Parsing in C++
+**Learning:** Creating temporary `std::string` copies to pad decimal numbers (e.g., `.5` -> `0.5`) before `std::from_chars` parsing causes unnecessary dynamic allocations, which violates zero-allocation guidelines and adds overhead. C++17 `std::from_chars` natively supports these formats without padding.
+**Action:** Remove string padding and temporary string copies in parsing hot paths. Directly pass `std::string_view` to `std::from_chars`. For fallback paths using `std::strtod`, use a small stack-allocated buffer (e.g., 64 bytes) to ensure null-termination without dynamic allocation, with a `std::string` fallback only for unusually large inputs.
