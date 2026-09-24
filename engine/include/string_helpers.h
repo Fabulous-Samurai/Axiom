@@ -19,33 +19,38 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
-        
-        // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
-        }
-        // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
-        }
-        
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
-        // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
-            return result;
-        } catch (...) {
-            return std::nullopt;
+        // ⚡ Bolt: Zero-allocation fallback for older compilers using stack buffer for typical sizes
+        // and avoiding forbidden exceptions (Zenith Pillar 5).
+        constexpr size_t MAX_STACK = 64;
+        char stack_buf[MAX_STACK];
+        char* buf = stack_buf;
+        
+        if (sv.size() >= MAX_STACK) {
+            buf = new char[sv.size() + 1];
         }
+        
+        std::copy(sv.begin(), sv.end(), buf);
+        buf[sv.size()] = '\0';
+
+        char* end;
+        errno = 0;
+        result = std::strtod(buf, &end);
+
+        // Allow underflow to 0.0 to match std::stod behavior, reject other range errors
+        bool success = (end == buf + sv.size()) && !(errno == ERANGE && result != 0.0);
+
+        if (buf != stack_buf) {
+            delete[] buf;
+        }
+
+        return success ? std::optional<double>(result) : std::nullopt;
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-        // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        // ⚡ Bolt: Removed unnecessary std::string allocation. std::from_chars natively supports
+        // edge cases like leading/trailing decimals without needing temporary zero-padded strings.
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
+        return (ec == std::errc{} && ptr == sv.data() + sv.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
