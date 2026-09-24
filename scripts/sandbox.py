@@ -32,9 +32,6 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    # Security update: Removed direct eval() usage which could lead to arbitrary
-    # code execution even with restricted globals due to MRO traversal.
-    # Now enforcing strict lexical filtering and a locked-down execution environment.
     code = f"import sys\n" \
            f"import math\n" \
            f"import time\n" \
