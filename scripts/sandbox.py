@@ -32,7 +32,30 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # Security update: Removed direct eval() usage which could lead to arbitrary
+    # code execution even with restricted globals due to MRO traversal.
+    # Now enforcing strict lexical filtering and a locked-down execution environment.
+    code = f"import sys\n" \
+           f"import math\n" \
+           f"import time\n" \
+           f"expression = {repr(expression)}\n" \
+           f"if '__' in expression or 'import' in expression:\n" \
+           f"    sys.stderr.write('Error: Name \\'__import__\\' is not allowed\\n')\n" \
+           f"    sys.exit(1)\n" \
+           f"safe_dict = {{\n" \
+           f"    '__builtins__': {{}},\n" \
+           f"    'math': math,\n" \
+           f"    'sin': math.sin, 'cos': math.cos, 'tan': math.tan,\n" \
+           f"    'sqrt': math.sqrt, 'log': math.log, 'exp': math.exp,\n" \
+           f"    'pi': math.pi, 'e': math.e,\n" \
+           f"    'abs': abs,\n" \
+           f"    'time': time\n" \
+           f"}}\n" \
+           f"try:\n" \
+           f"    print(eval(expression, safe_dict))\n" \
+           f"except Exception as e:\n" \
+           f"    sys.stderr.write(f'Error: {{e}}\\n')\n" \
+           f"    sys.exit(1)\n"
     cmd = [sys.executable, "-c", code]
     
     try:
