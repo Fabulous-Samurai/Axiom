@@ -9,6 +9,8 @@
 #include <charconv>
 #include <optional>
 #include <string_view>
+#include <cstdlib>
+#include <cerrno>
 
 #include "axiom_export.h"
 #include "fixed_vector.h"
@@ -16,36 +18,44 @@
 namespace Utils {
     
     // Fast string-to-double conversion using std::from_chars (C++17)
+    // ⚡ Bolt: Removed std::string allocations to adhere to Zenith Pillar 1 (Zero-Allocation).
+    // Using std::from_chars natively handles floats. For compiler fallbacks, we use a
+    // stack-based buffer with std::strtod (and a heap fallback for >64 chars to be safe),
+    // removing the costly throw/catch blocks of std::stod to comply with Pillar 5 (Zero-Exception).
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
-        
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
-        
-        // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
-        }
-        // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
-        }
         
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
-            return result;
-        } catch (...) {
-            return std::nullopt;
+        constexpr size_t kStackBufSize = 64;
+        char stack_buf[kStackBufSize];
+        const char* str_ptr = sv.data();
+        std::string heap_buf;
+
+        if (sv.size() < kStackBufSize) {
+            std::copy(sv.begin(), sv.end(), stack_buf);
+            stack_buf[sv.size()] = '\0';
+            str_ptr = stack_buf;
+        } else {
+            heap_buf = std::string(sv);
+            str_ptr = heap_buf.c_str();
         }
+
+        char* end = nullptr;
+        errno = 0;
+        result = std::strtod(str_ptr, &end);
+
+        if (errno == ERANGE && result != 0.0) return std::nullopt;
+        if (end != str_ptr + sv.size()) return std::nullopt;
+
+        return result;
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+        // In C++17 std::from_chars natively supports strings without leading zeros (e.g. ".5")
+        // No need to copy to std::string and pad zeros!
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
         // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        return (ec == std::errc{} && ptr == sv.data() + sv.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 

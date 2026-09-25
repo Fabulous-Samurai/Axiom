@@ -1,0 +1,3 @@
+## YYYY-MM-DD - [FastParseDouble Zero-Allocation & Exception-Free Optimization]
+**Learning:** C++17's `std::from_chars` natively supports parsing floating-point numbers without leading or trailing zeros (e.g., `.5` or `5.`). Previous manual string concatenation and padding was causing unnecessary heap allocations. Also learned that fallback parsers should use `std::strtod` with a stack buffer instead of `std::stod` to avoid costly try-catch exception handling.
+**Action:** Always prefer `std::from_chars` for high-performance number parsing. When writing compiler fallbacks, use `std::strtod` with `kStackBufSize` limits and avoid `std::stod`/exceptions to maintain adherence to Project AXIOM's Zero-Allocation and Zero-Exception policies.
