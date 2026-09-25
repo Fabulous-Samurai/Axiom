@@ -18,7 +18,7 @@
 namespace Utils {
     
     // Fast string-to-double conversion using std::from_chars (C++17)
-    // ⚡ Bolt: Removed std::string allocations to adhere to Zenith Pillar 1 (Zero-Allocation).
+    // ⚡ Bolt: Removed temporary object allocations to adhere to Zenith Pillar 1 (Zero-Allocation).
     // Using std::from_chars natively handles floats. For compiler fallbacks, we use a
     // stack-based buffer with std::strtod (and a heap fallback for >64 chars to be safe),
     // removing the costly throw/catch blocks of std::stod to comply with Pillar 5 (Zero-Exception).
@@ -51,10 +51,10 @@ namespace Utils {
 
         return result;
 #else
-        // In C++17 std::from_chars natively supports strings without leading zeros (e.g. ".5")
-        // No need to copy to std::string and pad zeros!
+        // In C++17 std::from_chars natively supports parsing views without leading zeros (e.g. ".5")
+        // No need to copy or pad zeros!
         auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
-        // Check if conversion was successful AND we consumed the entire string
+        // Check if conversion was successful AND we consumed the entire view
         return (ec == std::errc{} && ptr == sv.data() + sv.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }

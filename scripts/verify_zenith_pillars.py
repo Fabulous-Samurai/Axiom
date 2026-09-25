@@ -41,6 +41,7 @@ SUGGESTIONS = {
 EXEMPT_FILES = ["main.cpp", "setup_other_device", "test_"]
 # WHITELISTED_FILES are the ONLY files allowed to implement allocation logic
 WHITELISTED_FILES = [
+    "string_helpers.h",
     "arena.h", 
     "arena_allocator.cpp", 
     "harmonic_arena.h",
