@@ -18,7 +18,7 @@ FORBIDDEN_KEYWORDS = {
     "delete ": "Pillar 1: Heap deallocation (delete) detected.",
     "std::vector": "Pillar 1/3: std::vector detected. Use AXIOM::FixedVector or Arena instead.",
     "std::map": "Pillar 1/3: std::map detected. Use Arena-based structures or robin-map.",
-    # "std::string": "Pillar 1/3: std::string detected in CORE. Use std::string_view or const char*.",
+    "std::string": "Pillar 1/3: std::string detected in CORE. Use std::string_view or const char*.",
     
     # Pillar 5 violations (Exceptions & RTTI)
     "throw ": "Pillar 5: Exception throwing detected. Zenith Core must be Zero-Exception.",
@@ -66,8 +66,8 @@ def verify_file(file_path):
                         if "//" in line and line.find("//") < line.find(keyword):
                             continue
                         violations.append(f"Line {i+1}: {message}")
-    except Exception as e:
-        print(f"[ERROR] Could not read {file_path}: {e}")
+    except OSError as e:
+        print(f"[ERROR] Could not read {file_path}")
     return violations
 
 def main():
