@@ -32,7 +32,71 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"""
+import ast
+import operator
+import math
+import sys
+
+class SafeEval(ast.NodeVisitor):
+    allowed_ops = {{
+        ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+        ast.Div: operator.truediv, ast.FloorDiv: operator.floordiv,
+        ast.Mod: operator.mod, ast.Pow: operator.pow,
+        ast.USub: operator.neg, ast.UAdd: operator.pos,
+        ast.BitXor: operator.xor, ast.BitOr: operator.or_, ast.BitAnd: operator.and_,
+        ast.Eq: operator.eq, ast.NotEq: operator.ne, ast.Lt: operator.lt,
+        ast.LtE: operator.le, ast.Gt: operator.gt, ast.GtE: operator.ge,
+        ast.And: operator.and_, ast.Or: operator.or_
+    }}
+    allowed_funcs = {{
+        'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
+        'sqrt': math.sqrt, 'log': math.log, 'log10': math.log10,
+        'exp': math.exp, 'pi': math.pi, 'e': math.e, 'abs': abs,
+        'min': min, 'max': max, 'round': round
+    }}
+    def visit_Constant(self, node): return node.value
+    def visit_Num(self, node): return node.n
+    def visit_Name(self, node):
+        if node.id in self.allowed_funcs:
+            return self.allowed_funcs[node.id]
+        raise ValueError(f"Name '{{node.id}}' is not allowed")
+    def visit_BinOp(self, node):
+        return self.allowed_ops[type(node.op)](self.visit(node.left), self.visit(node.right))
+    def visit_UnaryOp(self, node):
+        return self.allowed_ops[type(node.op)](self.visit(node.operand))
+    def visit_BoolOp(self, node):
+        values = [self.visit(v) for v in node.values]
+        if isinstance(node.op, ast.And):
+            return all(values)
+        if isinstance(node.op, ast.Or):
+            return any(values)
+    def visit_Compare(self, node):
+        left = self.visit(node.left)
+        for op, right_node in zip(node.ops, node.comparators):
+            right = self.visit(right_node)
+            if not self.allowed_ops[type(op)](left, right): return False
+            left = right
+        return True
+    def visit_Call(self, node):
+        if isinstance(node.func, ast.Name):
+            func = self.visit(node.func)
+            args = [self.visit(a) for a in node.args]
+            return func(*args)
+        raise ValueError(f"Function call not allowed")
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+    def generic_visit(self, node):
+        raise ValueError(f"Node '{{type(node).__name__}}' is not allowed")
+
+try:
+    expr = {repr(expression)}
+    tree = ast.parse(expr, mode='eval')
+    print(SafeEval().visit(tree))
+except Exception as e:
+    print(f"Error: {{e}}", file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
