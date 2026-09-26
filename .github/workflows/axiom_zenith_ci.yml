@@ -22,7 +22,7 @@ jobs:
           python-version: '3.12'
       - name: "Run Pre-Commit"
         run: |
-          python -m pip install pre-commit
+          python -m pip install pre-commit==4.6.2
           pre-commit run --all-files --verbose
       - name: "Run Zenith Pillar Verification"
         run: python3 scripts/verify_zenith_pillars.py
