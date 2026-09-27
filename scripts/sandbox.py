@@ -33,7 +33,6 @@ def run_isolated_expression(expression):
     # Replace eval() with a strictly restricted execution environment
     # Disable builtins and all access to global namespace methods
     # to prevent arbitrary code execution via MRO traversal.
-    restricted_globals = {'__builtins__': {}}
 
     # We still have to prevent MRO traversal inside the subprocess.
     # We'll use a custom AST evaluator for maximum security.
@@ -126,7 +125,10 @@ except Exception as e:
         if proc.returncode == 0:
             return stdout.strip()
         else:
+            if "Timeout exceeded" in stdout:
+                return "Error: Timeout exceeded"
             return f"Error: {stderr.strip()}"
+
             
     except Exception as e:
         return f"Sandbox Exception: {str(e)}"
