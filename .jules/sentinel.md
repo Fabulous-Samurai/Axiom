@@ -1,0 +1,4 @@
+## 2024-06-25 - Prevent Arbitrary Code Execution in Sandbox
+**Vulnerability:** The sandbox used Python's `eval()` to execute mathematical expressions in a restricted subprocess, which is insufficient because attackers could achieve arbitrary code execution via MRO traversal (e.g., `().__class__.__bases__[0].__subclasses__()`) or access to `__import__` even if basic built-ins were restricted.
+**Learning:** Using `eval()` even inside a subprocess creates an unnecessary risk of sandbox escapes when evaluating mathematical expressions. Disabling builtins (`{'__builtins__': {}}`) in `eval()` is insufficient to prevent arbitrary code execution, as attackers can use Method Resolution Order (MRO) traversal.
+**Prevention:** Always use a strict AST-based evaluator (`ast.NodeVisitor`) with explicitly whitelisted nodes (e.g., specific math functions and operations) rather than attempting to blacklist dangerous operations within `eval()`.
