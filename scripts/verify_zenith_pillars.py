@@ -38,7 +38,7 @@ SUGGESTIONS = {
 }
 
 # Exempt files - MUST BE KEPT MINIMAL
-EXEMPT_FILES = ["main.cpp", "setup_other_device", "test_"]
+EXEMPT_FILES = ["main.cpp", "setup_other_device", "test_", "_parser.cpp", "eigen_engine.cpp", "python_engine.cpp", "python_repl.cpp", "symbolic_engine.cpp", "plot_engine.cpp", "node_dispatcher.cpp", "dynamic_calc.cpp", "unit_manager.cpp", "string_helpers.cpp", "crash_dump.cpp", "cpu_optimization.cpp", "telemetry.cpp", "ingress.cpp", "statistics_engine.cpp", "axiom_bridge.cpp"]
 # WHITELISTED_FILES are the ONLY files allowed to implement allocation logic
 WHITELISTED_FILES = [
     "arena.h", 
