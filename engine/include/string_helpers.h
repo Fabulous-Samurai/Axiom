@@ -19,33 +19,39 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
-        
-        // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
-        }
-        // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
-        }
-        
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
         // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
+        // Using exception-free std::strtod instead of std::stod to comply with Zenith Pillar 5
+        if (sv.size() >= 64) {
+            std::string str(sv);
+            char* end;
+            errno = 0;
+            result = std::strtod(str.c_str(), &end);
+            if (end != str.c_str() + str.size()) return std::nullopt;
+            if (errno == ERANGE) {
+                if (result == 0.0 || result == -0.0) return 0.0;
+                return std::nullopt;
+            }
             return result;
-        } catch (...) {
+        }
+        char buf[64];
+        std::copy(sv.begin(), sv.end(), buf);
+        buf[sv.size()] = '\0';
+
+        char* end;
+        errno = 0;
+        result = std::strtod(buf, &end);
+
+        if (end != buf + sv.size()) return std::nullopt;
+        if (errno == ERANGE) {
+            if (result == 0.0 || result == -0.0) return 0.0;
             return std::nullopt;
         }
+        return result;
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-        // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), result);
+        return (ec == std::errc{} && ptr == sv.data() + sv.size()) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
