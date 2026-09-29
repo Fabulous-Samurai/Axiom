@@ -1,0 +1,3 @@
+## YYYY-MM-DD - Remove temporary string allocation in FastParseDouble
+**Learning:** C++17's `std::from_chars` natively supports parsing floating-point numbers with leading or trailing decimals (e.g., `.5` or `5.`). Creating temporary `std::string` copies to pad zeroes is unnecessary overhead and violates zero-allocation constraints.
+**Action:** When optimizing numeric parsing in C++ to meet Zero-Allocation policies, rely on `std::from_chars` directly for floating-point representations without intermediate string copies, and use `std::strtod` on a stack buffer with proper underflow handling for compilers that lack floating-point `from_chars` support.
