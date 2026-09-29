@@ -32,7 +32,64 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"""
+import ast
+import sys
+import math
+
+class Evaluator(ast.NodeVisitor):
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        if isinstance(node.op, ast.Add): return left + right
+        if isinstance(node.op, ast.Sub): return left - right
+        if isinstance(node.op, ast.Mult): return left * right
+        if isinstance(node.op, ast.Div): return left / right
+        if isinstance(node.op, ast.Mod): return left % right
+        if isinstance(node.op, ast.Pow): return left ** right
+        raise ValueError(f"Unsupported operator: {{type(node.op).__name__}}")
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        if isinstance(node.op, ast.UAdd): return +operand
+        if isinstance(node.op, ast.USub): return -operand
+        raise ValueError(f"Unsupported unary operator: {{type(node.op).__name__}}")
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_Num(self, node):
+        return node.n
+
+    def visit_Name(self, node):
+        if node.id in ['pi', 'e', 'tau', 'inf', 'nan']:
+            return getattr(math, node.id)
+        raise ValueError(f"Unsupported variable: {{node.id}}")
+
+    def visit_Call(self, node):
+        if not isinstance(node.func, ast.Name):
+            raise ValueError("Only functions can be called")
+        if node.func.id not in ['sin', 'cos', 'tan', 'sqrt', 'log', 'log10', 'exp', 'abs', 'round']:
+            raise ValueError(f"Unsupported function: {{node.func.id}}")
+        if hasattr(math, node.func.id):
+            func = getattr(math, node.func.id)
+        elif node.func.id in ['abs', 'round']:
+            func = getattr(__builtins__, node.func.id) if hasattr(__builtins__, node.func.id) else __builtins__[node.func.id] if type(__builtins__) is dict else getattr(__import__('builtins'), node.func.id)
+        else:
+            raise ValueError(f"Function not found: {{node.func.id}}")
+        args = [self.visit(arg) for arg in node.args]
+        return func(*args)
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported node type: {{type(node).__name__}}")
+
+try:
+    tree = ast.parse({repr(expression)}, mode='eval')
+    print(Evaluator().visit(tree.body))
+except Exception as e:
+    print(f"Error: {{e}}", file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
