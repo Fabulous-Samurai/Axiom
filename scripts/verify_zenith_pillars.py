@@ -66,7 +66,7 @@ def verify_file(file_path):
                         if "//" in line and line.find("//") < line.find(keyword):
                             continue
                         violations.append(f"Line {i+1}: {message}")
-    except Exception as e:
+    except OSError as e:
         print(f"[ERROR] Could not read {file_path}: {e}")
     return violations
 
