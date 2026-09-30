@@ -30,9 +30,65 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # We use AST-based safe evaluation instead of raw eval() to prevent arbitrary code execution
+    # and sandbox escapes via __builtins__ manipulation or MRO traversal.
+    code = f"""import ast
+import operator
+import math
+import sys
+
+class SafeEval(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_operators = {{
+            ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+            ast.Div: operator.truediv, ast.Pow: operator.pow, ast.USub: operator.neg,
+            ast.Mod: operator.mod
+        }}
+        b = __builtins__
+        abs_func = getattr(b, 'abs') if type(b) is not dict else b['abs']
+        self.allowed_funcs = {{
+            'sin': math.sin, 'cos': math.cos, 'sqrt': math.sqrt,
+            'pi': math.pi, 'abs': abs_func
+        }}
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_Name(self, node):
+        if node.id in self.allowed_funcs:
+            return self.allowed_funcs[node.id]
+        raise ValueError(f"Name '{{node.id}}' is not allowed")
+
+    def visit_BinOp(self, node):
+        op = type(node.op)
+        if op not in self.allowed_operators:
+            raise ValueError(f"Operator '{{op.__name__}}' is not allowed")
+        return self.allowed_operators[op](self.visit(node.left), self.visit(node.right))
+
+    def visit_UnaryOp(self, node):
+        op = type(node.op)
+        if op not in self.allowed_operators:
+            raise ValueError(f"Operator '{{op.__name__}}' is not allowed")
+        return self.allowed_operators[op](self.visit(node.operand))
+
+    def visit_Call(self, node):
+        if not isinstance(node.func, ast.Name):
+            raise ValueError("Only simple calls")
+        func_name = node.func.id
+        if func_name not in self.allowed_funcs:
+            raise ValueError(f"Function '{{func_name}}' is not allowed")
+        return self.allowed_funcs[func_name](*[self.visit(a) for a in node.args])
+
+    def generic_visit(self, node):
+        raise ValueError(f"Node type '{{type(node).__name__}}' is not allowed")
+
+try:
+    expr_ast = ast.parse({repr(expression)}, mode='eval')
+    print(SafeEval().visit(expr_ast.body))
+except Exception as e:
+    print(f"Error: {{e}}", file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
