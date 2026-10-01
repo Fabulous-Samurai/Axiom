@@ -32,7 +32,86 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"""import sys, ast, math
+
+class SafeEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_builtins = {{'abs': abs, 'min': min, 'max': max, 'sum': sum, 'round': round}}
+
+    def visit_Module(self, node):
+        if len(node.body) != 1 or not isinstance(node.body[0], ast.Expr):
+            raise ValueError("Only single expressions are allowed")
+        return self.visit(node.body[0].value)
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op = node.op
+        if isinstance(op, ast.Add): return left + right
+        if isinstance(op, ast.Sub): return left - right
+        if isinstance(op, ast.Mult): return left * right
+        if isinstance(op, ast.Div): return left / right
+        if isinstance(op, ast.FloorDiv): return left // right
+        if isinstance(op, ast.Mod): return left % right
+        if isinstance(op, ast.Pow): return left ** right
+        raise ValueError(f"Unsupported operation: {{type(op).__name__}}")
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        if isinstance(node.op, ast.UAdd): return +operand
+        if isinstance(node.op, ast.USub): return -operand
+        raise ValueError(f"Unsupported unary operation: {{type(node.op).__name__}}")
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_List(self, node):
+        return [self.visit(elt) for elt in node.elts]
+
+    def visit_Dict(self, node):
+        return {{self.visit(k): self.visit(v) for k, v in zip(node.keys, node.values)}}
+
+    def visit_Call(self, node):
+        if isinstance(node.func, ast.Name):
+            func_name = node.func.id
+            if func_name in self.allowed_builtins:
+                args = [self.visit(arg) for arg in node.args]
+                return self.allowed_builtins[func_name](*args)
+            raise ValueError(f"Function '{{func_name}}' is not allowed")
+        elif isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):
+            if node.func.value.id == 'math':
+                func_name = node.func.attr
+                if hasattr(math, func_name) and not func_name.startswith('_'):
+                    args = [self.visit(arg) for arg in node.args]
+                    return getattr(math, func_name)(*args)
+        raise ValueError("Unsupported function call")
+
+    def visit_Name(self, node):
+        if node.id == 'True': return True
+        if node.id == 'False': return False
+        if node.id == 'None': return None
+        if node.id == 'math': return math
+        raise ValueError(f"Variable '{{node.id}}' is not allowed")
+
+    def visit_Attribute(self, node):
+        if isinstance(node.value, ast.Name) and node.value.id == 'math':
+            if hasattr(math, node.attr) and not node.attr.startswith('_'):
+                return getattr(math, node.attr)
+        raise ValueError("Unsupported attribute access")
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported syntax: {{type(node).__name__}}")
+
+expr_str = {repr(expression)}
+try:
+    tree = ast.parse(expr_str, mode='exec')
+    evaluator = SafeEvaluator()
+    result = evaluator.visit(tree)
+    print(result)
+except Exception as e:
+    print(f"Error: {{e}}", file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
