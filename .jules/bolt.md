@@ -1,0 +1,3 @@
+## YYYY-MM-DD - C++ std::stod exception handling overhead
+**Learning:** In hot paths, relying on `std::stod` for floating-point string parsing within a try-catch block introduces significant overhead when the parse fails. Even when parsing succeeds, allocating `std::string` copies to ensure null-termination adds allocation overhead. Using `std::strtod` with a stack-allocated buffer allows for exception-free, allocation-free fast parsing on the fallback path.
+**Action:** When optimizing C++ text processing in hot loops, replace `std::stod` with `std::strtod` and use bounded stack buffers to avoid `std::string` allocation and exception stack unwinding overheads.
