@@ -30,9 +30,69 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # Secure AST-based evaluation to prevent Remote Code Execution
+    code = f"""
+import sys
+import ast
+import math
+
+class SecureEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.safe_dict = {{
+            'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
+            'sqrt': math.sqrt, 'log': math.log, 'exp': math.exp,
+            'pi': math.pi, 'e': math.e, 'abs': abs
+        }}
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+    def visit_Call(self, node):
+        if not isinstance(node.func, ast.Name):
+            raise ValueError("Only simple function calls are allowed")
+        func_name = node.func.id
+        if func_name in self.safe_dict:
+            args = [self.visit(arg) for arg in node.args]
+            return self.safe_dict[func_name](*args)
+        raise ValueError(f"Function '{{func_name}}' not allowed")
+
+    def visit_Name(self, node):
+        if node.id in self.safe_dict:
+            return self.safe_dict[node.id]
+        raise ValueError(f"Name '{{node.id}}' not allowed")
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        if isinstance(node.op, ast.Add): return left + right
+        if isinstance(node.op, ast.Sub): return left - right
+        if isinstance(node.op, ast.Mult): return left * right
+        if isinstance(node.op, ast.Div): return left / right
+        if isinstance(node.op, ast.Pow): return left ** right
+        if isinstance(node.op, ast.Mod): return left % right
+        raise ValueError("Unsupported operation")
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        if isinstance(node.op, ast.UAdd): return +operand
+        if isinstance(node.op, ast.USub): return -operand
+        raise ValueError("Unsupported unary operation")
+
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float, complex)):
+            raise ValueError("Only numeric constants are allowed")
+        return node.value
+
+    def visit_List(self, node):
+        return [self.visit(elt) for elt in node.elts]
+
+try:
+    tree = ast.parse({repr(expression)}, mode='eval')
+    print(SecureEvaluator().visit(tree))
+except Exception as e:
+    sys.stderr.write(f"Error: {{e}}\\n")
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
