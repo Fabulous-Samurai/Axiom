@@ -32,7 +32,67 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # We use a secure AST-based evaluator to prevent arbitrary code execution
+    code = f"""
+import sys
+import ast
+import math
+
+class SafeEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_funcs = {{'sin': math.sin, 'cos': math.cos, 'tan': math.tan, 'sqrt': math.sqrt, 'abs': getattr(__builtins__, 'abs') if type(__builtins__) is dict else __builtins__.abs, 'log': math.log, 'exp': math.exp}}
+        self.allowed_names = {{'pi': math.pi, 'e': math.e}}
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        if isinstance(node.op, ast.Add): return left + right
+        elif isinstance(node.op, ast.Sub): return left - right
+        elif isinstance(node.op, ast.Mult): return left * right
+        elif isinstance(node.op, ast.Div): return left / right
+        elif isinstance(node.op, ast.Pow): return left ** right
+        elif isinstance(node.op, ast.Mod): return left % right
+        else: raise ValueError(f"Unsupported operation: {{type(node.op).__name__}}")
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        if isinstance(node.op, ast.UAdd): return +operand
+        elif isinstance(node.op, ast.USub): return -operand
+        else: raise ValueError(f"Unsupported unary operation: {{type(node.op).__name__}}")
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_Name(self, node):
+        if node.id in self.allowed_names:
+            return self.allowed_names[node.id]
+        raise ValueError(f"Name '{{node.id}}' is not allowed")
+
+    def visit_Call(self, node):
+        if not isinstance(node.func, ast.Name):
+            raise ValueError("Only simple function calls are allowed")
+        if node.func.id not in self.allowed_funcs:
+            raise ValueError(f"Function '{{node.func.id}}' is not allowed")
+        args = [self.visit(arg) for arg in node.args]
+        return self.allowed_funcs[node.func.id](*args)
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported node type: {{type(node).__name__}}")
+
+def evaluate(expr):
+    tree = ast.parse(expr, mode='eval')
+    evaluator = SafeEvaluator()
+    return evaluator.visit(tree)
+
+try:
+    print(evaluate({repr(expression)}))
+except Exception as e:
+    sys.stderr.write("Exception: " + str(e) + chr(10))
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
