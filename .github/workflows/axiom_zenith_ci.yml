@@ -32,7 +32,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: "Download TLA2Tools"
-        run: curl -sSLO https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar
+        run: |
+          curl -sSLO https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar
+          echo "b3e56ba18c65abd22e35755739963000f22e770279841d364699c31951ede70a  tla2tools.jar" | sha256sum -c -
       - name: "Run TLA+ Model Checks"
         run: |
           cp tla2tools.jar formal/tla/
@@ -63,6 +65,7 @@ jobs:
       - name: "Install build-wrapper"
         run: |
           curl -sSLo $HOME/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+          echo "408f8cca51d93fe7f20bd7c0147d0ef877a549946c4ac47ba9ffc05469f56046  $HOME/build-wrapper-linux-x86.zip" | sha256sum -c -
           unzip -o $HOME/build-wrapper-linux-x86.zip -d $HOME/
           echo "$HOME/build-wrapper-linux-x86" >> $GITHUB_PATH
       - name: "Configure CMake (Coverage)"
