@@ -15,37 +15,42 @@
 
 namespace Utils {
     
-    // Fast string-to-double conversion using std::from_chars (C++17)
+    // Fast string-to-double conversion using std::from_chars (C++17) or std::strtod fallback
     inline std::optional<double> FastParseDouble(std::string_view sv) {
-        if (sv.empty()) return std::nullopt;
+        if (sv.empty() || sv.size() > 125) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
+        char buf[128];
+        size_t len = 0;
         
-        // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
+        // Handle edge cases
+        if (sv.front() == '.') {
+            buf[len++] = '0';
         }
-        // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
+
+        for (char c : sv) {
+            buf[len++] = c;
         }
         
+        if (sv.back() == '.') {
+            buf[len++] = '0';
+        }
+
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
-        // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
-            return result;
-        } catch (...) {
-            return std::nullopt;
-        }
+        // Exception-free fallback for compilers with missing floating-point from_chars
+        buf[len] = '\0';
+        char* end_ptr;
+        errno = 0;
+        result = std::strtod(buf, &end_ptr);
+
+        if (end_ptr != buf + len) return std::nullopt;
+        if (errno == ERANGE && result != 0.0) return std::nullopt; // Allow underflow (result == 0.0)
+
+        return result;
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
+        auto [ptr, ec] = std::from_chars(buf, buf + len, result);
         // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        return (ec == std::errc{} && ptr == buf + len) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 

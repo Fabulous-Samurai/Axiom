@@ -1,0 +1,3 @@
+## YYYY-MM-DD - [Optimize string-to-double parsing in fast path]
+**Learning:** Using `std::stod` and `try/catch` internally in `FastParseDouble` fallback creates significant overhead due to memory allocation (`std::string`) and exception handling, violating Zenith Pillar 5 constraints and taking ~5x longer than standard C library functions (`strtod`).
+**Action:** Avoid exceptions and allocations in high-frequency parsing paths by using stack buffers (e.g. `char buf[128]`) and C standard `std::strtod` when `std::from_chars` is unavailable, effectively bypassing expensive stack unwinding and heap allocators.
