@@ -16,7 +16,7 @@ AXIOM::FixedVector<double, 256> StatisticsParser::ParseVector(const std::string&
     size_t pos = 0;
     while (pos < body.size()) {
         size_t next = body.find_first_of(",;", pos);
-        std::string_view token = Utils::Trim(std::string_view(body).substr(pos, next == std::string::npos ? std::string_view::npos : next - pos));
+        std::string_view token = Utils::TrimView(std::string_view(body).substr(pos, next == std::string::npos ? std::string_view::npos : next - pos));
         if (!token.empty()) {
             if (auto val = Utils::FastParseDouble(token)) {
                 out.push_back(*val);

@@ -4,6 +4,13 @@
 
 namespace Utils {
 
+std::string_view TrimView(std::string_view str) {
+    const auto first = str.find_first_not_of(" \t\n\r");
+    if (first == std::string_view::npos) return {};
+    const auto last = str.find_last_not_of(" \t\n\r");
+    return str.substr(first, last - first + 1);
+}
+
 std::string Trim(std::string_view str) {
     const auto first = str.find_first_not_of(" \t\n\r");
     if (first == std::string_view::npos) return {};
