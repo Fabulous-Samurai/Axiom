@@ -1,0 +1,3 @@
+## 2024-10-06 - [Avoid std::string allocations in Trim string parsing]
+**Learning:** `Utils::Trim` historically returned `std::string` which copies the characters and dynamically allocates memory for larger strings, violating Zenith Pillar 1 (Zero-Allocation) rules in the engine core when used inside loops or token splitting.
+**Action:** Created `Utils::TrimView` that returns `std::string_view` which only slices pointers without allocation, and updated parsers (`statistics_parser.cpp`, `algebraic_parser.cpp`, `symbolic_parser.cpp`, `plot_parser.cpp`) to use `TrimView` to prevent allocation on hot parsing paths.

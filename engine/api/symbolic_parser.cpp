@@ -63,7 +63,7 @@ EngineResult SymbolicParser::ParseAndExecute(std::string_view input) noexcept {
                     size_t pos = 0;
                     while (pos < body.size()) {
                         size_t next = body.find(',', pos);
-                        out.push_back(Utils::Trim(body.substr(pos, next == std::string_view::npos ? std::string_view::npos : next - pos)));
+                        out.emplace_back(Utils::TrimView(body.substr(pos, next == std::string_view::npos ? std::string_view::npos : next - pos)));
                         if (next == std::string_view::npos) break;
                         pos = next + 1;
                     }

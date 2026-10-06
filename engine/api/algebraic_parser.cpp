@@ -211,13 +211,13 @@ namespace {
         size_t c1 = content.find(',');
         if (c1 == std::string_view::npos) return false;
         
-        expr = Utils::Trim(content.substr(0, c1));
+        expr = Utils::TrimView(content.substr(0, c1));
         std::string_view rest = content.substr(c1 + 1);
         size_t c2 = rest.find(',');
         if (c2 == std::string_view::npos) return false;
         
-        var = Utils::Trim(rest.substr(0, c2));
-        std::string_view point_str = Utils::Trim(rest.substr(c2 + 1));
+        var = Utils::TrimView(rest.substr(0, c2));
+        std::string_view point_str = Utils::TrimView(rest.substr(c2 + 1));
         auto point_val = Utils::FastParseDouble(point_str);
         if (!point_val) return false;
         
@@ -234,18 +234,18 @@ namespace {
         size_t c1 = content.find(',');
         if (c1 == std::string_view::npos) return false;
         
-        expr = Utils::Trim(content.substr(0, c1));
+        expr = Utils::TrimView(content.substr(0, c1));
         std::string_view rest1 = content.substr(c1 + 1);
         size_t c2 = rest1.find(',');
         if (c2 == std::string_view::npos) return false;
         
-        var = Utils::Trim(rest1.substr(0, c2));
+        var = Utils::TrimView(rest1.substr(0, c2));
         std::string_view rest2 = rest1.substr(c2 + 1);
         size_t c3 = rest2.find(',');
         if (c3 == std::string_view::npos) return false;
         
-        std::string_view a_str = Utils::Trim(rest2.substr(0, c3));
-        std::string_view b_str = Utils::Trim(rest2.substr(c3 + 1));
+        std::string_view a_str = Utils::TrimView(rest2.substr(0, c3));
+        std::string_view b_str = Utils::TrimView(rest2.substr(c3 + 1));
         auto a_val = Utils::FastParseDouble(a_str);
         auto b_val = Utils::FastParseDouble(b_str);
         if (!a_val || !b_val) return false;
@@ -260,7 +260,7 @@ void AlgebraicParser::RegisterSpecialCommands() noexcept {}
 NodePtr AlgebraicParser::ParseExpression(std::string_view input) noexcept { ParserState state{input, 0, arena_}; return parse_expression(state); }
 
 EngineResult AlgebraicParser::ParseAndExecute(std::string_view input) noexcept { 
-    std::string_view trimmed = Utils::Trim(input);
+    std::string_view trimmed = Utils::TrimView(input);
     if (trimmed.rfind("derive ", 0) == 0) return HandleDerivative(trimmed);
     if (trimmed.rfind("limit(", 0) == 0) return HandleLimit(trimmed);
     if (trimmed.rfind("integrate(", 0) == 0) return HandleIntegrate(trimmed);
