@@ -25,7 +25,7 @@ EngineResult PlotParser::ParseAndExecute(std::string_view input) noexcept {
         } else if (c == ',' && paren_depth == 0) {
             const std::string_view arg = Utils::TrimView(args_content.substr(start, i - start));
             if (!arg.empty()) {
-                args.emplace_back(arg);
+                args.push_back(arg);
             }
             start = i + 1;
         }
