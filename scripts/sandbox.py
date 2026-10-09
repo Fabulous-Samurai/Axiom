@@ -35,19 +35,18 @@ def run_isolated_expression(expression):
     cmd = [sys.executable, secure_eval_script, expression]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        
-        guard = ComplexityGuard()
-        monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
-        monitor_thread.start()
-        
-        stdout, stderr = proc.communicate()
-        monitor_thread.join()
-        
-        if proc.returncode == 0:
-            return stdout.strip()
-        else:
-            return f"Error: {stderr.strip()}"
+        with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=False) as proc:
+            guard = ComplexityGuard()
+            monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
+            monitor_thread.start()
+
+            stdout, stderr = proc.communicate()
+            monitor_thread.join()
+
+            if proc.returncode == 0:
+                return stdout.strip()
+            else:
+                return f"Error: {stderr.strip()}"
             
     except Exception as e:
         return f"Sandbox Exception: {str(e)}"
