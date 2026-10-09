@@ -30,10 +30,9 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    # We use a secure AST evaluator script instead of arbitrary eval
+    secure_eval_script = os.path.join(os.path.dirname(__file__), "secure_eval.py")
+    cmd = [sys.executable, secure_eval_script, expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
