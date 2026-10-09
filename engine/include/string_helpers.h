@@ -19,33 +19,41 @@ namespace Utils {
     inline std::optional<double> FastParseDouble(std::string_view sv) {
         if (sv.empty()) return std::nullopt;
         
-        // Handle edge cases that std::from_chars might not handle well
-        std::string str(sv);
+        // ⚡ Bolt: Fast string-to-double parsing avoiding std::string allocation
+        // C++17 std::from_chars natively supports `.5` and `5.` formats,
+        // eliminating the need for padding and string conversions.
+        const char* start = sv.data();
+        size_t len = sv.size();
         
-        // Handle leading decimal point (e.g., ".5" -> "0.5")
-        if (str.front() == '.') {
-            str = "0" + str;
-        }
-        // Handle trailing decimal point (e.g., "5." -> "5.0")
-        else if (str.back() == '.') {
-            str += "0";
+        if (len > 0 && start[0] == '+') {
+            start++;
+            len--;
         }
         
+        if (len == 0) return std::nullopt;
+
         double result;
 #if defined(__apple_build_version__) || (defined(__GNUC__) && __GNUC__ < 11 && !defined(__clang__))
-        // Fallback for compilers with missing floating-point from_chars
-        try {
-            size_t pos;
-            result = std::stod(str, &pos);
-            if (pos != str.size()) return std::nullopt;
-            return result;
-        } catch (...) {
-            return std::nullopt;
+        // Fallback for older compilers without float from_chars support.
+        // We avoid try-catch/std::stod overhead (Zenith Pillar 5).
+        char buffer[64];
+        if (len >= sizeof(buffer)) {
+            // Rare edge case: extremely long number string
+            std::string str(start, len);
+            char* end;
+            result = std::strtod(str.c_str(), &end);
+            return (end == str.c_str() + len) ? std::optional<double>(result) : std::nullopt;
         }
+
+        for(size_t i = 0; i < len; ++i) buffer[i] = start[i];
+        buffer[len] = '\0';
+        char* end;
+        result = std::strtod(buffer, &end);
+        if (end != buffer + len) return std::nullopt;
+        return result;
 #else
-        auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-        // Check if conversion was successful AND we consumed the entire string
-        return (ec == std::errc{} && ptr == str.data() + str.size()) ? std::optional<double>(result) : std::nullopt;
+        auto [ptr, ec] = std::from_chars(start, start + len, result);
+        return (ec == std::errc{} && ptr == start + len) ? std::optional<double>(result) : std::nullopt;
 #endif
     }
 
