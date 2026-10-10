@@ -1,0 +1,3 @@
+## 2024-10-10 - Trim Returns std::string_view
+**Learning:** `Utils::Trim` was returning a new `std::string` allocation instead of returning a `std::string_view` over the trimmed portion of the input, violating the zero-allocation Zenith pillar and causing unnecessary heap allocations. This function is heavily used in string parsing (`engine/api/*`).
+**Action:** Changed `Utils::Trim` to return `std::string_view`. When storing the result in a container of `std::string` (e.g., `AXIOM::FixedVector<std::string, 256>`), used `.emplace_back()` to directly initialize the string from the view, bypassing explicit string construction and copies.
