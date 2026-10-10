@@ -30,9 +30,58 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # Evaluate safely using ast instead of eval()
+    # to prevent arbitrary code execution vulnerabilities.
+    code = f"""import ast, math
+
+def safe_eval(expr):
+    allowed_names = {{k: v for k, v in math.__dict__.items() if not k.startswith('_')}}
+    allowed_names['abs'] = abs
+    allowed_names['round'] = round
+
+    def _eval(node):
+        if isinstance(node, ast.Expression):
+            return _eval(node.body)
+        elif isinstance(node, ast.Constant):
+            return node.value
+        elif isinstance(node, ast.Name):
+            if node.id in allowed_names:
+                return allowed_names[node.id]
+            if node.id == 'math':
+                return math
+            raise ValueError(f"Name '{{node.id}}' is not allowed")
+        elif isinstance(node, ast.Attribute):
+            value = _eval(node.value)
+            if value is math and hasattr(math, node.attr):
+                return getattr(math, node.attr)
+            raise ValueError(f"Attribute '{{node.attr}}' is not allowed")
+        elif isinstance(node, ast.BinOp):
+            left = _eval(node.left)
+            right = _eval(node.right)
+            if type(left) not in (int, float) or type(right) not in (int, float):
+                raise TypeError("Only numeric operations allowed")
+            if isinstance(node.op, ast.Add): return left + right
+            elif isinstance(node.op, ast.Sub): return left - right
+            elif isinstance(node.op, ast.Mult): return left * right
+            elif isinstance(node.op, ast.Div): return left / right
+            elif isinstance(node.op, ast.Pow): return left ** right
+            elif isinstance(node.op, ast.Mod): return left % right
+            else: raise ValueError("Unsupported operator")
+        elif isinstance(node, ast.UnaryOp):
+            operand = _eval(node.operand)
+            if isinstance(node.op, ast.UAdd): return +operand
+            elif isinstance(node.op, ast.USub): return -operand
+            else: raise ValueError("Unsupported unary operator")
+        elif isinstance(node, ast.Call):
+            func = _eval(node.func)
+            args = [_eval(arg) for arg in node.args]
+            return func(*args)
+        else:
+            raise ValueError(f"Unsupported AST node: {{type(node).__name__}}")
+
+    return _eval(ast.parse(expr, mode='eval'))
+
+print(safe_eval({repr(expression)}))"""
     cmd = [sys.executable, "-c", code]
     
     try:
