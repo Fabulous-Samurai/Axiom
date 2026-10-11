@@ -50,6 +50,7 @@ namespace Utils {
     }
 
     // Helper to trim strings (removes whitespace from both ends)
+    // Performance: Returns std::string_view to prevent implicit heap allocations during parsing.
     AXIOM_EXPORT std::string_view Trim(std::string_view str);
     
     // Helper to split string by delimiter
