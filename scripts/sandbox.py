@@ -30,9 +30,66 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # Use a safe AST evaluator instead of dangerous eval()
+    code = f"""
+import ast
+import math
+import operator
+
+class SafeMath(ast.NodeVisitor):
+    def __init__(self):
+        self.ops = {{
+            ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+            ast.Div: operator.truediv, ast.Pow: operator.pow, ast.USub: operator.neg,
+            ast.Mod: operator.mod
+        }}
+
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float)):
+            raise ValueError("Only numbers allowed")
+        return node.value
+
+    def visit_Name(self, node):
+        if hasattr(math, node.id):
+            return getattr(math, node.id)
+        if hasattr(__builtins__, node.id) or (type(__builtins__) is dict and node.id in __builtins__):
+            b = __builtins__
+            func = getattr(b, node.id) if type(b) is not dict else b.get(node.id)
+            if func in (abs, min, max, round):
+                return func
+        raise ValueError(f"Unknown name: {{node.id}}")
+
+    def visit_Attribute(self, node):
+        if isinstance(node.value, ast.Name) and node.value.id == 'math':
+            if hasattr(math, node.attr):
+                return getattr(math, node.attr)
+        raise ValueError(f"Unsupported attribute: {{node.attr}}")
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        if type(node.op) == ast.Mult and not (isinstance(left, (int, float)) and isinstance(right, (int, float))):
+            raise ValueError("Multiplication only allowed on numbers")
+        return self.ops[type(node.op)](left, right)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        return self.ops[type(node.op)](operand)
+
+    def visit_Call(self, node):
+        func = self.visit(node.func)
+        args = [self.visit(arg) for arg in node.args]
+        return func(*args)
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported AST node: {{type(node).__name__}}")
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+tree = ast.parse({repr(expression)}, mode='eval')
+print(SafeMath().visit(tree))
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
