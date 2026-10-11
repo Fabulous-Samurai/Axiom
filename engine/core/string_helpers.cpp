@@ -4,11 +4,11 @@
 
 namespace Utils {
 
-std::string Trim(std::string_view str) {
+std::string_view Trim(std::string_view str) {
     const auto first = str.find_first_not_of(" \t\n\r");
     if (first == std::string_view::npos) return {};
     const auto last = str.find_last_not_of(" \t\n\r");
-    return std::string(str.substr(first, last - first + 1));
+    return str.substr(first, last - first + 1);
 }
 
 AXIOM::FixedVector<std::string, 256> Split(std::string_view s, char delimiter) {
@@ -19,7 +19,7 @@ AXIOM::FixedVector<std::string, 256> Split(std::string_view s, char delimiter) {
         const auto len = (pos == std::string_view::npos) ? s.size() - start : pos - start;
         const auto part = Trim(s.substr(start, len));
         if (!part.empty()) {
-            tokens.push_back(part);
+            tokens.emplace_back(part);
         }
         if (pos == std::string_view::npos) break;
         start = pos + 1;
