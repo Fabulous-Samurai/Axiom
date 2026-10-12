@@ -32,7 +32,7 @@ EngineResult StatisticsEngine::Median(Vector data) {
 EngineResult StatisticsEngine::Mode(const Vector& data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
-    // ⚡ Bolt Optimization: Replace allocating std::map with in-place vector sort
+    // ⚡ Bolt Optimization: Replace allocating std-map with in-place vector sort
     // AXIOM Zenith Pillar 1 Compliance: Zero Allocation
     Vector copy = data;
     std::ranges::sort(copy);

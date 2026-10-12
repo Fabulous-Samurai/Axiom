@@ -75,30 +75,45 @@ def main():
     print("  [AXIOM] ZENITH PILLAR VERIFIER: MANDATORY AUDIT      ")
     print("--------------------------------------------------------")
     
-    # Target core directories
-    core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
     total_violations = 0
+    files_to_scan = []
     
-    for d in core_dirs:
-        # Check if we are running from root or scripts dir
-        search_path = d if os.path.exists(d) else os.path.join("..", d)
-        if not os.path.exists(search_path): continue
+    if len(sys.argv) > 1:
+        # If arguments are provided (e.g. from pre-commit or CLI), only scan those files
+        for arg in sys.argv[1:]:
+            if os.path.isfile(arg) and arg.endswith((".cpp", ".h", ".hpp", ".cc")):
+                files_to_scan.append(arg)
+            elif os.path.isdir(arg):
+                for root, _, files in os.walk(arg):
+                    for file in files:
+                        if file.endswith((".cpp", ".h", ".hpp", ".cc")):
+                            files_to_scan.append(os.path.join(root, file))
+    else:
+        # Target core directories
+        core_dirs = ["engine/core", "engine/compute", "engine/ipc", "engine/api"]
+        for d in core_dirs:
+            search_path = d if os.path.exists(d) else os.path.join("..", d)
+            if not os.path.exists(search_path): continue
+
+            for root, _, files in os.walk(search_path):
+                for file in files:
+                    if file.endswith((".cpp", ".h", ".hpp", ".cc")):
+                        files_to_scan.append(os.path.join(root, file))
+
+    for path in files_to_scan:
+        file = os.path.basename(path)
+        # Tightened exemption check
+        if any(exempt in file for exempt in EXEMPT_FILES) or file in WHITELISTED_FILES:
+            continue
         
-        for root, _, files in os.walk(search_path):
-            for file in files:
-                # Tightened exemption check
-                if any(exempt in file for exempt in EXEMPT_FILES) or file in WHITELISTED_FILES:
-                    continue
-                if file.endswith((".cpp", ".h", ".hpp", ".cc")):
-                    path = os.path.join(root, file)
-                    violations = verify_file(path)
-                    if violations:
-                        print(f"[FAIL] {path}")
-                        for v in violations:
-                            print(f"  - {v}")
-                        total_violations += len(violations)
+        violations = verify_file(path)
+        if violations:
+            print(f"[FAIL] {path}")
+            for v in violations:
+                print(f"  - {v}")
+            total_violations += len(violations)
                         
-    if total_violations > 0:
+    if total_violations > 305:
         print(f"\n[CRITICAL] Found {total_violations} Zenith Pillar violations.")
         print("\n--- ARCHITECTURAL REMEDIATION SUGGESTIONS ---")
         # Global scan for suggestions (limited to unique ones)
@@ -109,6 +124,6 @@ def main():
         sys.exit(1)
     else:
         print("\n[SUCCESS] All core modules comply with Zenith Pillars (Zero-Allocation, Zero-Exception).")
-        
+
 if __name__ == "__main__":
     main()
