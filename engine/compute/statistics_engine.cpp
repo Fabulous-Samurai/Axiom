@@ -32,6 +32,9 @@ EngineResult StatisticsEngine::Median(Vector data) {
 EngineResult StatisticsEngine::Mode(const Vector& data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
+    // Performance Optimization: Using a sorted vector copy instead of std::map
+    // Impact: Avoids O(N) dynamic memory allocations for tree nodes.
+    // Reduces memory overhead and significantly improves cache locality.
     Vector sorted_data = data;
     std::ranges::sort(sorted_data);
 
