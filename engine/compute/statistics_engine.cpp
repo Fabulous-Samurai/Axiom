@@ -2,7 +2,6 @@
 #include "statistics_engine.h"
 #include <algorithm>
 #include <cmath>
-#include <map>
 
 namespace AXIOM {
 
@@ -33,18 +32,33 @@ EngineResult StatisticsEngine::Median(Vector data) {
 EngineResult StatisticsEngine::Mode(const Vector& data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
-    std::map<double, int> frequency;
-    for (double val : data) {
-        frequency[val]++;
-    }
+    // Performance Optimization: Using a sorted vector copy instead of std::map
+    // Impact: Avoids O(N) dynamic memory allocations for tree nodes.
+    // Reduces memory overhead and significantly improves cache locality.
+    Vector sorted_data = data;
+    std::ranges::sort(sorted_data);
+
+    double mode_val = sorted_data[0];
+    int max_count = 1;
     
-    double mode_val = data[0];
-    int max_count = 0;
-    for (const auto& [val, count] : frequency) {
-        if (count > max_count) {
-            max_count = count;
-            mode_val = val;
+    double current_val = sorted_data[0];
+    int current_count = 1;
+
+    for (size_t i = 1; i < sorted_data.size(); ++i) {
+        if (sorted_data[i] == current_val) {
+            current_count++;
+        } else {
+            if (current_count > max_count) {
+                max_count = current_count;
+                mode_val = current_val;
+            }
+            current_val = sorted_data[i];
+            current_count = 1;
         }
+    }
+    // Check the last run
+    if (current_count > max_count) {
+        mode_val = current_val;
     }
     
     return CreateSuccessResult(mode_val);
