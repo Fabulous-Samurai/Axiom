@@ -34,6 +34,7 @@ def run_isolated_expression(expression):
     # without exposing full Python eval capabilities.
     code = f"""
 import ast
+import sys
 import operator
 import math
 
@@ -99,7 +100,6 @@ class SafeEvaluator(ast.NodeVisitor):
 try:
     print(SafeEvaluator().visit(ast.parse({repr(expression)}, mode='eval').body))
 except Exception as e:
-    import sys
     print(str(e), file=sys.stderr)
     sys.exit(1)
 """
