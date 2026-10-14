@@ -30,9 +30,79 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # We use an AST-based safe evaluator to execute mathematical expressions
+    # without exposing full Python eval capabilities.
+    code = f"""
+import ast
+import operator
+import math
+
+class SafeEvaluator(ast.NodeVisitor):
+    allowed_ops = {{
+        ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+        ast.Div: operator.truediv, ast.FloorDiv: operator.floordiv,
+        ast.Mod: operator.mod, ast.Pow: operator.pow,
+        ast.USub: operator.neg, ast.UAdd: operator.pos,
+    }}
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+
+        op_type = type(node.op)
+        if op_type not in self.allowed_ops:
+            raise ValueError(f"Unsupported operator: {{op_type.__name__}}")
+
+        if op_type == ast.Mult:
+            if not isinstance(left, (int, float)) or not isinstance(right, (int, float)):
+                raise TypeError("Multiplication operands must be numbers")
+        elif op_type == ast.Pow:
+            if not isinstance(left, (int, float)) or not isinstance(right, (int, float)):
+                raise TypeError("Power operands must be numbers")
+            if right > 100 or right < -100:
+                raise ValueError("Power exponent too large")
+
+        return self.allowed_ops[op_type](left, right)
+
+    def visit_UnaryOp(self, node):
+        op_type = type(node.op)
+        if op_type not in self.allowed_ops:
+             raise ValueError(f"Unsupported unary operator: {{op_type.__name__}}")
+        return self.allowed_ops[op_type](self.visit(node.operand))
+
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float)):
+             raise TypeError("Only numeric constants are allowed")
+        return node.value
+
+    def visit_Name(self, node):
+        if hasattr(math, node.id):
+             return getattr(math, node.id)
+        raise ValueError(f"Unknown variable/function: {{node.id}}")
+
+    def visit_Attribute(self, node):
+        if isinstance(node.value, ast.Name) and node.value.id == 'math':
+            if hasattr(math, node.attr):
+                return getattr(math, node.attr)
+        raise ValueError(f"Unsupported attribute: {{node.attr}}")
+
+    def visit_Call(self, node):
+        func = self.visit(node.func)
+        if not callable(func):
+            raise ValueError("Only mathematical functions are allowed")
+        args = [self.visit(arg) for arg in node.args]
+        return func(*args)
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported AST node: {{type(node).__name__}}")
+
+try:
+    print(SafeEvaluator().visit(ast.parse({repr(expression)}, mode='eval').body))
+except Exception as e:
+    import sys
+    print(str(e), file=sys.stderr)
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
