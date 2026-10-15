@@ -46,7 +46,7 @@ EngineResult StatisticsEngine::Mode(const Vector& data) {
             mode_val = val;
         }
     }
-    
+
     return CreateSuccessResult(mode_val);
 }
 
