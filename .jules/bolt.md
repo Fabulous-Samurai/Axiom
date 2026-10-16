@@ -1,0 +1,3 @@
+## 2024-05-15 - Statistics Mode Computation Optimization
+**Learning:** The AXIOM engine has a strict Zenith Pillar Mandate (Pillar 1: Zero-Allocation) requiring no implicit/explicit allocations (like `std::string` or `std::unordered_map`/`std::map`) in core compute paths. The `Mode()` function in `engine/compute/statistics_engine.cpp` violates this mandate and performs poorly because it uses a dynamically allocating `std::map<double, int>`.
+**Action:** Replace `std::map` with an allocation-free copy sort (using `std::ranges::sort` on the pre-allocated `Vector`) and a linear iteration to count consecutive identical elements. This satisfies Pillar 1 and drastically improves performance.
