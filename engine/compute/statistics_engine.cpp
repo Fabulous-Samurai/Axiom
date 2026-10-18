@@ -2,6 +2,7 @@
 #include "statistics_engine.h"
 #include <algorithm>
 #include <cmath>
+#include <map>
 
 namespace AXIOM {
 
