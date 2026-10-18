@@ -59,7 +59,6 @@ EngineResult StatisticsEngine::Mode(const Vector& data) {
     
     // Check the last group
     if (current_count > max_count) {
-        max_count = current_count;
         mode_val = current_val;
     }
 
