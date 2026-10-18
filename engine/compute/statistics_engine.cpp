@@ -32,6 +32,9 @@ EngineResult StatisticsEngine::Median(Vector data) {
 EngineResult StatisticsEngine::Mode(const Vector& data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
+    // ⚡ Bolt Optimization: Replace std::map with vector sort + linear scan.
+    // Eliminates O(N) heap allocations (Zero-Allocation Pillar) and improves cache locality.
+    // Sorting + scan avoids the heavy node-allocation overhead of std::map.
     Vector sorted_data = data;
     std::ranges::sort(sorted_data);
 
