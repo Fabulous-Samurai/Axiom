@@ -32,7 +32,77 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+
+    # Replace unsafe eval with AST-based safe evaluation
+    code = f"""import sys, ast, operator, math
+class SafeEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_operators = {{
+            ast.Add: operator.add, ast.Sub: operator.sub,
+            ast.Mult: operator.mul, ast.Div: operator.truediv,
+            ast.USub: operator.neg, ast.UAdd: operator.pos,
+        }}
+
+        # Determine __builtins__ access based on environment
+        if isinstance(__builtins__, dict):
+            get_builtin = lambda x: __builtins__.get(x)
+        else:
+            get_builtin = lambda x: getattr(__builtins__, x, None)
+
+        self.allowed_calls = {{
+            'abs': get_builtin('abs'),
+            'round': get_builtin('round'),
+            'min': get_builtin('min'),
+            'max': get_builtin('max'),
+        }}
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op_type = type(node.op)
+        if op_type not in self.allowed_operators:
+            raise ValueError(f"Unsupported operator: {{op_type.__name__}}")
+        if op_type == ast.Mult and not (isinstance(left, (int, float)) and isinstance(right, (int, float))):
+             raise ValueError("Multiplication is only allowed for numbers")
+        return self.allowed_operators[op_type](left, right)
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op_type = type(node.op)
+        if op_type not in self.allowed_operators:
+            raise ValueError(f"Unsupported unary operator: {{op_type.__name__}}")
+        return self.allowed_operators[op_type](operand)
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float, complex)):
+            raise ValueError("Only numbers are allowed")
+        return node.value
+    def visit_Name(self, node):
+        if node.id in self.allowed_calls:
+            return self.allowed_calls[node.id]
+        if node.id == 'math':
+            return math
+        if hasattr(math, node.id):
+            return getattr(math, node.id)
+        raise ValueError(f"Variable '{{node.id}}' not allowed")
+    def visit_Call(self, node):
+        func = self.visit(node.func)
+        if not callable(func):
+            raise ValueError("Invalid function call")
+        args = [self.visit(arg) for arg in node.args]
+        return func(*args)
+    def visit_Attribute(self, node):
+        value = self.visit(node.value)
+        if value is math and hasattr(math, node.attr):
+            return getattr(math, node.attr)
+        raise ValueError("Attributes are not allowed on this object")
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported AST node: {{type(node).__name__}}")
+
+def safe_eval(expr):
+    tree = ast.parse(expr, mode='eval')
+    evaluator = SafeEvaluator()
+    return evaluator.visit(tree.body)
+
+print(safe_eval({repr(expression)}))"""
+
     cmd = [sys.executable, "-c", code]
     
     try:

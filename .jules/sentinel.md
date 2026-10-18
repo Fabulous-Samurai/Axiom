@@ -1,0 +1,4 @@
+## YYYY-MM-DD - [Safe Evaluator with AST]
+**Vulnerability:** Arbitrary code execution via `eval()` in `scripts/sandbox.py`. Adversarial inputs such as `__import__('os').listdir('.')` could access system files, and inputs like `[0] * 10**9` could cause denial of service via memory exhaustion.
+**Learning:** `eval()` allows extensive Python environment manipulation when unbounded. Directly replacing it with a basic AST parser that maps standard mathematical operators to their `operator` counterparts isn't enough, as valid AST operations (like `ast.Mult` on iterables) can still cause DoS, and complex nodes like `ast.List` or `ast.Call` must be explicitly blocked.
+**Prevention:** Implement `ast.NodeVisitor` allowing explicit operations only. Enforce strict operand type-checking (e.g., ensuring `ast.Mult` only operates on `int` or `float`) and systematically block generic variables, calls, list iterations, and attribute access by raising exceptions in visitor overrides.
