@@ -1,0 +1,3 @@
+## 2024-10-19 - Replaced std::map with std::ranges::sort for Mode calculation
+**Learning:** `StatisticsEngine::Mode` used `std::map<double, int>` to count frequencies. This violates Zenith Pillar 1 (Zero-Allocation) because map insertions perform heap allocations. Furthermore, maps are generally slower than contiguous data structures for this use case.
+**Action:** Replaced `std::map` with an allocation-free copy sort (`std::ranges::sort`) by changing the parameter to pass-by-value `Vector data`, matching the pattern used in `Median`. We then linearly iterate to count consecutive identical elements, which is faster and zero-allocation.
