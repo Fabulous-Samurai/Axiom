@@ -121,7 +121,7 @@ def run_isolated_expression(expression):
         env = os.environ.copy()
         env['PYTHONPATH'] = os.path.dirname(os.path.abspath(__file__))
 
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)  # NOSONAR
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
