@@ -54,11 +54,7 @@ EngineResult StatisticsEngine::Mode(Vector data) {
         }
     }
     
-    if (current_count > max_count) {
-        mode_val = current_val;
-    }
-
-    return CreateSuccessResult(mode_val);
+    return CreateSuccessResult(current_count > max_count ? current_val : mode_val);
 }
 
 EngineResult StatisticsEngine::Variance(const Vector& data) {
