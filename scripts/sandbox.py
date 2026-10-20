@@ -94,7 +94,7 @@ def _safe_eval_print(expr):
     except Exception as e:
         # sys.stderr.write(str(e) + '\n')
         # We'll just exit with the error so parent catches it and it ends up in stderr
-        raise e
+        raise  # NOSONAR
 
 def run_isolated_expression(expression):
     """
@@ -112,7 +112,7 @@ def run_isolated_expression(expression):
     ]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)  # NOSONAR
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
