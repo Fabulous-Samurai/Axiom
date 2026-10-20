@@ -57,7 +57,7 @@ EngineResult StatisticsEngine::Mode(Vector data) {
     
     // Check the last sequence
     if (current_count > max_count) {
-        mode_val = current_val;
+        return CreateSuccessResult(current_val);
     }
 
     return CreateSuccessResult(mode_val);
