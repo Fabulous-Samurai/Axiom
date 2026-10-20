@@ -29,7 +29,7 @@ EngineResult StatisticsEngine::Median(Vector data) {
     }
 }
 
-EngineResult StatisticsEngine::Mode(Vector data) const {
+EngineResult StatisticsEngine::Mode(Vector data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
     // Performance Optimization: Allocation-free mode calculation
