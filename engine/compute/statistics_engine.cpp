@@ -33,6 +33,9 @@ EngineResult StatisticsEngine::Median(Vector data) {
 EngineResult StatisticsEngine::Mode(Vector data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
+    // [PERFORMANCE OPTIMIZATION]: Replaced std::map with in-place sorting to comply with Zenith Pillar 1 (Zero-Allocation).
+    // Sorting (O(N log N)) followed by a linear scan is significantly faster and cache-friendly than allocating heap nodes for every unique value.
+    // The data parameter is passed by value (using FixedVector stack storage) to allow allocation-free local modification.
     std::ranges::sort(data);
     
     double mode_val = data[0];
