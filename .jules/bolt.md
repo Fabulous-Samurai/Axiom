@@ -1,0 +1,3 @@
+## 2024-10-21 - [Zero-Allocation Policy in StatisticsEngine::Mode]
+**Learning:** Found an architectural bottleneck where `std::map<double, int>` was used to compute the Mode of a vector in `StatisticsEngine::Mode`. This violates Zenith Pillar 1 (Zero-Allocation), causing constant heap allocations per data point, significantly harming performance compared to an allocation-free copy sort approach using `std::ranges::sort` on the pre-allocated `FixedVector` stack storage.
+**Action:** Replace map-based frequency counting with in-place sorting and linear iteration to count consecutive identical elements. `Vector` is a `FixedVector<double, 256>` which avoids allocations. Use `std::ranges::sort` and simple `for` loops.
