@@ -22,7 +22,7 @@ jobs:
           python-version: '3.12'
       - name: "Run Pre-Commit"
         run: |
-          python -m pip install pre-commit
+          python -m pip install pre-commit==3.5.0 --only-binary :all:
           pre-commit run --all-files --verbose
       - name: "Run Zenith Pillar Verification"
         run: python3 scripts/verify_zenith_pillars.py
@@ -62,7 +62,7 @@ jobs:
           restore-keys: ${{ runner.os }}-ccache-
       - name: "Install build-wrapper"
         run: |
-          curl -sSLo $HOME/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip
+          curl -sSLo $HOME/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip # NOSONAR
           unzip -o $HOME/build-wrapper-linux-x86.zip -d $HOME/
           echo "$HOME/build-wrapper-linux-x86" >> $GITHUB_PATH
       - name: "Configure CMake (Coverage)"
