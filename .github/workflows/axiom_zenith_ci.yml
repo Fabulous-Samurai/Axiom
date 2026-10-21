@@ -62,7 +62,7 @@ jobs:
           restore-keys: ${{ runner.os }}-ccache-
       - name: "Install build-wrapper"
         run: |
-          curl -sSLo $HOME/build-wrapper-linux-x86.zip https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip # NOSONAR
+          curl -sSLo $HOME/build-wrapper-linux-x86.zip -L https://sonarcloud.io/static/cpp/build-wrapper-linux-x86.zip # NOSONAR
           unzip -o $HOME/build-wrapper-linux-x86.zip -d $HOME/
           echo "$HOME/build-wrapper-linux-x86" >> $GITHUB_PATH
       - name: "Configure CMake (Coverage)"
