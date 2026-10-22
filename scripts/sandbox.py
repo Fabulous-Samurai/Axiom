@@ -4,6 +4,9 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
+import math
 
 class ComplexityGuard:
     """
@@ -23,6 +26,73 @@ class ComplexityGuard:
                 return
             time.sleep(0.1)
 
+class SafeEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Mod: operator.mod,
+            ast.Pow: operator.pow,
+            ast.BitXor: operator.xor,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_Name(self, node):
+        if node.id == 'math':
+            return math
+        if hasattr(math, node.id):
+            return getattr(math, node.id)
+        raise ValueError(f"Unsupported name: {node.id}")
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        if isinstance(node.op, (ast.Mult, ast.Pow)):
+            if not (isinstance(left, (int, float)) and isinstance(right, (int, float))):
+                raise ValueError("Operator only supported for numbers")
+        op = self.allowed_ops.get(type(node.op))
+        if op is None:
+            raise ValueError(f"Unsupported operator: {type(node.op)}")
+        return op(left, right)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op = self.allowed_ops.get(type(node.op))
+        if op is None:
+            raise ValueError(f"Unsupported unary operator: {type(node.op)}")
+        return op(operand)
+
+    def visit_Call(self, node):
+        func = self.visit(node.func)
+        if node.keywords:
+            raise ValueError("Keyword arguments are not supported in calls")
+        args = [self.visit(arg) for arg in node.args]
+        return func(*args)
+
+    def visit_Attribute(self, node):
+        value = self.visit(node.value)
+        if value is math:
+            if hasattr(math, node.attr):
+                return getattr(math, node.attr)
+            raise ValueError(f"Unsupported attribute: math.{node.attr}")
+        raise ValueError("Unsupported attribute access")
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported AST node: {type(node).__name__}")
+
+def evaluate_expression(expr):
+    tree = ast.parse(expr, mode='eval')
+    print(SafeEvaluator().visit(tree))
+
 def run_isolated_expression(expression):
     """
     Runs an AXIOM expression in a restricted subprocess.
@@ -30,13 +100,12 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    code = f"import sys; sys.path.insert(0, {repr(current_dir)}); from sandbox import evaluate_expression; evaluate_expression(sys.argv[1])"
+    cmd = [sys.executable, "-c", code, expression]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)  # NOSONAR
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
