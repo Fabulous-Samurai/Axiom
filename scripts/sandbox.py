@@ -73,6 +73,8 @@ class SafeEvaluator(ast.NodeVisitor):
 
     def visit_Call(self, node):
         func = self.visit(node.func)
+        if node.keywords:
+            raise ValueError("Keyword arguments are not supported in calls")
         args = [self.visit(arg) for arg in node.args]
         return func(*args)
 
