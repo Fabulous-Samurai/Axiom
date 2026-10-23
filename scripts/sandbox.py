@@ -106,7 +106,7 @@ def run_isolated_expression(expression):
 
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import sys; sys.path.insert(0, '{os.path.abspath('scripts')}'); from sandbox import safe_eval; print(safe_eval({repr(expression)}))"
+    code = f"import sys; sys.path.insert(0, {repr(os.path.abspath('scripts'))}); from sandbox import safe_eval; print(safe_eval({repr(expression)}))"
 
     cmd = [sys.executable, "-c", code]
     
