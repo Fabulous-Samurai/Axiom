@@ -27,7 +27,7 @@ class SonarIssuePuller:
         page = 1
         while True:
             params["p"] = page
-            response = requests.get(self.base_url, params=params, auth=(self.token, ""))
+            response = requests.get(self.base_url, params=params, auth=(self.token, ""), timeout=30)
             if response.status_code != 200:
                 print(f"Error fetching issues: {response.status_code} - {response.text}")
                 break
@@ -47,7 +47,7 @@ class SonarIssuePuller:
             "projectKey": self.project_key,
             "status": "TO_REVIEW"
         }
-        hs_response = requests.get(hotspot_url, params=hotspot_params, auth=(self.token, ""))
+        hs_response = requests.get(hotspot_url, params=hotspot_params, auth=(self.token, ""), timeout=30)
         if hs_response.status_code == 200:
             hotspots = hs_response.json().get("hotspots", [])
             for hs in hotspots:
