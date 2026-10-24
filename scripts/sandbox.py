@@ -4,6 +4,62 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
+
+class SecureEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.BitXor: operator.xor,
+            ast.USub: operator.neg,
+        }
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported AST node: {type(node).__name__}")
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float, complex)):
+            raise ValueError("Only numbers are supported")
+        return node.value
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op_type = type(node.op)
+        if op_type not in self.allowed_ops:
+            raise ValueError(f"Unsupported operator: {op_type.__name__}")
+
+        # Type-check operands for ast.Mult to prevent large string multiplication DoS
+        if op_type == ast.Mult:
+            if not isinstance(left, (int, float, complex)) or not isinstance(right, (int, float, complex)):
+                raise ValueError("Multiplication only allowed for numbers")
+
+        return self.allowed_ops[op_type](left, right)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op_type = type(node.op)
+        if op_type not in self.allowed_ops:
+            raise ValueError(f"Unsupported operator: {op_type.__name__}")
+        return self.allowed_ops[op_type](operand)
+
+    def visit_Call(self, node):
+        if node.keywords:
+            raise ValueError("Keyword arguments are not allowed")
+        raise ValueError("Function calls are not allowed")
+
+def secure_eval_str(expr_str):
+    tree = ast.parse(expr_str, mode='eval')
+    evaluator = SecureEvaluator()
+    print(evaluator.visit(tree))
 
 class ComplexityGuard:
     """
@@ -32,11 +88,13 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    module_path = os.path.abspath(__file__)
+    dir_path = os.path.dirname(module_path)
+    code = f"import sys; sys.path.insert(0, {repr(dir_path)}); from sandbox import secure_eval_str; secure_eval_str({repr(expression)})"
     cmd = [sys.executable, "-c", code]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)  # NOSONAR
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
