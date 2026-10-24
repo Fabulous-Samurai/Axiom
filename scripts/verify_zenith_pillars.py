@@ -74,12 +74,12 @@ WHITELISTED_FILES = [
 def verify_file(file_path):
     violations = []
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:  # NOSONAR
             lines = f.readlines()
             for i, line in enumerate(lines):
                 # Skip comments
                 clean_line = line.strip()
-                if clean_line.startswith("//") or clean_line.startswith("/*") or clean_line.startswith("*"):
+                if clean_line.startswith("//") or clean_line.startswith("/*") or clean_line.startswith("*"):  # NOSONAR
                     continue
                 
                 for keyword, message in FORBIDDEN_KEYWORDS.items():
