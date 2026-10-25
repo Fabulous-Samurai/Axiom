@@ -5,7 +5,7 @@
 
 namespace AXIOM {
 
-EngineResult StatisticsEngine::Mean(const Vector& data) {
+EngineResult StatisticsEngine::Mean(const Vector& data) const {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
     double sum = 0.0;
@@ -16,7 +16,7 @@ EngineResult StatisticsEngine::Mean(const Vector& data) {
     return CreateSuccessResult(sum / data.size());
 }
 
-EngineResult StatisticsEngine::Median(Vector data) {
+EngineResult StatisticsEngine::Median(Vector data) const {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
 
     std::ranges::sort(data);
@@ -60,7 +60,7 @@ EngineResult StatisticsEngine::Mode(Vector data) const {
     return CreateSuccessResult(mode_val);
 }
 
-EngineResult StatisticsEngine::Variance(const Vector& data) {
+EngineResult StatisticsEngine::Variance(const Vector& data) const {
     if (data.size() < 2) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
     auto mean_result = Mean(data);
@@ -81,7 +81,7 @@ EngineResult StatisticsEngine::Variance(const Vector& data) {
     return CreateSuccessResult(sum_sq_diff / (data.size() - 1));
 }
 
-EngineResult StatisticsEngine::StandardDeviation(const Vector& data) {
+EngineResult StatisticsEngine::StandardDeviation(const Vector& data) const {
     auto var_result = Variance(data);
     if (!var_result.result.has_value()) return var_result;
     
@@ -91,7 +91,7 @@ EngineResult StatisticsEngine::StandardDeviation(const Vector& data) {
     return CreateSuccessResult(std::sqrt(variance));
 }
 
-EngineResult StatisticsEngine::Correlation(const Vector& x, const Vector& y) {
+EngineResult StatisticsEngine::Correlation(const Vector& x, const Vector& y) const {
     if (x.size() != y.size() || x.size() < 2) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
@@ -126,7 +126,7 @@ EngineResult StatisticsEngine::Correlation(const Vector& x, const Vector& y) {
     return CreateSuccessResult(numerator / denominator);
 }
 
-EngineResult StatisticsEngine::LinearRegression(const Vector& x, const Vector& y) {
+EngineResult StatisticsEngine::LinearRegression(const Vector& x, const Vector& y) const {
     if (x.size() != y.size() || x.size() < 2) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
@@ -162,7 +162,7 @@ EngineResult StatisticsEngine::LinearRegression(const Vector& x, const Vector& y
     return CreateSuccessResult(Vector{slope, intercept});
 }
 
-EngineResult StatisticsEngine::Percentile(Vector data, double p) {
+EngineResult StatisticsEngine::Percentile(Vector data, double p) const {
     if (data.empty() || p < 0 || p > 100) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
@@ -186,7 +186,7 @@ EngineResult StatisticsEngine::Percentile(Vector data, double p) {
     return CreateSuccessResult(result);
 }
 
-EngineResult StatisticsEngine::MovingAverage(const Vector& data, int window_size) {
+EngineResult StatisticsEngine::MovingAverage(const Vector& data, int window_size) const {
     if (data.empty() || window_size <= 0 || window_size > static_cast<int>(data.size())) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
