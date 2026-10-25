@@ -1,0 +1,4 @@
+## 2023-10-25 - [Arbitrary Code Execution in Sandbox via eval()]
+**Vulnerability:** The sandbox utility `scripts/sandbox.py` uses Python's `eval()` function to execute expressions in a subprocess. A user-provided string `expr` is evaluated via `f"import os; print(eval({repr(expression)}))"`, which allows Arbitrary Code Execution (e.g. `__import__('os').listdir('.')`).
+**Learning:** `eval()` should never be used to evaluate untrusted input, even in a subprocess, because it can execute arbitrary Python code and interact with the system if not strictly isolated by OS-level sandboxes (like seccomp or AppArmor).
+**Prevention:** Implement a custom `ast.NodeVisitor` to parse and safely evaluate expressions by strictly limiting the allowed AST nodes and operations, and avoiding the use of `eval()`.
