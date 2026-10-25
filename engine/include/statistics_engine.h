@@ -18,38 +18,38 @@ namespace AXIOM {
 class AXIOM_EXPORT StatisticsEngine {
 public:
     // Descriptive Statistics
-    EngineResult Mean(const Vector& data);
-    EngineResult Median(Vector data);  // Note: modifies input for sorting
-    EngineResult Mode(const Vector& data);
-    EngineResult Variance(const Vector& data);
-    EngineResult StandardDeviation(const Vector& data);
-    EngineResult Skewness(const Vector& data);
-    EngineResult Kurtosis(const Vector& data);
+    EngineResult Mean(const Vector& data) const;
+    EngineResult Median(Vector data) const;  // Note: modifies input for sorting
+    EngineResult Mode(Vector data) const;
+    EngineResult Variance(const Vector& data) const;
+    EngineResult StandardDeviation(const Vector& data) const;
+    EngineResult Skewness(const Vector& data) const;
+    EngineResult Kurtosis(const Vector& data) const;
     
     // Percentiles and Quantiles  
-    EngineResult Percentile(Vector data, double p);
-    EngineResult Quartiles(Vector data);
-    EngineResult InterquartileRange(Vector data);
+    EngineResult Percentile(Vector data, double p) const;
+    EngineResult Quartiles(Vector data) const;
+    EngineResult InterquartileRange(Vector data) const;
     
     // Correlation and Regression
-    EngineResult Correlation(const Vector& x, const Vector& y);
-    EngineResult LinearRegression(const Vector& x, const Vector& y);
-    EngineResult RSquared(const Vector& x, const Vector& y);
+    EngineResult Correlation(const Vector& x, const Vector& y) const;
+    EngineResult LinearRegression(const Vector& x, const Vector& y) const;
+    EngineResult RSquared(const Vector& x, const Vector& y) const;
     
     // Probability Distributions
-    EngineResult NormalPDF(double x, double mean = 0, double stddev = 1);
-    EngineResult NormalCDF(double x, double mean = 0, double stddev = 1);
-    EngineResult TDistributionPDF(double x, double degrees_freedom);
-    EngineResult ChiSquaredPDF(double x, double degrees_freedom);
+    EngineResult NormalPDF(double x, double mean = 0, double stddev = 1) const;
+    EngineResult NormalCDF(double x, double mean = 0, double stddev = 1) const;
+    EngineResult TDistributionPDF(double x, double degrees_freedom) const;
+    EngineResult ChiSquaredPDF(double x, double degrees_freedom) const;
     
     // Hypothesis Testing
-    EngineResult TTest(const Vector& sample1, const Vector& sample2);
-    EngineResult ChiSquaredTest(const Matrix& observed, const Matrix& expected);
-    EngineResult ANOVAOneWay(const std::vector<Vector>& groups);
+    EngineResult TTest(const Vector& sample1, const Vector& sample2) const;
+    EngineResult ChiSquaredTest(const Matrix& observed, const Matrix& expected) const;
+    EngineResult ANOVAOneWay(const std::vector<Vector>& groups) const;
     
     // Time Series
-    EngineResult MovingAverage(const Vector& data, int window_size);
-    EngineResult ExponentialSmoothing(const Vector& data, double alpha);
+    EngineResult MovingAverage(const Vector& data, int window_size) const;
+    EngineResult ExponentialSmoothing(const Vector& data, double alpha) const;
 };
 
 } // namespace AXIOM

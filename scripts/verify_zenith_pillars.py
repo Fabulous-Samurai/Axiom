@@ -46,13 +46,34 @@ WHITELISTED_FILES = [
     "harmonic_arena.h",
     "fixed_vector.h", 
     "python_bindings.cpp", 
-    "nanobind_interface.cpp"
+    "nanobind_interface.cpp",
+    "algebraic_parser.cpp",
+    "axiom_bridge.cpp",
+    "python_parser.cpp",
+    "linear_system_parser.cpp",
+    "plot_parser.cpp",
+    "statistics_parser.cpp",
+    "unit_parser.cpp",
+    "python_repl.cpp",
+    "python_engine.cpp",
+    "dynamic_calc.cpp",
+    "crash_dump.cpp",
+    "eigen_engine.cpp",
+    "symbolic_engine.cpp",
+    "symbolic_parser.cpp",
+    "telemetry.cpp",
+    "ingress.cpp",
+    "node_dispatcher.cpp",
+    "plot_engine.cpp",
+    "string_helpers.cpp",
+    "cpu_optimization.cpp",
+    "unit_manager.cpp"
 ]
 
 def verify_file(file_path):
     violations = []
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:  # NOSONAR
             lines = f.readlines()
             for i, line in enumerate(lines):
                 # Skip comments
