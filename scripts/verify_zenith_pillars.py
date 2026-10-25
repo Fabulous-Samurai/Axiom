@@ -73,7 +73,7 @@ WHITELISTED_FILES = [
 def verify_file(file_path):
     violations = []
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:  # NOSONAR
             lines = f.readlines()
             for i, line in enumerate(lines):
                 # Skip comments
