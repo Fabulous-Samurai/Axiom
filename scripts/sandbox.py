@@ -4,6 +4,81 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
+
+class SafeEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv,
+            ast.Mod: operator.mod,
+            ast.Pow: operator.pow,
+            ast.BitXor: operator.xor,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported node type: {type(node).__name__}")
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_Name(self, node):
+        raise ValueError("Variables are not allowed")
+
+    def visit_UnaryOp(self, node):
+        op = type(node.op)
+        if op not in self.allowed_ops:
+            raise ValueError(f"Unsupported unary operator: {op}")
+        operand = self.visit(node.operand)
+        return self.allowed_ops[op](operand)
+
+    def visit_BinOp(self, node):
+        op = type(node.op)
+        if op not in self.allowed_ops:
+            raise ValueError(f"Unsupported binary operator: {op}")
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+
+        if op == ast.Mult and (isinstance(left, str) or isinstance(right, str)):
+            raise ValueError("String multiplication is not allowed")
+        if op == ast.Pow:
+            if not isinstance(left, (int, float)) or not isinstance(right, (int, float)):
+                raise ValueError("Power operation requires numbers")
+            if isinstance(right, (int, float)) and right > 100:
+                raise ValueError("Exponent too large")
+
+        return self.allowed_ops[op](left, right)
+
+    def visit_Call(self, node):
+        if node.keywords:
+            raise ValueError("Keyword arguments are not allowed")
+
+        if isinstance(node.func, ast.Name):
+            func_name = node.func.id
+            if func_name == "abs":
+                if len(node.args) != 1:
+                    raise ValueError("abs() takes exactly one argument")
+                arg = self.visit(node.args[0])
+                return abs(arg)
+            else:
+                raise ValueError(f"Unsupported function: {func_name}")
+        else:
+            raise ValueError("Unsupported function call")
+
+    def visit_Expr(self, node):
+        return self.visit(node.value)
+
+def evaluate_expression(expr_str):
+    tree = ast.parse(expr_str, mode='eval')
+    evaluator = SafeEvaluator()
+    result = evaluator.visit(tree.body)
+    print(result)
 
 class ComplexityGuard:
     """
@@ -32,7 +107,7 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"import sys\nsys.path.insert(0, {repr(os.path.dirname(os.path.abspath(__file__)))})\nimport sandbox\nfrom sandbox import evaluate_expression\nevaluate_expression({repr(expression)})"
     cmd = [sys.executable, "-c", code]
     
     try:
