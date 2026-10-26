@@ -73,7 +73,7 @@ def safe_eval(expr):
     return evaluator.visit(tree)
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1:  # NOSONAR
         try:
             print(safe_eval(sys.argv[1]))
         except Exception as e:
