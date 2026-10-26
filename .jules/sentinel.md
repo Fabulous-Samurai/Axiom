@@ -1,0 +1,4 @@
+## 2023-10-26 - Remote Code Execution (RCE) via eval() in Python sandbox
+**Vulnerability:** The `scripts/sandbox.py` module used Python's built-in `eval()` function to evaluate user-provided expressions inside a subprocess without an AST validation layer. While isolated in a subprocess, an attacker could execute arbitrary code (e.g. `__import__('os').listdir('.')`).
+**Learning:** Using `eval()` even inside a subprocess is dangerous for untrusted input, as standard sandboxing may still allow OS access or resource exhaustion if AppContainer/seccomp isn't perfectly configured.
+**Prevention:** Implement an `ast.NodeVisitor` based safe evaluator that strictly whitelists permitted AST node types and operations (e.g. arithmetic, math functions) while rejecting strings, lists, variables, and function calls that can lead to DoS or escape. Do not use `eval()` on untrusted input.
