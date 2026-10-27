@@ -1,0 +1,3 @@
+## 2024-10-27 - Zero-Allocation Mode Calculation
+**Learning:** Using `std::map` or `std::unordered_map` for frequency analysis in C++ mode calculations causes constant memory allocations, degrading performance and violating zero-allocation constraints. Sorting floating-point arrays without handling `NaN` values violates strict weak ordering and can cause crashes. Taking large vector types by value (`Vector data`) allows in-place mutation like sorting, saving an extra heap allocation compared to copy-constructing inside the method.
+**Action:** Replace map-based counting by taking the argument by value to allow allocation-free in-place sorting. Sort using a custom comparator with `std::isnan` to safely handle NaNs, and linearly iterate to count frequencies.

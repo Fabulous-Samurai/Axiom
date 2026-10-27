@@ -18,11 +18,11 @@ namespace AXIOM {
 class AXIOM_EXPORT StatisticsEngine {
 public:
     // Descriptive Statistics
-    EngineResult Mean(const Vector& data);
+    EngineResult Mean(const Vector& data) const;
     EngineResult Median(Vector data);  // Note: modifies input for sorting
-    EngineResult Mode(const Vector& data);
-    EngineResult Variance(const Vector& data);
-    EngineResult StandardDeviation(const Vector& data);
+    EngineResult Mode(Vector data) const;
+    EngineResult Variance(const Vector& data) const;
+    EngineResult StandardDeviation(const Vector& data) const;
     EngineResult Skewness(const Vector& data);
     EngineResult Kurtosis(const Vector& data);
     
@@ -32,8 +32,8 @@ public:
     EngineResult InterquartileRange(Vector data);
     
     // Correlation and Regression
-    EngineResult Correlation(const Vector& x, const Vector& y);
-    EngineResult LinearRegression(const Vector& x, const Vector& y);
+    EngineResult Correlation(const Vector& x, const Vector& y) const;
+    EngineResult LinearRegression(const Vector& x, const Vector& y) const;
     EngineResult RSquared(const Vector& x, const Vector& y);
     
     // Probability Distributions
