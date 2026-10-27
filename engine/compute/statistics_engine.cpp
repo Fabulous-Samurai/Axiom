@@ -6,7 +6,7 @@
 
 namespace AXIOM {
 
-EngineResult StatisticsEngine::Mean(const Vector& data) {
+EngineResult StatisticsEngine::Mean(const Vector& data) const {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
     double sum = 0.0;
@@ -30,27 +30,44 @@ EngineResult StatisticsEngine::Median(Vector data) {
     }
 }
 
-EngineResult StatisticsEngine::Mode(const Vector& data) {
+EngineResult StatisticsEngine::Mode(Vector data) const {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
-    std::map<double, int> frequency;
-    for (double val : data) {
-        frequency[val]++;
-    }
+    // Sort array (using isnan check to handle NaNs safely for strict weak ordering)
+    std::ranges::sort(data, [](double a, double b) {
+        if (std::isnan(a) && std::isnan(b)) return false;
+        if (std::isnan(a)) return false;
+        if (std::isnan(b)) return true;
+        return a < b;
+    });
     
     double mode_val = data[0];
-    int max_count = 0;
-    for (const auto& [val, count] : frequency) {
-        if (count > max_count) {
-            max_count = count;
-            mode_val = val;
+    int max_count = 1;
+
+    double current_val = data[0];
+    int current_count = 1;
+
+    for (size_t i = 1; i < data.size(); ++i) {
+        if (data[i] == current_val || (std::isnan(data[i]) && std::isnan(current_val))) {
+            current_count++;
+        } else {
+            if (current_count > max_count) {
+                max_count = current_count;
+                mode_val = current_val;
+            }
+            current_val = data[i];
+            current_count = 1;
         }
     }
     
+    if (current_count > max_count) {
+        mode_val = current_val;
+    }
+
     return CreateSuccessResult(mode_val);
 }
 
-EngineResult StatisticsEngine::Variance(const Vector& data) {
+EngineResult StatisticsEngine::Variance(const Vector& data) const {
     if (data.size() < 2) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
     auto mean_result = Mean(data);
@@ -71,7 +88,7 @@ EngineResult StatisticsEngine::Variance(const Vector& data) {
     return CreateSuccessResult(sum_sq_diff / (data.size() - 1));
 }
 
-EngineResult StatisticsEngine::StandardDeviation(const Vector& data) {
+EngineResult StatisticsEngine::StandardDeviation(const Vector& data) const {
     auto var_result = Variance(data);
     if (!var_result.result.has_value()) return var_result;
     
@@ -81,7 +98,7 @@ EngineResult StatisticsEngine::StandardDeviation(const Vector& data) {
     return CreateSuccessResult(std::sqrt(variance));
 }
 
-EngineResult StatisticsEngine::Correlation(const Vector& x, const Vector& y) {
+EngineResult StatisticsEngine::Correlation(const Vector& x, const Vector& y) const {
     if (x.size() != y.size() || x.size() < 2) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
@@ -116,7 +133,7 @@ EngineResult StatisticsEngine::Correlation(const Vector& x, const Vector& y) {
     return CreateSuccessResult(numerator / denominator);
 }
 
-EngineResult StatisticsEngine::LinearRegression(const Vector& x, const Vector& y) {
+EngineResult StatisticsEngine::LinearRegression(const Vector& x, const Vector& y) const {
     if (x.size() != y.size() || x.size() < 2) {
         return CreateErrorResult(CalcErr::ArgumentMismatch);
     }
