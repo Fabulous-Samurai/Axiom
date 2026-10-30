@@ -1,0 +1,4 @@
+## 2024-05-24 - [Replaced dangerous eval() with AST NodeVisitor in sandbox]
+**Vulnerability:** Arbitrary code execution due to the use of `eval()` in `scripts/sandbox.py`. Even though it was isolated in a subprocess, it could be escaped using `__import__('os')` or manipulated for resource exhaustion.
+**Learning:** `eval()` should never be used on untrusted input, even in "sandboxed" Python scripts. A custom `ast.NodeVisitor` that handles mathematical operations and strictly rejects function calls provides a secure alternative for expression evaluation. Overriding `generic_visit` to raise exceptions on unsupported nodes is key to preventing bypasses.
+**Prevention:** Implement custom AST parsing instead of using `eval()` or `ast.literal_eval()` when mathematical or complex expression evaluation is required for untrusted input.
