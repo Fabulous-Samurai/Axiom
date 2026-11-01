@@ -35,8 +35,8 @@ EngineResult StatisticsEngine::Mode(Vector data) const {
     
     // Pass by value allows in-place sorting, avoiding extra allocations.
     // Ensure no NaNs as they break strict weak ordering in sort
-    for (size_t i = 0; i < data.size(); ++i) {
-        if (std::isnan(data[i])) return CreateErrorResult(CalcErr::DomainError);
+    for (double val : data) {
+        if (std::isnan(val)) return CreateErrorResult(CalcErr::DomainError);
     }
     
     std::ranges::sort(data);
