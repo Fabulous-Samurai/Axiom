@@ -1,0 +1,4 @@
+## 2025-02-28 - Insecure eval() in Python sandbox script
+**Vulnerability:** Arbitrary code execution via `eval()` in `scripts/sandbox.py`. Even though the code was evaluated in a subprocess, it allowed accessing OS functions like `__import__('os').listdir('.')` because `eval()` can execute arbitrary Python expressions.
+**Learning:** `ast.literal_eval()` is safe but doesn't allow expressions like `2 + 2`. Python's `eval()` is inherently unsafe for untrusted strings because it can be used to bypass sandbox limits via builtins or `__import__`.
+**Prevention:** Implement a custom `ast.NodeVisitor` that explicitly whitelists safe mathematical operators and functions, completely rejecting any other AST node (e.g. `generic_visit` raising ValueError). Pass this class cleanly to the subprocess rather than relying on `eval()`.

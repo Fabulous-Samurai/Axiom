@@ -4,6 +4,90 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
+import math
+
+class SafeEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv,
+            ast.Mod: operator.mod,
+            ast.Pow: operator.pow,
+            ast.BitXor: operator.xor,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+        self.functions = {
+            'sin': math.sin,
+            'cos': math.cos,
+            'tan': math.tan,
+            'sqrt': math.sqrt,
+            'log': math.log,
+            'log10': math.log10,
+            'pi': math.pi,
+            'e': math.e,
+            'abs': abs,
+            'round': round,
+        }
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported syntax: {type(node).__name__}")
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float)):
+            raise ValueError("Only numeric constants are allowed")
+        return node.value
+
+    def visit_Name(self, node):
+        if node.id in self.functions:
+            return self.functions[node.id]
+        raise ValueError(f"Unsupported variable or function: {node.id}")
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op_type = type(node.op)
+        if op_type not in self.operators:
+            raise ValueError(f"Unsupported operator: {op_type.__name__}")
+
+        if isinstance(left, str) or isinstance(right, str):
+            raise ValueError("String operations are not allowed")
+
+        return self.operators[op_type](left, right)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op_type = type(node.op)
+        if op_type not in self.operators:
+             raise ValueError(f"Unsupported unary operator: {op_type.__name__}")
+        return self.operators[op_type](operand)
+
+    def visit_Call(self, node):
+        if node.keywords:
+            raise ValueError("Keyword arguments not allowed")
+        func = self.visit(node.func)
+        if not callable(func):
+             raise ValueError("Not a callable function")
+        args = [self.visit(arg) for arg in node.args]
+        return func(*args)
+
+def _evaluate_securely(expr_string):
+    try:
+        tree = ast.parse(expr_string, mode='eval')
+        evaluator = SafeEvaluator()
+        result = evaluator.visit(tree)
+        print(result)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 class ComplexityGuard:
     """
@@ -32,7 +116,8 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    module_path = os.path.abspath(__file__)
+    code = f"import sys, os; sys.path.insert(0, os.path.dirname({repr(module_path)})); from sandbox import _evaluate_securely; _evaluate_securely({repr(expression)})"
     cmd = [sys.executable, "-c", code]
     
     try:
