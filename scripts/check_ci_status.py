@@ -3,7 +3,7 @@ import json
 
 def get_latest_runs(owner, repo):
     url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs"
-    response = requests.get(url)
+    response = requests.get(url, timeout=30)
     if response.status_code == 200:
         return response.json()['workflow_runs']
     else:
@@ -12,7 +12,7 @@ def get_latest_runs(owner, repo):
 
 def get_run_jobs(owner, repo, run_id):
     url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/jobs"
-    response = requests.get(url)
+    response = requests.get(url, timeout=30)
     if response.status_code == 200:
         return response.json()['jobs']
     else:
