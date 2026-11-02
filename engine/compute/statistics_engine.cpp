@@ -30,23 +30,46 @@ EngineResult StatisticsEngine::Median(Vector data) {
     }
 }
 
-EngineResult StatisticsEngine::Mode(const Vector& data) {
+EngineResult StatisticsEngine::Mode(Vector data) const {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
-    std::map<double, int> frequency;
-    for (double val : data) {
-        frequency[val]++;
-    }
+    // Sort, correctly handling NaN to maintain strict weak ordering
+    std::ranges::sort(data, [](double a, double b) {
+        if (std::isnan(a) && std::isnan(b)) return false;
+        if (std::isnan(a)) return false;
+        if (std::isnan(b)) return true;
+        return a < b;
+    });
     
     double mode_val = data[0];
-    int max_count = 0;
-    for (const auto& [val, count] : frequency) {
-        if (count > max_count) {
-            max_count = count;
-            mode_val = val;
+    int max_count = 1;
+
+    double current_val = data[0];
+    int current_count = 1;
+
+    for (size_t i = 1; i < data.size(); ++i) {
+        // Safe equality check, NaNs are considered distinct from themselves normally,
+        // but for Mode calculation we typically either group NaNs or ignore them.
+        // Let's group NaNs as the same value.
+        bool is_same = (data[i] == current_val) || (std::isnan(data[i]) && std::isnan(current_val));
+
+        if (is_same) {
+            current_count++;
+        } else {
+            if (current_count > max_count) {
+                max_count = current_count;
+                mode_val = current_val;
+            }
+            current_val = data[i];
+            current_count = 1;
         }
     }
     
+    // Final check for the last group
+    if (current_count > max_count) {
+        mode_val = current_val;
+    }
+
     return CreateSuccessResult(mode_val);
 }
 
