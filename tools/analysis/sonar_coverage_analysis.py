@@ -24,7 +24,7 @@ def trigger_sonar_analysis(config):
         "projectKey": config["project"],
         "branch": "master",  # Update this if you want to analyze a different branch
     }
-    response = requests.post(url, headers=headers, data=data)
+    response = requests.post(url, headers=headers, data=data, timeout=30)
 
     if response.status_code == 200:
         print("SonarQube analysis triggered successfully.")
