@@ -1,0 +1,4 @@
+## 2024-03-24 - Secure AST Evaluation replacing Python eval
+**Vulnerability:** The sandbox module used Python's `eval()` on unsanitized input within a subprocess. This allowed command injection, path traversal and malicious arbitrary code execution.
+**Learning:** Even if `eval()` is isolated in a subprocess, it can still access OS resources, memory and trigger DoS if no OS-level protections (like seccomp or AppContainer) are strictly enforced or configured.
+**Prevention:** Always implement a custom Abstract Syntax Tree (`ast.NodeVisitor`) evaluator to restrict expressions instead of using `eval()`. Explicitly allow only needed operations/functions, overriding `generic_visit` to raise exceptions on unsupported syntax, and type-checking operations (like string multiplication `ast.Mult`) to avoid DoS.
