@@ -59,7 +59,7 @@ class SafeEvaluator(ast.NodeVisitor):
             raise ValueError(f"Unsupported operator: {op.__name__}")
 
         if op == ast.Mult:
-            if isinstance(left, str) or isinstance(right, str):
+            if type(left) is str or type(right) is str:
                 raise ValueError("String multiplication is not allowed")
 
         return self.operators[op](left, right)
