@@ -20,7 +20,7 @@ public:
     // Descriptive Statistics
     EngineResult Mean(const Vector& data);
     EngineResult Median(Vector data);  // Note: modifies input for sorting
-    EngineResult Mode(const Vector& data);
+    EngineResult Mode(Vector data);
     EngineResult Variance(const Vector& data);
     EngineResult StandardDeviation(const Vector& data);
     EngineResult Skewness(const Vector& data);
