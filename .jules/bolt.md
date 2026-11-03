@@ -1,0 +1,3 @@
+## 2024-05-30 - [StatisticsEngine::Mode Zero-Allocation Improvement]
+**Learning:** `std::map` was used in `StatisticsEngine::Mode` to calculate frequency, violating Zenith Pillar 1 (Zero-Allocation policy) because `std::map` performs constant allocations. A zero-allocation approach involves sorting the data in-place and linearly counting consecutive identical elements.
+**Action:** When calculating mode or frequency, sort the data first (passing by value `Vector` allows in-place mutation and avoids heap allocations when callers pass rvalues) and iterate through it, avoiding the overhead of `std::unordered_map` or `std::map` which constantly allocate on the heap.
