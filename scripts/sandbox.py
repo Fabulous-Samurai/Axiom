@@ -4,6 +4,61 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
+
+class SafeEvaluator(ast.NodeVisitor):
+    ops = {
+        ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+        ast.Div: operator.truediv, ast.FloorDiv: operator.floordiv,
+        ast.Mod: operator.mod, ast.Pow: operator.pow,
+        ast.USub: operator.neg, ast.UAdd: operator.pos
+    }
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op_type = type(node.op)
+        if op_type not in self.ops:
+            raise ValueError(f"Unsupported binary operator: {op_type.__name__}")
+        if op_type == ast.Mult:
+            if isinstance(left, str) or isinstance(right, str):
+                raise ValueError("String multiplication disabled")
+        if op_type == ast.Pow:
+            if isinstance(right, (int, float)) and right > 100:
+                raise ValueError("Power too large")
+        return self.ops[op_type](left, right)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op_type = type(node.op)
+        if op_type not in self.ops:
+            raise ValueError(f"Unsupported unary operator: {op_type.__name__}")
+        return self.ops[op_type](operand)
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported node type: {type(node).__name__}")
+
+    def visit_Call(self, node):
+        if getattr(node, 'keywords', None):
+            raise ValueError("Keyword arguments not allowed")
+        raise ValueError("Function calls not allowed")
+
+def _safe_eval_main(expr):
+    try:
+        tree = ast.parse(expr, mode='eval')
+        evaluator = SafeEvaluator()
+        print(evaluator.visit(tree.body))
+    except Exception as e:
+        print(f"{e}", file=sys.stderr)
+        sys.exit(1)
+
 
 class ComplexityGuard:
     """
@@ -30,10 +85,9 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    code = f"import sys; sys.path.insert(0, {repr(script_dir)}); from sandbox import _safe_eval_main; _safe_eval_main(sys.argv[1])"
+    cmd = [sys.executable, "-c", code, expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
