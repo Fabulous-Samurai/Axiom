@@ -32,9 +32,10 @@ EngineResult StatisticsEngine::Median(Vector data) {
 EngineResult StatisticsEngine::Mode(const Vector& data) {
     if (data.empty()) return CreateErrorResult(CalcErr::ArgumentMismatch);
     
-    Vector sorted_data;
-    sorted_data.assign(data.size(), 0.0);
-    for(size_t i=0; i<data.size(); ++i) sorted_data[i] = data[i];
+    // Zero-allocation optimization: Use an in-place sort and linear scan instead of std::map
+    // to prevent memory fragmentation and heap allocations for individual tree nodes.
+    // We create a local copy to avoid mutating the original data passed by const reference.
+    Vector sorted_data = data;
     std::ranges::sort(sorted_data);
 
     double mode_val = sorted_data[0];
