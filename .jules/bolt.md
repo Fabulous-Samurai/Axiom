@@ -1,0 +1,3 @@
+## 2024-05-18 - [Zero-Allocation Policy in StatisticsEngine::Mode]
+**Learning:** Found an `std::map<double, int>` being used in `StatisticsEngine::Mode` to calculate frequencies. According to Zenith Pillar 1 (Zero-Allocation), `std::map` and `std::unordered_map` are strictly forbidden in core modules because they cause memory fragmentation and break zero-allocation principles.
+**Action:** Replace `std::map` with an allocation-free copy sort (`std::ranges::sort` on a `FixedVector` or regular `Vector` if it was passed by value) and linearly iterate to count consecutive identical elements. I will change the signature from `const Vector&` to `Vector` (pass-by-value) to allow in-place sorting without extra heap allocation.
