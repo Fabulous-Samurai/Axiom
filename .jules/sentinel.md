@@ -1,0 +1,4 @@
+## 2025-02-23 - Python eval() vulnerability in subprocess sandbox
+**Vulnerability:** `eval()` was used inside a subprocess to evaluate mathematical expressions passed from `sys.argv`, enabling arbitrary code execution if an attacker crafted a payload like `__import__('os').listdir('.')`.
+**Learning:** `ast.literal_eval()` cannot evaluate basic binary arithmetic expressions, making it unsuitable for math expression evaluation. However, `eval()` remains a critical risk even in limited subprocesses unless properly secured via seccomp or AppContainer.
+**Prevention:** Always implement a custom `ast.NodeVisitor` that strictly restricts the AST node types and allowed operators (e.g., overriding `generic_visit` to raise exceptions) instead of relying on `eval()` when evaluating mathematical expressions from untrusted sources.
