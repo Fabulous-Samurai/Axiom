@@ -4,6 +4,56 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
+
+class SecureEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Pow: operator.pow,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported syntax: {type(node).__name__}")
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+    def visit_Constant(self, node):
+        if isinstance(node.value, (int, float)):
+            return node.value
+        raise ValueError("Only numeric constants are allowed")
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op_type = type(node.op)
+        if op_type not in self.allowed_operators:
+            raise ValueError(f"Unsupported operator: {op_type.__name__}")
+        return self.allowed_operators[op_type](left, right)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op_type = type(node.op)
+        if op_type not in self.allowed_operators:
+            raise ValueError(f"Unsupported unary operator: {op_type.__name__}")
+        return self.allowed_operators[op_type](operand)
+
+    def visit_Call(self, node):
+        if getattr(node, 'keywords', None):
+            raise ValueError("Keyword arguments are not allowed")
+        raise ValueError("Function calls are not allowed")
+
+def evaluate_and_print(expression):
+    tree = ast.parse(expression, mode='eval')
+    evaluator = SecureEvaluator()
+    print(evaluator.visit(tree))
 
 class ComplexityGuard:
     """
@@ -30,13 +80,12 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    code = f"import sys; sys.path.insert(0, {repr(script_dir)}); from sandbox import evaluate_and_print; evaluate_and_print(sys.argv[1])"
+    cmd = [sys.executable, "-c", code, expression]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)  # NOSONAR
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
