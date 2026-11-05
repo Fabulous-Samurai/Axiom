@@ -1,0 +1,3 @@
+## 2024-05-15 - Zero-Allocation Pass-by-Value Arrays
+**Learning:** Found a codebase-specific anti-pattern in `StatisticsEngine::Mode` where `const Vector&` was used alongside `std::map`, causing `O(N log K)` heap allocations per element. AXIOM's Zenith Pillar 1 dictates passing `Vector` by value to enable in-place mutation (like sorting) which naturally eliminates all heap allocations when callers pass rvalues (e.g. from `ParseVector`).
+**Action:** When implementing algorithms that can operate in-place (like `Mode` or `Median`), use pass-by-value `Vector data` and `std::ranges::sort` to achieve true zero-allocation processing, checking for `NaN` first to preserve strict weak ordering.
