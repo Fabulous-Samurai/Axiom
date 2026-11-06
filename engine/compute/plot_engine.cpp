@@ -303,18 +303,21 @@ std::string_view PlotEngine::Histogram(const Vector& data, int bins, const PlotC
     return arena_.allocString(std::string_view(result_buffer.data(), result_buffer.size()));
 }
 
-std::string_view PlotEngine::BoxPlot(const Vector& data, const PlotConfig& config) noexcept {
+std::string_view PlotEngine::BoxPlot(Vector data, const PlotConfig& config) noexcept {
     arena_.reset();
     if (data.empty()) return arena_.allocString("Error: Data is empty\n");
 
-    Vector sorted = data;
-    std::sort(sorted.begin(), sorted.end());
+    std::sort(data.begin(), data.end(), [](double a, double b) {
+        if (std::isnan(a)) return false;
+        if (std::isnan(b)) return true;
+        return a < b;
+    });
 
-    const double min_val = sorted.front();
-    const double max_val = sorted.back();
-    const double q1 = sorted[sorted.size() / 4];
-    const double median = sorted[sorted.size() / 2];
-    const double q3 = sorted[3 * sorted.size() / 4];
+    const double min_val = data.front();
+    const double max_val = data.back();
+    const double q1 = data[data.size() / 4];
+    const double median = data[data.size() / 2];
+    const double q3 = data[3 * data.size() / 4];
 
     const int width = std::clamp(config.width, 10, 256);
     const double range = max_val - min_val;
