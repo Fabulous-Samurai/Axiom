@@ -45,7 +45,7 @@ public:
     // Data plotting
     std::string_view PlotData(const Vector& x_data, const Vector& y_data, const PlotConfig& config = {}) noexcept;
     std::string_view Histogram(const Vector& data, int bins = 10, const PlotConfig& config = {}) noexcept;
-    std::string_view BoxPlot(const Vector& data, const PlotConfig& config = {}) noexcept;
+    std::string_view BoxPlot(Vector data, const PlotConfig& config = {}) noexcept;
     
     // 3D Surface plots (top-down view)
     std::string_view PlotSurface(std::string_view expression, const PlotConfig& config = {}) noexcept;
