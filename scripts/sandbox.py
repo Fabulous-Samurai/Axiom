@@ -31,8 +31,81 @@ def run_isolated_expression(expression):
     print(f"[SANDBOX] Evaluating: {expression}")
     
     # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    # to avoid shell quoting issues, while avoiding dangerous eval().
+    code = f"""
+import ast
+import operator
+import sys
+import math
+
+class SafeEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_operators = {{
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv,
+            ast.Mod: operator.mod,
+            ast.Pow: operator.pow,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }}
+        self.allowed_functions = {{
+            'abs': abs,
+            'round': round,
+            'min': min,
+            'max': max,
+            'sum': sum,
+            'math.sqrt': math.sqrt,
+        }}
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported syntax: {{type(node).__name__}}")
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+    def visit_Constant(self, node):
+        if not isinstance(node.value, (int, float)):
+            raise ValueError("Only numeric constants are allowed")
+        return node.value
+
+    def visit_UnaryOp(self, node):
+        if type(node.op) not in self.allowed_operators:
+            raise ValueError(f"Unsupported unary operator: {{type(node.op).__name__}}")
+        return self.allowed_operators[type(node.op)](self.visit(node.operand))
+
+    def visit_BinOp(self, node):
+        if type(node.op) not in self.allowed_operators:
+            raise ValueError(f"Unsupported binary operator: {{type(node.op).__name__}}")
+        return self.allowed_operators[type(node.op)](self.visit(node.left), self.visit(node.right))
+
+    def visit_Call(self, node):
+        if node.keywords:
+            raise ValueError("Keyword arguments are not allowed")
+
+        if isinstance(node.func, ast.Name):
+            func_name = node.func.id
+        elif isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name):
+            func_name = f"{{node.func.value.id}}.{{node.func.attr}}"
+        else:
+            raise ValueError("Unsupported function call")
+
+        if func_name not in self.allowed_functions:
+            raise ValueError(f"Unsupported function: {{func_name}}")
+
+        args = [self.visit(arg) for arg in node.args]
+        return self.allowed_functions[func_name](*args)
+
+try:
+    tree = ast.parse({repr(expression)}, mode='eval')
+    evaluator = SafeEvaluator()
+    print(evaluator.visit(tree))
+except Exception as e:
+    sys.stderr.write(str(e))
+    sys.exit(1)
+"""
     cmd = [sys.executable, "-c", code]
     
     try:
