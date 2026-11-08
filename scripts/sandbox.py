@@ -30,13 +30,74 @@ def run_isolated_expression(expression):
     """
     print(f"[SANDBOX] Evaluating: {expression}")
     
-    # We use a more robust way to pass the expression to the subprocess
-    # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    # We use a more robust and secure way to pass the expression to the subprocess
+    # to avoid shell quoting issues and Remote Code Execution (RCE) via eval().
+    code = """
+import ast
+import operator
+import math
+import sys
+
+class SafeEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.operators = {
+            ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+            ast.Div: operator.truediv, ast.FloorDiv: operator.floordiv,
+            ast.Mod: operator.mod, ast.Pow: operator.pow, ast.BitXor: operator.xor,
+            ast.BitOr: operator.or_, ast.BitAnd: operator.and_,
+            ast.USub: operator.neg, ast.UAdd: operator.pos,
+        }
+        self.functions = {
+            'abs': abs, 'round': round, 'min': min, 'max': max, 'sum': sum,
+            'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
+            'sqrt': math.sqrt, 'exp': math.exp, 'log': math.log, 'log10': math.log10,
+        }
+        self.constants = {'pi': math.pi, 'e': math.e}
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported node type: {type(node).__name__}")
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_Name(self, node):
+        if node.id in self.constants:
+            return self.constants[node.id]
+        raise ValueError(f"Unknown variable: {node.id}")
+
+    def visit_UnaryOp(self, node):
+        op = self.operators.get(type(node.op))
+        if op is None: raise ValueError(f"Unsupported operator: {type(node.op).__name__}")
+        return op(self.visit(node.operand))
+
+    def visit_BinOp(self, node):
+        op = self.operators.get(type(node.op))
+        if op is None: raise ValueError(f"Unsupported operator: {type(node.op).__name__}")
+        return op(self.visit(node.left), self.visit(node.right))
+
+    def visit_Call(self, node):
+        if node.keywords: raise ValueError("Keyword arguments are not supported")
+        if not isinstance(node.func, ast.Name): raise ValueError("Only simple function calls are supported")
+        func_name = node.func.id
+        if func_name not in self.functions: raise ValueError(f"Unknown function: {func_name}")
+        return self.functions[func_name](*[self.visit(arg) for arg in node.args])
+
+def evaluate(expr):
+    return SafeEvaluator().visit(ast.parse(expr, mode='eval'))
+
+try:
+    print(evaluate(sys.argv[1]))
+except Exception as e:
+    print(f"Error: {e}", file=sys.stderr)
+    sys.exit(1)
+"""
+    cmd = [sys.executable, "-c", code, expression]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)  # NOSONAR
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
