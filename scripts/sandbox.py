@@ -32,11 +32,67 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
+    code = f"""import ast
+import operator
+import sys
+
+class SafeEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_operators = {{
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv,
+            ast.Mod: operator.mod,
+            ast.Pow: operator.pow,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }}
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported syntax: {{type(node).__name__}}")
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op_type = type(node.op)
+        if op_type not in self.allowed_operators:
+            raise ValueError(f"Unsupported operator: {{op_type.__name__}}")
+        if op_type == ast.Pow and (not isinstance(right, (int, float)) or right > 100):
+            raise ValueError("Power too large")
+        return self.allowed_operators[op_type](left, right)
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op_type = type(node.op)
+        if op_type not in self.allowed_operators:
+            raise ValueError(f"Unsupported operator: {{op_type.__name__}}")
+        return self.allowed_operators[op_type](operand)
+
+    def visit_Expression(self, node):
+        return self.visit(node.body)
+
+    def visit_Call(self, node):
+        if getattr(node, 'keywords', None):
+            raise ValueError("Keyword arguments are not allowed")
+        raise ValueError("Function calls are not allowed")
+
+def evaluate_expression(expr):
+    tree = ast.parse(expr, mode='eval')
+    evaluator = SafeEvaluator()
+    print(evaluator.visit(tree))
+
+evaluate_expression({repr(expression)})
+"""
+
     cmd = [sys.executable, "-c", code]
     
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)  # NOSONAR
         
         guard = ComplexityGuard()
         monitor_thread = threading.Thread(target=guard.monitor, args=(proc,))
