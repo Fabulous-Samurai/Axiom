@@ -1,0 +1,4 @@
+## 2024-11-10 - Secure Sandbox AST Evaluator
+**Vulnerability:** Remote Code Execution (RCE) via Python `eval()` in `scripts/sandbox.py`. Even though the process was monitored and killed, `eval` executes arbitrary Python code which is extremely dangerous.
+**Learning:** `ast.literal_eval()` cannot evaluate basic binary arithmetic operations like `2 + 2`. Thus a custom `ast.NodeVisitor` must be implemented to evaluate safely while explicitly restricting supported operations and node types. To maintain error propagation logic, `try...except` must not wrap the evaluator when exceptions need to fail the parent process via exit code.
+**Prevention:** Never use `eval` for untrusted input. Instead, use a custom `ast.NodeVisitor` or parse safely via `ast` and selectively evaluate expressions. Additionally, securely pass custom modules to subprocess via `-c` without inline `eval`.
