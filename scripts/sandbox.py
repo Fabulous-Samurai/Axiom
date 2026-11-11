@@ -4,6 +4,55 @@ import time
 import threading
 import subprocess
 import signal
+import ast
+import operator
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    def __init__(self):
+        self.allowed_operators = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.FloorDiv: operator.floordiv,
+            ast.Pow: operator.pow,
+            ast.BitXor: operator.xor,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+    def visit_Constant(self, node):
+        if isinstance(node.value, (int, float, complex)):
+            return node.value
+        raise ValueError(f"Unsupported constant type: {type(node.value)}")
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        op_type = type(node.op)
+        if op_type in self.allowed_operators:
+            return self.allowed_operators[op_type](left, right)
+        raise ValueError(f"Unsupported binary operator: {op_type}")
+
+    def visit_UnaryOp(self, node):
+        operand = self.visit(node.operand)
+        op_type = type(node.op)
+        if op_type in self.allowed_operators:
+            return self.allowed_operators[op_type](operand)
+        raise ValueError(f"Unsupported unary operator: {op_type}")
+
+    def visit_Call(self, node):
+        if getattr(node, 'keywords', None):
+            raise ValueError("Keyword arguments are not allowed")
+        raise ValueError("Function calls are not allowed")
+
+    def generic_visit(self, node):
+        raise ValueError(f"Unsupported AST node type: {type(node)}")
+
+def evaluate_expression_safe(expression):
+    tree = ast.parse(expression, mode='eval')
+    print(SafeMathEvaluator().visit(tree.body))
+
 
 class ComplexityGuard:
     """
@@ -32,8 +81,9 @@ def run_isolated_expression(expression):
     
     # We use a more robust way to pass the expression to the subprocess
     # to avoid shell quoting issues.
-    code = f"import os; print(eval({repr(expression)}))"
-    cmd = [sys.executable, "-c", code]
+    module_path = os.path.abspath(__file__)
+    code = f"import sys; sys.path.insert(0, {repr(os.path.dirname(module_path))}); from sandbox import evaluate_expression_safe; evaluate_expression_safe(sys.argv[1])"
+    cmd = [sys.executable, "-c", code, expression]
     
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
