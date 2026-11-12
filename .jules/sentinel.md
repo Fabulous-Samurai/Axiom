@@ -1,0 +1,4 @@
+## 2024-05-18 - [Fix Critical Remote Code Execution in sandbox]
+**Vulnerability:** The sandbox evaluator `run_isolated_expression` in `scripts/sandbox.py` previously used Python's `eval()` on unvalidated string input. This allowed arbitrary code execution (e.g., executing OS commands or instantiating objects like `__import__('os').listdir()`).
+**Learning:** Using `eval()` even within a time/memory constrained subprocess doesn't prevent logic-level remote code execution. Because `eval()` allows full access to Python's built-ins, an attacker can bypass restrictions to read files, allocate infinite memory, or crash the process.
+**Prevention:** Always use safe abstractions for string evaluation. Implementing a custom AST evaluator (`ast.NodeVisitor`) explicitly whitelisting specific, safe mathematical operations (like `ast.Add`, `ast.Sub`) and rejecting unknown nodes or calls guarantees that only intended expressions can be processed.
